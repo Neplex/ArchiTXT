@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "text2graph"
+version = "0.1.0"
+description = ""
+authors = ["Nicolas Hiot <nhiot@ennov.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+joblib = ">=1.1"
+tqdm = "*"
+pqdm = "*"
+nltk = "*"
+chatette = ">=1.6.2"
+unidecode = "*"
+cachetools = "*"
+pytokenizations = "0.8.1"
+matplotlib = ">=3.4"
+requests = "*"
+scikit-learn = "*"
+numpy = "*"
+scipy = "*"
+levenshtein = "*"
+more-itertools = "*"
+pytest = "*"
+ray = "*"
+bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
+mlflow = "^2.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
