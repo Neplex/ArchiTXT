@@ -1,17 +1,23 @@
+import math
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from itertools import combinations
+from threading import RLock
+from typing import Sequence
 
+import numpy as np
 from Levenshtein import ratio as levenshtein_ratio, jaro_winkler
 from cachetools import cached
 from joblib import Parallel, delayed
 from scipy.cluster import hierarchy
 from tqdm import tqdm
 
-from .tree import Tree, ParentedTree
+from tal_db.tree import Tree, ParentedTree
+
+_parallel = Parallel(n_jobs=1, require='sharedmem', return_as='generator')
 
 
-def jaccard(x: list[str], y: list[str]) -> float:
+def jaccard(x: Sequence[str], y: Sequence[str]) -> float:
     """
     Jaccard similarity for list (originally for set)
 
@@ -30,7 +36,7 @@ def jaccard(x: list[str], y: list[str]) -> float:
     return len(inter) / len(union) if len(union) else 0
 
 
-def levenshtein(x: list[str], y: list[str]) -> float:
+def levenshtein(x: Sequence[str], y: Sequence[str]) -> float:
     """
     Levenshtein similarity for list
     """
@@ -40,7 +46,7 @@ def levenshtein(x: list[str], y: list[str]) -> float:
     )
 
 
-def jaro(x: list[str], y: list[str]) -> float:
+def jaro(x: Sequence[str], y: Sequence[str]) -> float:
     """
     Jaro winkler similarity for list
     """
@@ -50,27 +56,36 @@ def jaro(x: list[str], y: list[str]) -> float:
     )
 
 
-METRIC_FUNC = Callable[[list[str], list[str]], float]
+METRIC_FUNC = Callable[[Sequence[str], Sequence[str]], float]
 DEFAULT_METRIC: METRIC_FUNC = jaccard
+TREE_CLUSTER = set[tuple[ParentedTree, ...], ...]
+
+SIM_CACHE = {}
+SIM_CACHE_LOCK = RLock()
 
 
-@cached(cache={}, key=lambda x, y, *, metric: f'{metric.__name__}=={x.pformat()}#$#{y.pformat()}')
+@cached(cache=SIM_CACHE, lock=SIM_CACHE_LOCK,
+        key=lambda x, y, *, metric: (x.treeposition(), y.treeposition()))
 def similarity(x: ParentedTree, y: ParentedTree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
-    depth_max = max(x.depth(), y.depth())
-    depth_min = min(x.depth(), y.depth())
-
     x_labels = tuple(node.label().name for node in x.entities())
     y_labels = tuple(node.label().name for node in y.entities())
-    sim_sum = depth_min * metric(x_labels, y_labels)
+
+    if not any(label in y_labels for label in x_labels):
+        return 0
+
+    depth_min = min(x.depth(), y.depth())
+    sim_sum = metric(x_labels, y_labels)
 
     # Context similarity
-    for i in range(1, depth_min):
-        x = x.parent()
-        y = y.parent()
-        sim_sum += (depth_min - i) * similarity(x, y, metric=metric)
+    sim_sum += sum(
+        (1 / i) * similarity(x := x.parent(), y := y.parent(), metric=metric)
+        for i in range(2, depth_min)
+    )
 
-    weight_sum = sum(range(1, depth_min + 1))
-    return sim_sum / weight_sum if weight_sum else 0
+    weight_sum = sum((1 / i) for i in range(1, depth_min))
+    score = (sim_sum / weight_sum) if weight_sum else 0
+
+    return max(0, min(1, score))  # Need to fix float issues
 
 
 def sim(
@@ -78,9 +93,6 @@ def sim(
         tau: float, metric: METRIC_FUNC = DEFAULT_METRIC
 ) -> bool:
     return similarity(x, y, metric=metric) >= tau
-
-
-TREE_CLUSTER = set[tuple[ParentedTree, ...]]
 
 
 def equiv_cluster(
@@ -97,18 +109,19 @@ def equiv_cluster(
     :param metric: the similarity metric function
     :return: Set of tuples representing the clustered subtrees
     """
-    subtrees = list(sorted(t.subtrees(
+    subtrees = sorted(t.subtrees(
         lambda x: isinstance(x, Tree) and x != t.root() and max(Counter(ent.label() for ent in x.entities()).values()) == 1
-    ), key=lambda x: x.height()))
+    ), key=lambda x: x.depth())
 
     if len(subtrees) < 2:
-        return []
+        return set()
 
     # Get distance matrix for all subtrees
-    dist_matrix = Parallel(n_jobs=1, require='sharedmem')(
+    nb_combinations = math.comb(len(subtrees), 2)
+    dist_matrix = np.fromiter(_parallel(
         delayed(lambda x, y: 1 - similarity(x, y, metric=metric))(x, y)
-        for x, y in tqdm(list(combinations(subtrees, r=2)), desc='similarity', leave=False)
-    )
+        for x, y in tqdm(combinations(subtrees, r=2), total=nb_combinations, desc='similarity', leave=False)
+    ), dtype=np.double, count=nb_combinations)
 
     # with tqdm(desc='similarity', leave=False, total=int((N ** 2 - N) / 2)) as pb:
     #     dist_matrix = pdist(
@@ -122,9 +135,9 @@ def equiv_cluster(
     # Cluster
     clusters = hierarchy.fcluster(linkage_matrix, 1 - tau, criterion='distance')
 
-    subtree_clusters = defaultdict(list)
+    subtree_clusters = defaultdict(set)
     for subtree, cluster in zip(subtrees, clusters):
-        subtree_clusters[cluster].append(subtree)
+        subtree_clusters[cluster].add(subtree)
 
     return {
         tuple(cluster)
@@ -132,6 +145,8 @@ def equiv_cluster(
     }
 
 
+@cached(cache={},  # lock=RLock(),
+        key=lambda t, equiv_subtrees, *, tau, metric: (id(equiv_subtrees), t.treeposition()))
 def get_equiv_of(
         t: ParentedTree, equiv_subtrees: TREE_CLUSTER, *,
         tau: float, metric: METRIC_FUNC = DEFAULT_METRIC
@@ -144,8 +159,8 @@ def get_equiv_of(
     :param metric: the similarity metric function
     :return: The cluster containing `t`
     """
-    for cluster in tqdm(equiv_subtrees, desc='search equivalent class', leave=False):
+    for cluster in tqdm(list(sorted(equiv_subtrees, key=lambda x: len(x), reverse=True)), desc='search equivalent class', leave=False):
         if all(sim(x, t, tau, metric) for x in cluster):
             return cluster
 
-    return []
+    return tuple()

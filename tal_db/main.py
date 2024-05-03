@@ -1,15 +1,14 @@
 import sys
-from collections import Counter
 from pathlib import Path
 
+import mlflow
 from nltk import Production
 
-from .algo import rewrite
-from .model import NodeType, NodeLabel
-from .nlp import get_sentence_from_disk, get_annotated_rooted_forest
-from .instance_generator import gen_instance
-from .similarity import levenshtein
-import mlflow
+from tal_db.algo import rewrite
+from tal_db.instance_generator import gen_instance
+from tal_db.model import NodeType, NodeLabel
+from tal_db.nlp import get_sentence_from_disk, get_annotated_rooted_forest
+from tal_db.similarity import *
 
 if __name__ == '__main__':
     path = Path(sys.argv[1])
@@ -18,7 +17,7 @@ if __name__ == '__main__':
     min_support = int(sys.argv[4])
 
     mlflow.log_params({
-        'has_instance': False,
+        'has_instance': True,
         'has_corpus': True,
     })
 
@@ -33,36 +32,45 @@ if __name__ == '__main__':
             'PRESCRIPTION': ('SOSY', 'TREATMENT'),
             'EXAM': ('EXAM', 'SOSY'),
         },
-        size=25
+        size=50
     )
 
     print(f'Load corpus: {path.absolute()}')
-    sentences = list(get_sentence_from_disk(path))[:66]
+    sentences = list(get_sentence_from_disk(path))[:150]
+
     corpus_tree = get_annotated_rooted_forest(sentences, url='http://localhost:9001')
     print('Dataset loaded!')
 
-    tree = corpus_tree #gen_tree.merge(corpus_tree)
-    with open('debug.log', 'w', encoding='utf8') as log_file:
-        rewrite(tree, tau=.7, epoch=25, min_support=10, metric=levenshtein, stream=log_file)
+    tree = gen_tree.merge(corpus_tree)
+    mlflow.log_param('nb_sentences', len(tree))
+    with open('debug.txt', 'w', encoding='utf8') as log_file:
+        rewrite(tree, tau=tau, epoch=epoch, min_support=min_support, stream=log_file)
     print('Done!')
 
     productions = []
     schema = {}
     for prod in tree.productions():
-        if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type == NodeType.COLL:
-            productions.append(Production(prod.lhs(), [prod.rhs()[0]]))
-            schema[prod.lhs()] = [str(prod.rhs()[0]) + '*']
-        else:
-            productions.append(Production(prod.lhs(), list(sorted(prod.rhs()))))
+        if prod.is_nonlexical():
+            if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type == NodeType.COLL:
+                productions.append(Production(prod.lhs(), [prod.rhs()[0]]))
+                schema[prod.lhs()] = [str(prod.rhs()[0]) + '*']
+            else:
+                productions.append(Production(prod.lhs(), list(sorted(prod.rhs()))))
 
-            if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type in (NodeType.GROUP, NodeType.REL):
-                old = set(schema[prod.lhs()]) if prod.lhs() in schema else set()
-                new = set(str(x) for x in prod.rhs())
+                if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type in (NodeType.GROUP, NodeType.REL):
+                    old = set(schema[prod.lhs()]) if prod.lhs() in schema else set()
+                    new = set(str(x) for x in prod.rhs())
 
-                schema[prod.lhs()] = list(sorted(old | new))
+                    schema[prod.lhs()] = list(sorted(old | new))
 
+    schema_str = ""
     for key, value in sorted(schema.items(), key=lambda x: (x[0].symbol().type, x[0].symbol().name)):
-        print(f"{key} -> {', '.join(value)}")
+        schema_str += f"{key} -> {', '.join(value)}\n"
+
+    print(schema_str)
+    mlflow.log_text(schema_str, 'schema.txt')
+    mlflow.log_artifact('debug.txt')
+    mlflow.log_artifact('trace.txt')
 
     print('\n' + '=' * 10 + '\n')
 
@@ -70,3 +78,5 @@ if __name__ == '__main__':
         production: Production
         if production.is_nonlexical():
             print(f'[{count}] {production}')
+
+    tree.draw()

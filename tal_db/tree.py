@@ -1,14 +1,15 @@
-from nltk.tree import Tree as NLTKTree, ParentedTree as NLTKParentedTree
 from nltk.grammar import Production
+from nltk.tree import Tree as NLTKTree, ParentedTree as NLTKParentedTree
 from tqdm import tqdm
 
-from .model import Entity, Relation, TreeEntity, TreeRel, NodeLabel, NodeType
+from tal_db.model import Entity, Relation, TreeEntity, TreeRel, NodeLabel, NodeType
 
 __all__ = [
     'has_type', 'Tree', 'ParentedTree',
     'ins_elem', 'del_elem', 'reduce', 'reduce_all',
     'fix_coord', 'fix_conj', 'fix_all_coord',
     'ins_ent', 'ins_rel', 'ins_ent_list', 'unnest_ent',
+    'update_cache',
 ]
 
 
@@ -36,7 +37,30 @@ class ParentedTree(Tree, NLTKParentedTree):
         return ParentedTree.convert(merged_tree)
 
 
+def update_cache(x: ParentedTree) -> None:
+    """
+    This method updates the similarity cache.
+    It removes any cache entries that contain the tree.
+    """
+    from tal_db.similarity import SIM_CACHE, SIM_CACHE_LOCK
+
+    position = x.treeposition()
+
+    with SIM_CACHE_LOCK:
+        keys_to_remove = {key for key in SIM_CACHE.keys() if key[0] == position or key[1] == position}
+
+        for key in keys_to_remove:
+            del SIM_CACHE[key]
+
+
 def has_type(t: Tree | Production | NodeLabel, types: set[str] | str | None = None) -> bool:
+    """
+    Check if the given tree object has the specified type(s).
+
+    :param t: The object to check type for (can be a Tree, Production, or NodeLabel).
+    :param types: The types to check for (can be a set of strings, a string, or None).
+    :return: True if the object has the specified type(s), False otherwise.
+    """
     if types is None:
         types = set(NodeType)
 
@@ -54,6 +78,7 @@ def has_type(t: Tree | Production | NodeLabel, types: set[str] | str | None = No
 
 def ins_elem(t: ParentedTree, x: Tree, pos: int) -> None:
     t.insert(pos, ParentedTree.convert(x))
+    update_cache(t[pos])
 
 
 def del_elem(t: ParentedTree, pos: int) -> None:
@@ -61,18 +86,20 @@ def del_elem(t: ParentedTree, pos: int) -> None:
         return
 
     t.pop(pos)
+    update_cache(t)
 
     if len(t) == 0:
         del_elem(t.parent(), t.parent_index())
 
 
-def reduce(t: ParentedTree, pos: int, types: set[NodeType] | None = None) -> bool:
+def reduce(t: ParentedTree, pos: int, types: set[NodeType | str] | None = None) -> bool:
     if not isinstance(t, Tree) or not isinstance(t[pos], Tree) or (types and has_type(t[pos], types)) or (
             not types and len(t[pos]) > 1):
         return False
 
     children = [Tree.convert(child) for child in t[pos]]
     t.pop(pos)
+    update_cache(t)
 
     for i, child in enumerate(children):
         t.insert(pos + i, ParentedTree.convert(child))
@@ -80,14 +107,14 @@ def reduce(t: ParentedTree, pos: int, types: set[NodeType] | None = None) -> boo
     return True
 
 
-def reduce_all(t: ParentedTree, skip_types: set[NodeType] | None = None):
+def reduce_all(t: ParentedTree, skip_types: set[NodeType | str] | None = None):
     if not isinstance(t, Tree):
         return
 
     reduced = True
     while reduced:
         reduced = False
-        for pos in t.treepositions():
+        for pos in tqdm(t.treepositions(), desc='reduce all', leave=False):
             if len(pos) < 1 or isinstance(t[pos], str) or (skip_types and has_type(t[pos], skip_types)):
                 continue
 
@@ -199,7 +226,10 @@ def ins_ent(t: ParentedTree, tree_ent: TreeEntity) -> ParentedTree | None:
         anchor_pos = tree_ent.root_pos
         entity_index = tree_ent.positions[0][len(tree_ent.root_pos)] + 1
 
-    elif tree_ent.positions[0][len(tree_ent.root_pos)] > 0:
+    elif (
+            tree_ent.positions[0][len(tree_ent.root_pos)] > 0 or  # Elements in the left-hand side are not part of the entity
+            tree_ent.positions[-1][len(tree_ent.root_pos)] < (len(t[tree_ent.root_pos]) - 1)  # Elements remain in the right-hand side
+    ):
         anchor_pos = tree_ent.root_pos
         entity_index = tree_ent.positions[0][len(tree_ent.root_pos)]
 

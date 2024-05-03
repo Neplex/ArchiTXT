@@ -8,8 +8,10 @@ from nltk.parse.corenlp import CoreNLPParser
 from tqdm import tqdm
 from unidecode import unidecode
 
-from .model import AnnotatedSentence, Entity, Relation, NodeType
-from .tree import Tree, ParentedTree, ins_ent_list, reduce_all, fix_all_coord
+from tal_db.model import AnnotatedSentence, Entity, Relation, NodeType
+from tal_db.tree import ParentedTree, ins_ent_list, reduce_all, fix_all_coord
+
+_parallel = Parallel(n_jobs=-2, require='sharedmem', return_as='generator')
 
 
 def split_sentences(text):
@@ -27,10 +29,11 @@ def convert_brat_file(brat_file: BratFile) -> Generator[AnnotatedSentence]:
     relationships = split_relations(convert_brat_relations(brat_file.relations), entities)
 
     for sentence, entities, rels in zip(sentences, entities, relationships):
-        yield AnnotatedSentence(sentence, entities, rels)
+        if sentence:
+            yield AnnotatedSentence(sentence, entities, rels)
 
 
-def convert_brat_entities(entities: Sequence[BratEntity]) -> Generator[Entity]:
+def convert_brat_entities(entities: Iterable[BratEntity]) -> Generator[Entity]:
     for brat_entity in entities:
         start = brat_entity.spans[0][0]
         end = brat_entity.spans[-1][-1]
@@ -49,7 +52,7 @@ def convert_brat_entities(entities: Sequence[BratEntity]) -> Generator[Entity]:
             )
 
 
-def split_entities(entities: Sequence[Entity], sentences: Sequence[str]) -> Generator[list[Entity]]:
+def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Generator[list[Entity]]:
     entities = sorted(entities)
     ent_i = 0
     sent_i = 0
@@ -72,7 +75,7 @@ def split_entities(entities: Sequence[Entity], sentences: Sequence[str]) -> Gene
         yield sent_entities
 
 
-def convert_brat_relations(relations: Sequence[BratRelation]) -> Generator[Relation]:
+def convert_brat_relations(relations: Iterable[BratRelation]) -> Generator[Relation]:
     for brat_relation in relations:
         src = tuple(brat_relation.arg1.spans)
         dst = tuple(brat_relation.arg2.spans)
@@ -82,7 +85,7 @@ def convert_brat_relations(relations: Sequence[BratRelation]) -> Generator[Relat
             yield src, dst, relation
 
 
-def split_relations(relations: Sequence[Relation], entities: Sequence[Sequence[Entity]]):
+def split_relations(relations: Iterable[Relation], entities: Sequence[Sequence[Entity]]):
     relationship = []
     for _ in range(len(entities)):
         relationship.append([])
@@ -123,8 +126,8 @@ def get_sentence_from_disk(path: Path) -> Generator[AnnotatedSentence]:
 
 
 def get_sentence_tree(sentence: AnnotatedSentence, *, parser: CoreNLPParser) -> ParentedTree:
-    tree = Tree('ROOT', children=[
-        Tree.convert(sent_tree)
+    tree = ParentedTree('ROOT', children=[
+        ParentedTree.convert(sent_tree)
         for tree in parser.raw_parse_sents([sentence.txt], properties={'tokenize.language': 'French'})
         for rooted_tree in tree
         for sent_tree in rooted_tree
@@ -133,16 +136,16 @@ def get_sentence_tree(sentence: AnnotatedSentence, *, parser: CoreNLPParser) -> 
     for subtree in tree.subtrees(lambda x: x.height() == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
         subtree[0] = '(' if subtree[0] == '-LRB-' else ')'
 
-    return ParentedTree.convert(tree)
+    return tree
 
 
-def get_annotated_sentence_tree(sentence: AnnotatedSentence, *, parser: CoreNLPParser) -> ParentedTree:
+def get_annotated_sentence_tree(sentence: AnnotatedSentence, *, parser: CoreNLPParser) -> ParentedTree | None:
     try:
         tree = get_sentence_tree(sentence, parser=parser)
 
         fix_all_coord(tree)
         ins_ent_list(tree, sentence.txt, sentence.entities, sentence.rels)
-        reduce_all(tree, list(NodeType))
+        reduce_all(tree, set(NodeType))
 
         return tree
 
@@ -153,18 +156,13 @@ def get_annotated_sentence_tree(sentence: AnnotatedSentence, *, parser: CoreNLPP
 def get_annotated_rooted_forest(sentences: Iterable[AnnotatedSentence], *, url: str) -> ParentedTree:
     nltk_parser = CoreNLPParser(url=url)
 
-    annotated_trees = Parallel(n_jobs=-2, require='sharedmem')(
+    annotated_trees = _parallel(
         delayed(get_annotated_sentence_tree)(sentence, parser=nltk_parser)
-        for sentence in sentences
+        for sentence in tqdm(sentences)
     )
     annotated_trees = filter(lambda x: x is not None, annotated_trees)
+    annotated_forest = ParentedTree('ROOT', children=list(annotated_trees))
 
-    annotated_forest = Tree('ROOT', children=[
-        Tree.convert(rooted_tree)
-        for rooted_tree in annotated_trees
-    ])
-
-    annotated_forest = ParentedTree.convert(annotated_forest)
-    reduce_all(annotated_forest, list(NodeType))
+    reduce_all(annotated_forest, set(NodeType))
 
     return annotated_forest
