@@ -1,0 +1,3 @@
+- Nicolas Hiot <nicolas.hiot@etu.univ-orleans.fr>
+- Dominique Laurent <dominique.laurent@u-cergy.fr>
+- Jacques Chabin <jchabin@univ-orleans.fr>
