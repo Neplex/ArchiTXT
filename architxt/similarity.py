@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 from scipy.cluster import hierarchy
 from tqdm import tqdm
 
-from tal_db.tree import Tree, ParentedTree
+from architxt.tree import Tree, ParentedTree
 
 _parallel = Parallel(n_jobs=1, require='sharedmem', return_as='generator')
 

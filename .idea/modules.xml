@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/tal-db.iml" filepath="$PROJECT_DIR$/.idea/tal-db.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/architxt.iml" filepath="$PROJECT_DIR$/.idea/architxt.iml" />
     </modules>
   </component>
 </project>

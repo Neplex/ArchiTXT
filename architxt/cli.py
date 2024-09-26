@@ -1,47 +1,47 @@
-import sys
+from collections import Counter
 from pathlib import Path
 
 import mlflow
+import typer
 from nltk import Production
 
-from tal_db.algo import rewrite
-from tal_db.instance_generator import gen_instance
-from tal_db.model import NodeType, NodeLabel
-from tal_db.nlp import get_sentence_from_disk, get_annotated_rooted_forest
-from tal_db.similarity import *
+from architxt.algo import rewrite
+from architxt.model import NodeType, NodeLabel
+from architxt.nlp import get_sentence_from_disk, get_annotated_rooted_forest
 
-if __name__ == '__main__':
-    path = Path(sys.argv[1])
-    tau = float(sys.argv[2])
-    epoch = int(sys.argv[3])
-    min_support = int(sys.argv[4])
 
+def cli(
+        corpus_path: Path, *,
+        tau: float = 0.5,
+        epoch: int = 100,
+        min_support: int = 10
+):
     mlflow.log_params({
-        'has_instance': True,
+        'has_instance': False,
         'has_corpus': True,
     })
 
-    print('Generate instance...')
-    gen_tree = gen_instance(
-        groups={
-            'SOSY': ('SOSY', 'ANATOMIE', 'SUBSTANCE'),
-            'TREATMENT': ('SUBSTANCE', 'DOSE', 'MODE', 'FREQUENCE'),
-            'EXAM': ('EXAMEN', 'ANATOMIE'),
-        },
-        rels={
-            'PRESCRIPTION': ('SOSY', 'TREATMENT'),
-            'EXAM': ('EXAM', 'SOSY'),
-        },
-        size=50
-    )
+    # print('Generate instance...')
+    # gen_tree = gen_instance(
+    #     groups={
+    #         'SOSY': ('SOSY', 'ANATOMIE', 'SUBSTANCE'),
+    #         'TREATMENT': ('SUBSTANCE', 'DOSE', 'MODE', 'FREQUENCE'),
+    #         'EXAM': ('EXAMEN', 'ANATOMIE'),
+    #     },
+    #     rels={
+    #         'PRESCRIPTION': ('SOSY', 'TREATMENT'),
+    #         'EXAM': ('EXAM', 'SOSY'),
+    #     },
+    #     size=50
+    # )
 
-    print(f'Load corpus: {path.absolute()}')
-    sentences = list(get_sentence_from_disk(path))[:150]
+    print(f'Load corpus: {corpus_path.absolute()}')
+    sentences = list(get_sentence_from_disk(corpus_path))[:150]
 
     corpus_tree = get_annotated_rooted_forest(sentences, url='http://localhost:9001')
     print('Dataset loaded!')
 
-    tree = gen_tree.merge(corpus_tree)
+    tree = corpus_tree  # gen_tree.merge(corpus_tree)
     mlflow.log_param('nb_sentences', len(tree))
     with open('debug.txt', 'w', encoding='utf8') as log_file:
         rewrite(tree, tau=tau, epoch=epoch, min_support=min_support, stream=log_file)
@@ -80,3 +80,11 @@ if __name__ == '__main__':
             print(f'[{count}] {production}')
 
     tree.draw()
+
+
+def main():
+    typer.run(cli)
+
+
+if __name__ == "__main__":
+    main()

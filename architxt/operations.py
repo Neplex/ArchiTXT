@@ -7,9 +7,9 @@ from itertools import combinations, groupby
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from tal_db.model import NodeType, NodeLabel
-from tal_db.similarity import METRIC_FUNC, TREE_CLUSTER, get_equiv_of
-from tal_db.tree import *
+from architxt.model import NodeType, NodeLabel
+from architxt.similarity import METRIC_FUNC, TREE_CLUSTER, get_equiv_of
+from architxt.tree import ParentedTree, has_type, Tree, ins_elem, del_elem, update_cache
 
 __all__ = [
     'OPERATION',

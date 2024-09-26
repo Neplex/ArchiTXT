@@ -1,8 +1,8 @@
 import pytest
 
-from tal_db.model import NodeLabel, NodeType
-from tal_db.similarity import jaccard, METRIC_FUNC
-from tal_db.tree import ParentedTree
+from architxt.model import NodeLabel, NodeType
+from architxt.similarity import jaccard, METRIC_FUNC
+from architxt.tree import ParentedTree
 
 t1 = ParentedTree('ROOT', [
     ParentedTree(NodeLabel(NodeType.GROUP, '1'), [

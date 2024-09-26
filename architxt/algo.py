@@ -8,10 +8,10 @@ import mlflow
 from nltk import Production
 from tqdm import trange, tqdm
 
-from tal_db import operations, tree
-from tal_db.model import NodeType
-from tal_db.similarity import equiv_cluster, METRIC_FUNC, DEFAULT_METRIC, TREE_CLUSTER, similarity, get_equiv_of
-from tal_db.tree import has_type
+from architxt import operations, tree
+from architxt.model import NodeType
+from architxt.similarity import equiv_cluster, METRIC_FUNC, DEFAULT_METRIC, TREE_CLUSTER, similarity, get_equiv_of
+from architxt.tree import has_type
 
 DEFAULT_OPERATIONS = (
     operations.find_subgroups,

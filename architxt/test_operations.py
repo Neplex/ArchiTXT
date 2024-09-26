@@ -1,7 +1,7 @@
-from tal_db.model import NodeLabel, NodeType
-from tal_db.operations import find_subgroups, find_collections, merge_groups
-from tal_db.similarity import jaccard
-from tal_db.tree import ParentedTree
+from architxt.model import NodeLabel, NodeType
+from architxt.operations import find_subgroups, find_collections, merge_groups
+from architxt.similarity import jaccard
+from architxt.tree import ParentedTree
 
 
 def test_find_collections_simple():

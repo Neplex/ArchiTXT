@@ -1,6 +1,6 @@
 import pytest
 
-from tal_db.model import NodeLabel, NodeType
+from architxt.model import NodeLabel, NodeType
 
 
 

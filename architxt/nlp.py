@@ -8,8 +8,8 @@ from nltk.parse.corenlp import CoreNLPParser
 from tqdm import tqdm
 from unidecode import unidecode
 
-from tal_db.model import AnnotatedSentence, Entity, Relation, NodeType
-from tal_db.tree import ParentedTree, ins_ent_list, reduce_all, fix_all_coord
+from architxt.model import AnnotatedSentence, Entity, Relation, NodeType
+from architxt.tree import ParentedTree, ins_ent_list, reduce_all, fix_all_coord
 
 _parallel = Parallel(n_jobs=-2, require='sharedmem', return_as='generator')
 

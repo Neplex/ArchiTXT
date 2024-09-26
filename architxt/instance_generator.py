@@ -2,8 +2,8 @@
 Generator of instances
 """
 
-from tal_db.model import NodeLabel, NodeType
-from tal_db.tree import Tree, ParentedTree
+from architxt.model import NodeLabel, NodeType
+from architxt.tree import Tree, ParentedTree
 
 GROUP_SCHEMA = dict[str, tuple[str, ...]]
 REL_SCHEMA = dict[str, tuple[str, str]]

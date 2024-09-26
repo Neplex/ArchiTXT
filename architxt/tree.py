@@ -2,7 +2,7 @@ from nltk.grammar import Production
 from nltk.tree import Tree as NLTKTree, ParentedTree as NLTKParentedTree
 from tqdm import tqdm
 
-from tal_db.model import Entity, Relation, TreeEntity, TreeRel, NodeLabel, NodeType
+from architxt.model import Entity, Relation, TreeEntity, TreeRel, NodeLabel, NodeType
 
 __all__ = [
     'has_type', 'Tree', 'ParentedTree',
@@ -42,7 +42,7 @@ def update_cache(x: ParentedTree) -> None:
     This method updates the similarity cache.
     It removes any cache entries that contain the tree.
     """
-    from tal_db.similarity import SIM_CACHE, SIM_CACHE_LOCK
+    from architxt.similarity import SIM_CACHE, SIM_CACHE_LOCK
 
     position = x.treeposition()
 
@@ -277,9 +277,9 @@ def ins_ent_list(t: ParentedTree, sentence: str, entities: list[Entity], relatio
         unnest_ent(entity_tree.parent(), entity_tree.parent_index())
 
     # Insert relations
-    for relation in tqdm(relations, desc='insert relation', leave=False):
-        tree_rel = None
-        ins_rel(t, tree_rel)
+    # for relation in tqdm(relations, desc='insert relation', leave=False):
+    #     tree_rel = None
+    #     ins_rel(t, tree_rel)
 
     for subtree in tqdm(list(t.subtrees(lambda x: x.height() == 2 and not has_type(x))), desc='remove leaves', leave=False):
         del_elem(subtree.parent(), subtree.parent_index())
