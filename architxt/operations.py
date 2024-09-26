@@ -1,37 +1,50 @@
 import math
-from collections import Counter
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Callable
 from itertools import combinations, groupby
 
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from architxt.model import NodeType, NodeLabel
+from architxt.model import NodeLabel, NodeType
 from architxt.similarity import METRIC_FUNC, TREE_CLUSTER, get_equiv_of
-from architxt.tree import ParentedTree, has_type, Tree, ins_elem, del_elem, update_cache
+from architxt.tree import ParentedTree, Tree, del_elem, has_type, ins_elem, update_cache
 
 __all__ = [
     'OPERATION',
-    'find_groups', 'find_subgroups', 'merge_groups',
-    'find_relationship', 'find_collections',
-    'reduce_bottom', 'reduce_top', 'merge_sentences',
+    'find_groups',
+    'find_subgroups',
+    'merge_groups',
+    'find_relationship',
+    'find_collections',
+    'reduce_bottom',
+    'reduce_top',
+    'merge_sentences',
 ]
 
 OPERATION = Callable[[ParentedTree, TREE_CLUSTER, float, int, METRIC_FUNC], bool]
 TASK_POOL = Parallel(n_jobs=-2, require='sharedmem', return_as='generator', batch_size=1)
 
-trace = open('trace.txt', 'w')
+trace = open('trace.txt', 'w')  # noqa SIM115
 
 
-def reduce_bottom(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC) -> bool:
+def reduce_bottom(
+    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> bool:
     # return any([
     #     reduce(subtree.parent(), subtree.parent_index(), set(NodeType))
     #     for subtree in t.subtrees(lambda x: not has_type(x) and any(has_type(child, NodeType.ENT) for child in x))
     # ])
 
-    for subtree in reversed(list(t.subtrees(
-            lambda x: not has_type(x) and any(has_type(child, NodeType.ENT) for child in x) and x.height() < (t.height() - 1)))):
+    for subtree in reversed(
+        list(
+            t.subtrees(
+                lambda x: not has_type(x)
+                and any(has_type(child, NodeType.ENT) for child in x)
+                and x.height() < (t.height() - 1)
+            )
+        )
+    ):
         parent = subtree.parent()
 
         if not parent:
@@ -50,16 +63,15 @@ def reduce_bottom(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min
             ins_elem(parent, child, parent_pos)
 
         new = [child.label() for child in parent]
-        print(
-            f'reduce_bottom {label} ({position}) {old} -> {new}',
-            file=trace
-        )
+        print(f'reduce_bottom {label} ({position}) {old} -> {new}', file=trace)
         return True
 
     return False
 
 
-def reduce_top(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC, level: int = 2) -> bool:
+def reduce_top(
+    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC, level: int = 2
+) -> bool:
     # return any([
     #     reduce(subtree.parent(), subtree.parent_index(), set(NodeType))
     #     for subtree in t.subtrees(lambda x: not has_type(x) and x.height() == (t.height() - 1))
@@ -81,16 +93,15 @@ def reduce_top(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_su
             ins_elem(parent, child, parent_pos)
 
         new = [child.label() for child in parent]
-        print(
-            f'reduce_top {label} ({position}) {old} -> {new}',
-            file=trace
-        )
+        print(f'reduce_top {label} ({position}) {old} -> {new}', file=trace)
         reduced = True
 
     return reduced
 
 
-def merge_sentences(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC) -> bool:
+def merge_sentences(
+    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> bool:
     return reduce_top(t, equiv_subtrees, tau, min_support, metric, 1)
 
 
@@ -110,21 +121,24 @@ def find_groups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_s
 
     for k, min_group in enumerate(tqdm(frequent_subtrees, desc='find groups', leave=False)):
         # Skip frequent subtrees containing or contain in groups
-        if any(has_type(x, NodeType.GROUP) or has_type(subtree, NodeType.GROUP) for subtree in min_group for x in subtree):
+        if any(
+            has_type(x, NodeType.GROUP) or has_type(subtree, NodeType.GROUP) for subtree in min_group for x in subtree
+        ):
             continue
 
-        deque(TASK_POOL(
-            delayed(_create_group)(subtree, k)
-            for subtree in tqdm(min_group, leave=False)
-        ), maxlen=0)
+        deque(TASK_POOL(delayed(_create_group)(subtree, k) for subtree in tqdm(min_group, leave=False)), maxlen=0)
 
     print('=' * 50, file=trace)
     trace.flush()
 
 
 def _find_subgroups_inner(
-        subtree: ParentedTree, sub_group: tuple[ParentedTree, ...],
-        equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+    subtree: ParentedTree,
+    sub_group: tuple[ParentedTree, ...],
+    equiv_subtrees: TREE_CLUSTER,
+    tau: float,
+    min_support: int,
+    metric: METRIC_FUNC,
 ) -> tuple[ParentedTree, int] | None:
     if max(Counter(x.label() for x in sub_group).values()) > 1:
         return None
@@ -151,12 +165,28 @@ def _find_subgroups_inner(
     return new_subtree, support
 
 
-def find_subgroups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC) -> bool:
+def find_subgroups(
+    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> bool:
     simplified = False
 
-    for subtree in tqdm(list(reversed(list(t.subtrees(
-            lambda x: not isinstance(x, str) and x != t.root() and x.parent() != t.root() and not has_type(x) and any(has_type(y, NodeType.ENT) for y in x)
-    )))), desc='find subgroups', leave=False):
+    for subtree in tqdm(
+        list(
+            reversed(
+                list(
+                    t.subtrees(
+                        lambda x: not isinstance(x, str)
+                        and x != t.root()
+                        and x.parent() != t.root()
+                        and not has_type(x)
+                        and any(has_type(y, NodeType.ENT) for y in x)
+                    )
+                )
+            )
+        ),
+        desc='find subgroups',
+        leave=False,
+    ):
         group_support = len(get_equiv_of(subtree, equiv_subtrees, tau=tau, metric=metric))
         entity_trees = list(filter(lambda x: has_type(x, NodeType.ENT), subtree))
         parent_idx = subtree.parent_index()
@@ -176,18 +206,24 @@ def find_subgroups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, mi
                 k_groups = combinations(entity_trees, k)
                 k_groups_support = TASK_POOL(
                     delayed(_find_subgroups_inner)(
-                        subtree, sub_group, equiv_subtrees=equiv_subtrees, tau=tau, min_support=group_support,
-                        metric=metric
+                        subtree,
+                        sub_group,
+                        equiv_subtrees=equiv_subtrees,
+                        tau=tau,
+                        min_support=group_support,
+                        metric=metric,
                     )
-                    for sub_group in
-                    tqdm(k_groups, leave=False, total=nb_combinations, desc=f'{subtree.label()} n={len(entity_trees)} k={k}')
+                    for sub_group in tqdm(
+                        k_groups,
+                        leave=False,
+                        total=nb_combinations,
+                        desc=f'{subtree.label()} n={len(entity_trees)} k={k}',
+                    )
                 )
 
                 # Compute max merge
                 max_subtree, _ = max(
-                    filter(lambda x: x is not None, k_groups_support),
-                    key=lambda x: x[1],
-                    default=(None, None)
+                    filter(lambda x: x is not None, k_groups_support), key=lambda x: x[1], default=(None, None)
                 )
 
                 # If no k-group found, we reduce group size
@@ -198,7 +234,7 @@ def find_subgroups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, mi
                 # A group is found, we need to add the new subgroup tree
                 print(
                     f'find_subgroups {subtree.treeposition()} k={k}:\t{[x.label() for x in subtree]} -> {[x.label() for x in max_subtree]}',
-                    file=trace
+                    file=trace,
                 )
                 trace.flush()
                 simplified = True
@@ -218,8 +254,12 @@ def find_subgroups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, mi
 
 
 def _merge_groups_inner(
-        subtree: ParentedTree, combined_groups: tuple[ParentedTree, ...],
-        equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+    subtree: ParentedTree,
+    combined_groups: tuple[ParentedTree, ...],
+    equiv_subtrees: TREE_CLUSTER,
+    tau: float,
+    min_support: int,
+    metric: METRIC_FUNC,
 ) -> tuple[ParentedTree | None, int]:
     sub_group = []
     max_sub_group_support = 0
@@ -245,7 +285,12 @@ def _merge_groups_inner(
 
     # Skip invalid groups with duplicate entities
     # assert all(has_type(ent, NodeType.ENT) for ent in sub_group)
-    if not all(has_type(ent, NodeType.ENT) for ent in sub_group) or not sub_group or nb_group != 1 or max(Counter(x.label() for x in sub_group).values()):
+    if (
+        not all(has_type(ent, NodeType.ENT) for ent in sub_group)
+        or not sub_group
+        or nb_group != 1
+        or max(Counter(x.label() for x in sub_group).values())
+    ):
         return None, 0
 
     # Copy the tree
@@ -273,14 +318,32 @@ def _merge_groups_inner(
     return new_subtree, support
 
 
-def merge_groups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC) -> bool:
+def merge_groups(
+    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> bool:
     simplified = False
 
-    for subtree in tqdm(list(reversed(list(t.subtrees(
-            lambda x: not isinstance(x, str) and x != t.root() and x.parent() != t.root() and not has_type(x) and any(has_type(y, NodeType.GROUP) for y in x)
-    )))), desc='merge groups', leave=False):
+    for subtree in tqdm(
+        list(
+            reversed(
+                list(
+                    t.subtrees(
+                        lambda x: not isinstance(x, str)
+                        and x != t.root()
+                        and x.parent() != t.root()
+                        and not has_type(x)
+                        and any(has_type(y, NodeType.GROUP) for y in x)
+                    )
+                )
+            )
+        ),
+        desc='merge groups',
+        leave=False,
+    ):
         # group_support = len(get_equiv_of(subtree, equiv_subtrees, tau=tau, metric=metric))
-        group_ent_trees = list(filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.ENT}) or not has_type(x), subtree))
+        group_ent_trees = list(
+            filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.ENT}) or not has_type(x), subtree)
+        )
         parent = subtree.parent()
         parent_idx = subtree.parent_index()
 
@@ -297,21 +360,34 @@ def merge_groups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_
                     break
 
                 # Get k-subgroup with maximum support
-                k_groups_support = list(filter(lambda x: x[0] is not None, TASK_POOL(
-                    delayed(_merge_groups_inner)(
-                        subtree, combined_groups, equiv_subtrees=equiv_subtrees, tau=tau, min_support=min_support,
-                        metric=metric
+                k_groups_support = list(
+                    filter(
+                        lambda x: x[0] is not None,
+                        TASK_POOL(
+                            delayed(_merge_groups_inner)(
+                                subtree,
+                                combined_groups,
+                                equiv_subtrees=equiv_subtrees,
+                                tau=tau,
+                                min_support=min_support,
+                                metric=metric,
+                            )
+                            for combined_groups in tqdm(
+                                k_groups,
+                                leave=False,
+                                total=nb_combinations,
+                                desc=f'{subtree.label()} n={len(group_ent_trees)} k={k}',
+                            )
+                        ),
                     )
-                    for combined_groups in
-                    tqdm(k_groups, leave=False, total=nb_combinations, desc=f'{subtree.label()} n={len(group_ent_trees)} k={k}')
-                )))
+                )
 
                 # Compute max merge
                 if k_groups_support:
                     max_subtree, _ = max(
                         k_groups_support,
                         key=lambda x: x[1],  # if x[1] >= group_support else float('-inf'),
-                        default=(None, 0)
+                        default=(None, 0),
                     )
 
                 else:
@@ -325,7 +401,7 @@ def merge_groups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_
                 # A group is found, we need to add the new subgroup tree
                 print(
                     f'merge_groups {subtree.treeposition()} k={k}:\t{[x.label() for x in subtree]} -> {[x.label() for x in max_subtree]}',
-                    file=trace
+                    file=trace,
                 )
                 trace.flush()
                 simplified = True
@@ -344,17 +420,30 @@ def merge_groups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_
     return simplified
 
 
-def find_relationship(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC,
-                      naming_only: bool = False) -> bool:
+def find_relationship(
+    t: ParentedTree,
+    equiv_subtrees: TREE_CLUSTER,
+    tau: float,
+    min_support: int,
+    metric: METRIC_FUNC,
+    naming_only: bool = False,
+) -> bool:
     simplified = False
 
-    for subtree in tqdm(list(t.subtrees(lambda x: len(x) == 2 and not has_type(x) and x != t.root() and x.parent() != t.root())), desc='find relations', leave=False):
+    for subtree in tqdm(
+        list(t.subtrees(lambda x: len(x) == 2 and not has_type(x) and x != t.root() and x.parent() != t.root())),
+        desc='find relations',
+        leave=False,
+    ):
         group = None
         collection = None
 
         # Group <-> Group
-        if has_type(subtree[0], NodeType.GROUP) and has_type(subtree[1], NodeType.GROUP) and \
-                subtree[0].label().name != subtree[1].label().name:
+        if (
+            has_type(subtree[0], NodeType.GROUP)
+            and has_type(subtree[1], NodeType.GROUP)
+            and subtree[0].label().name != subtree[1].label().name
+        ):
             label = sorted([subtree[0].label().name, subtree[1].label().name])
             subtree.set_label(NodeLabel(NodeType.REL, f'{label[0]} <-> {label[1]}'))
             continue
@@ -376,15 +465,12 @@ def find_relationship(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float,
             simplified = True
             print(
                 f'find_relationship {subtree.treeposition()}:\tgroup={group.label()} coll={collection.label()}',
-                file=trace
+                file=trace,
             )
             trace.flush()
             for coll_group in collection:
                 label = sorted([group.label().name, coll_group.label().name])
-                rel_tree = Tree(
-                    NodeLabel(NodeType.REL, f'{label[0]} <-> {label[1]}'),
-                    children=[group, coll_group]
-                )
+                rel_tree = Tree(NodeLabel(NodeType.REL, f'{label[0]} <-> {label[1]}'), children=[group, coll_group])
                 ins_elem(subtree, rel_tree, 0)
 
             del_elem(subtree, group.parent_index())
@@ -393,31 +479,37 @@ def find_relationship(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float,
     return simplified
 
 
-def find_collections(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC,
-                     naming_only: bool = False) -> bool:
+def find_collections(
+    t: ParentedTree,
+    equiv_subtrees: TREE_CLUSTER,
+    tau: float,
+    min_support: int,
+    metric: METRIC_FUNC,
+    naming_only: bool = False,
+) -> bool:
     simplified = False
 
     for subtree in tqdm(list(reversed(list(t.subtrees()))), desc='find collections', leave=False):
-
         # Make collection of group / rels or merge collections
         for coll_tree_set in sorted(
-                filter(
-                    lambda x: len(x) > 1,
-                    (
-                            sorted(equiv_set, key=lambda x: x.parent_index())
-                            for _, equiv_set in groupby(
+            filter(
+                lambda x: len(x) > 1,
+                (
+                    sorted(equiv_set, key=lambda x: x.parent_index())
+                    for _, equiv_set in groupby(
                         sorted(
                             filter(
-                                lambda x: isinstance(x, Tree) and has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}),
-                                subtree
+                                lambda x: isinstance(x, Tree)
+                                and has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}),
+                                subtree,
                             ),
-                            key=lambda x: x.label().name
+                            key=lambda x: x.label().name,
                         ),
-                        key=lambda x: x.label().name
-                    )
+                        key=lambda x: x.label().name,
                     )
                 ),
-                key=lambda x: x[0].parent_index()
+            ),
+            key=lambda x: x[0].parent_index(),
         ):
             # Add an intermediate collection node. If it is a collection of collection we merge them into one
             coll_elements = []
@@ -441,10 +533,7 @@ def find_collections(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, 
 
             else:
                 simplified = True
-                print(
-                    f'find_collections {subtree.treeposition()}:\t{[x.label() for x in coll_tree_set]}',
-                    file=trace
-                )
+                print(f'find_collections {subtree.treeposition()}:\t{[x.label() for x in coll_tree_set]}', file=trace)
                 trace.flush()
                 index = coll_tree_set[0].parent_index()
                 for tree in coll_tree_set:

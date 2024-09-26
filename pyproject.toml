@@ -12,8 +12,15 @@ readme = "README.md"
 [tool.poetry.scripts]
 architxt = "architxt.cli:main"
 
+[tool.poetry-dynamic-versioning]
+enable = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 
 joblib = ">=1.1"
 tqdm = "*"
@@ -39,9 +46,60 @@ typer = "^0.12.5"
 anyio = "^4.6.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
+wheel = "^0.38.0"
+devtools = "^0.12.0"
+py-spy = "~0.3.14 "
+pre-commit = "^3.8.0"
+
+pylint = "^2.14"
+mypy = ">=0.910,<1.4"
 ruff = "^0.6.7"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2"
+pytest-cov = "*"
+pytest-xdist = "*"
+pytest-mock = "*"
+hypothesis = "^6.68.0"
+
+# Async libs for tests
+asyncio = "^3.4.0"
+trio = "^0.22.0"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+junit_family = "legacy"
+testpaths = ["test"]
+
+[tool.coverage.run]
+source = ["architxt/*"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:"
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["architxt", "test"]
+
+# Selective rules for auto-fixing and auto-formatting
+[tool.ruff.lint]
+select = [
+    "E4", # Pycodestyle error codes that are safe to auto-fix
+    "E7",
+    "E9",
+    "F", # Flake8 rules (includes many core Python errors and issues)
+    "I", # isort rules for import ordering
+    "ICN", # Import conventions
+    "UP", # pyupgrade (for safe code modernization)
+    "C4", # Comprehension simplifications
+    "SIM", # Code simplifications
+    "LOG", # Logger usage
+    "PIE", # Miscs
+    "RUF", # Ruff-specific auto-fixable rules
+]
+
+[tool.ruff.format]
+quote-style = "preserve"

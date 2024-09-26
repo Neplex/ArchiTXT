@@ -1,15 +1,16 @@
-from collections.abc import Iterable, Sequence, Generator
+from collections.abc import Generator, Iterable, Sequence
 from pathlib import Path
 
 from bratlib.data import BratDataset, BratFile
-from bratlib.data.annotation_types import Entity as BratEntity, Relation as BratRelation
+from bratlib.data.annotation_types import Entity as BratEntity
+from bratlib.data.annotation_types import Relation as BratRelation
 from joblib import Parallel, delayed
 from nltk.parse.corenlp import CoreNLPParser
 from tqdm import tqdm
 from unidecode import unidecode
 
-from architxt.model import AnnotatedSentence, Entity, Relation, NodeType
-from architxt.tree import ParentedTree, ins_ent_list, reduce_all, fix_all_coord
+from architxt.model import AnnotatedSentence, Entity, NodeType, Relation
+from architxt.tree import ParentedTree, fix_all_coord, ins_ent_list, reduce_all
 
 _parallel = Parallel(n_jobs=-2, require='sharedmem', return_as='generator')
 
@@ -44,12 +45,7 @@ def convert_brat_entities(entities: Iterable[BratEntity]) -> Generator[Entity]:
             tag = 'FREQUENCE'
 
         if tag not in ['MOMENT', 'DUREE', 'DATE']:
-            yield Entity(
-                name=tag,
-                start=start,
-                end=end,
-                id=str(identity)
-            )
+            yield Entity(name=tag, start=start, end=end, id=str(identity))
 
 
 def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Generator[list[Entity]]:
@@ -126,12 +122,15 @@ def get_sentence_from_disk(path: Path) -> Generator[AnnotatedSentence]:
 
 
 def get_sentence_tree(sentence: AnnotatedSentence, *, parser: CoreNLPParser) -> ParentedTree:
-    tree = ParentedTree('ROOT', children=[
-        ParentedTree.convert(sent_tree)
-        for tree in parser.raw_parse_sents([sentence.txt], properties={'tokenize.language': 'French'})
-        for rooted_tree in tree
-        for sent_tree in rooted_tree
-    ])
+    tree = ParentedTree(
+        'ROOT',
+        children=[
+            ParentedTree.convert(sent_tree)
+            for tree in parser.raw_parse_sents([sentence.txt], properties={'tokenize.language': 'French'})
+            for rooted_tree in tree
+            for sent_tree in rooted_tree
+        ],
+    )
 
     for subtree in tree.subtrees(lambda x: x.height() == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
         subtree[0] = '(' if subtree[0] == '-LRB-' else ')'
@@ -157,8 +156,7 @@ def get_annotated_rooted_forest(sentences: Iterable[AnnotatedSentence], *, url: 
     nltk_parser = CoreNLPParser(url=url)
 
     annotated_trees = _parallel(
-        delayed(get_annotated_sentence_tree)(sentence, parser=nltk_parser)
-        for sentence in tqdm(sentences)
+        delayed(get_annotated_sentence_tree)(sentence, parser=nltk_parser) for sentence in tqdm(sentences)
     )
     annotated_trees = filter(lambda x: x is not None, annotated_trees)
     annotated_forest = ParentedTree('ROOT', children=list(annotated_trees))

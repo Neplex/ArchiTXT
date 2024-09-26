@@ -3,7 +3,7 @@ Generator of instances
 """
 
 from architxt.model import NodeLabel, NodeType
-from architxt.tree import Tree, ParentedTree
+from architxt.tree import ParentedTree, Tree
 
 GROUP_SCHEMA = dict[str, tuple[str, ...]]
 REL_SCHEMA = dict[str, tuple[str, str]]
@@ -47,7 +47,9 @@ def gen_collection(name: str, elements: list[Tree]) -> Tree:
     return Tree(label, elements)
 
 
-def gen_instance(groups: GROUP_SCHEMA, rels: REL_SCHEMA, size: int = 200, generate_collections: bool = True) -> ParentedTree:
+def gen_instance(
+    groups: GROUP_SCHEMA, rels: REL_SCHEMA, size: int = 200, generate_collections: bool = True
+) -> ParentedTree:
     """
     Generate a database instances as a tree based on the given groups and relations schema.
     :param groups: A dictionary containing group names as keys and elements as values.

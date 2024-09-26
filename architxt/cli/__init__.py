@@ -6,20 +6,17 @@ import typer
 from nltk import Production
 
 from architxt.algo import rewrite
-from architxt.model import NodeType, NodeLabel
-from architxt.nlp import get_sentence_from_disk, get_annotated_rooted_forest
+from architxt.model import NodeLabel, NodeType
+from architxt.nlp import get_annotated_rooted_forest, get_sentence_from_disk
 
 
-def cli(
-        corpus_path: Path, *,
-        tau: float = 0.5,
-        epoch: int = 100,
-        min_support: int = 10
-):
-    mlflow.log_params({
-        'has_instance': False,
-        'has_corpus': True,
-    })
+def cli(corpus_path: Path, *, tau: float = 0.5, epoch: int = 100, min_support: int = 10):
+    mlflow.log_params(
+        {
+            'has_instance': False,
+            'has_corpus': True,
+        }
+    )
 
     # print('Generate instance...')
     # gen_tree = gen_instance(
@@ -55,13 +52,16 @@ def cli(
                 productions.append(Production(prod.lhs(), [prod.rhs()[0]]))
                 schema[prod.lhs()] = [str(prod.rhs()[0]) + '*']
             else:
-                productions.append(Production(prod.lhs(), list(sorted(prod.rhs()))))
+                productions.append(Production(prod.lhs(), sorted(prod.rhs())))
 
-                if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type in (NodeType.GROUP, NodeType.REL):
+                if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type in (
+                    NodeType.GROUP,
+                    NodeType.REL,
+                ):
                     old = set(schema[prod.lhs()]) if prod.lhs() in schema else set()
-                    new = set(str(x) for x in prod.rhs())
+                    new = {str(x) for x in prod.rhs()}
 
-                    schema[prod.lhs()] = list(sorted(old | new))
+                    schema[prod.lhs()] = sorted(old | new)
 
     schema_str = ""
     for key, value in sorted(schema.items(), key=lambda x: (x[0].symbol().type, x[0].symbol().name)):

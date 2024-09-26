@@ -1,14 +1,25 @@
 from nltk.grammar import Production
-from nltk.tree import Tree as NLTKTree, ParentedTree as NLTKParentedTree
+from nltk.tree import ParentedTree as NLTKParentedTree
+from nltk.tree import Tree as NLTKTree
 from tqdm import tqdm
 
-from architxt.model import Entity, Relation, TreeEntity, TreeRel, NodeLabel, NodeType
+from architxt.model import Entity, NodeLabel, NodeType, Relation, TreeEntity, TreeRel
 
 __all__ = [
-    'has_type', 'Tree', 'ParentedTree',
-    'ins_elem', 'del_elem', 'reduce', 'reduce_all',
-    'fix_coord', 'fix_conj', 'fix_all_coord',
-    'ins_ent', 'ins_rel', 'ins_ent_list', 'unnest_ent',
+    'has_type',
+    'Tree',
+    'ParentedTree',
+    'ins_elem',
+    'del_elem',
+    'reduce',
+    'reduce_all',
+    'fix_coord',
+    'fix_conj',
+    'fix_all_coord',
+    'ins_ent',
+    'ins_rel',
+    'ins_ent_list',
+    'unnest_ent',
     'update_cache',
 ]
 
@@ -21,14 +32,16 @@ class Tree(NLTKTree):
         return list(self.subtrees(lambda st: has_type(st, NodeType.ENT)))
 
     def merge(self, tree: NLTKTree) -> 'Tree':
-        return Tree('ROOT', [
-            *Tree.convert(self),
-            *Tree.convert(tree),
-        ])
+        return Tree(
+            'ROOT',
+            [
+                *Tree.convert(self),
+                *Tree.convert(tree),
+            ],
+        )
 
 
 class ParentedTree(Tree, NLTKParentedTree):
-
     def depth(self) -> int:
         return len(self.treeposition()) + 1
 
@@ -47,7 +60,7 @@ def update_cache(x: ParentedTree) -> None:
     position = x.treeposition()
 
     with SIM_CACHE_LOCK:
-        keys_to_remove = {key for key in SIM_CACHE.keys() if key[0] == position or key[1] == position}
+        keys_to_remove = {key for key in SIM_CACHE if key[0] == position or key[1] == position}
 
         for key in keys_to_remove:
             del SIM_CACHE[key]
@@ -68,11 +81,9 @@ def has_type(t: Tree | Production | NodeLabel, types: set[str] | str | None = No
         types = {types}
 
     return (
-            isinstance(t, NodeLabel) and t.type in types
-    ) or (
-            isinstance(t, Production) and isinstance(t.lhs().symbol(), NodeLabel) and t.lhs().symbol().type in types
-    ) or (
-            isinstance(t, Tree) and isinstance(t.label(), NodeLabel) and t.label().type in types
+        (isinstance(t, NodeLabel) and t.type in types)
+        or (isinstance(t, Production) and isinstance(t.lhs().symbol(), NodeLabel) and t.lhs().symbol().type in types)
+        or (isinstance(t, Tree) and isinstance(t.label(), NodeLabel) and t.label().type in types)
     )
 
 
@@ -93,8 +104,12 @@ def del_elem(t: ParentedTree, pos: int) -> None:
 
 
 def reduce(t: ParentedTree, pos: int, types: set[NodeType | str] | None = None) -> bool:
-    if not isinstance(t, Tree) or not isinstance(t[pos], Tree) or (types and has_type(t[pos], types)) or (
-            not types and len(t[pos]) > 1):
+    if (
+        not isinstance(t, Tree)
+        or not isinstance(t[pos], Tree)
+        or (types and has_type(t[pos], types))
+        or (not types and len(t[pos]) > 1)
+    ):
         return False
 
     children = [Tree.convert(child) for child in t[pos]]
@@ -129,7 +144,12 @@ def fix_coord(t: ParentedTree, pos: int) -> bool:
 
     coord = None
     for child in t[pos]:
-        if isinstance(child, ParentedTree) and child.label() == 'COORD' and isinstance(child[0], Tree) and child[0].label() == 'CCONJ':
+        if (
+            isinstance(child, ParentedTree)
+            and child.label() == 'COORD'
+            and isinstance(child[0], Tree)
+            and child[0].label() == 'CCONJ'
+        ):
             coord = child
             break
 
@@ -138,12 +158,16 @@ def fix_coord(t: ParentedTree, pos: int) -> bool:
 
     coord_index = coord.parent_index()
 
-    left = Tree(t[pos].label(), children=[Tree.convert(child) for child in t[pos][:coord_index]]) if coord_index > 1 else t[pos][0]
+    left = (
+        Tree(t[pos].label(), children=[Tree.convert(child) for child in t[pos][:coord_index]])
+        if coord_index > 1
+        else t[pos][0]
+    )
     conjuncts = Tree('CONJUNCTS', children=[Tree.convert(conj) for conj in coord[1:]]) if len(coord) > 2 else coord[1]
     conj = Tree('CONJ', children=[left, Tree.convert(coord[0]), conjuncts])
 
-    if len(t[pos][coord_index + 1:]) > 0:
-        new_tree = Tree(t[pos].label(), children=[conj] + [Tree.convert(child) for child in t[pos][coord_index + 1:]])
+    if len(t[pos][coord_index + 1 :]) > 0:
+        new_tree = Tree(t[pos].label(), children=[conj] + [Tree.convert(child) for child in t[pos][coord_index + 1 :]])
     else:
         new_tree = conj
 
@@ -209,7 +233,9 @@ def unnest_ent(t: ParentedTree, pos: int) -> None:
         return
 
     ent_tree = Tree(t[pos].label(), children=t[pos].leaves())
-    nested_ents = Tree('nested', children=[Tree.convert(ent_child) for ent_child in t[pos] if has_type(ent_child, NodeType.ENT)])
+    nested_ents = Tree(
+        'nested', children=[Tree.convert(ent_child) for ent_child in t[pos] if has_type(ent_child, NodeType.ENT)]
+    )
     new_tree = Tree(NodeLabel(NodeType.REL), children=[ent_tree, nested_ents])
 
     # Replace tree
@@ -221,14 +247,15 @@ def ins_ent(t: ParentedTree, tree_ent: TreeEntity) -> ParentedTree | None:
     if not isinstance(t, Tree):
         return None
 
-    if sum(tree_ent.positions[0][len(tree_ent.root_pos) + 1:]) > 0:
+    if sum(tree_ent.positions[0][len(tree_ent.root_pos) + 1 :]) > 0:
         # Attach to common parent at first child index + 1 (as nodes remain at the child index)
         anchor_pos = tree_ent.root_pos
         entity_index = tree_ent.positions[0][len(tree_ent.root_pos)] + 1
 
     elif (
-            tree_ent.positions[0][len(tree_ent.root_pos)] > 0 or  # Elements in the left-hand side are not part of the entity
-            tree_ent.positions[-1][len(tree_ent.root_pos)] < (len(t[tree_ent.root_pos]) - 1)  # Elements remain in the right-hand side
+        tree_ent.positions[0][len(tree_ent.root_pos)] > 0  # Elements in the left-hand side are not part of the entity
+        or tree_ent.positions[-1][len(tree_ent.root_pos)]
+        < (len(t[tree_ent.root_pos]) - 1)  # Elements remain in the right-hand side
     ):
         anchor_pos = tree_ent.root_pos
         entity_index = tree_ent.positions[0][len(tree_ent.root_pos)]
@@ -268,7 +295,9 @@ def ins_ent_list(t: ParentedTree, sentence: str, entities: list[Entity], relatio
 
     # Insert entities
     for entity in tqdm(entities, desc='insert entity', leave=False):
-        tree_entity = TreeEntity(entity.name, [t.leaf_treeposition(i)[:-1] for i in entity.token_index(sentence, t.leaves())])
+        tree_entity = TreeEntity(
+            entity.name, [t.leaf_treeposition(i)[:-1] for i in entity.token_index(sentence, t.leaves())]
+        )
         entity_tree = ins_ent(t, tree_entity)
         entities_tree.append(entity_tree)
 
@@ -281,5 +310,7 @@ def ins_ent_list(t: ParentedTree, sentence: str, entities: list[Entity], relatio
     #     tree_rel = None
     #     ins_rel(t, tree_rel)
 
-    for subtree in tqdm(list(t.subtrees(lambda x: x.height() == 2 and not has_type(x))), desc='remove leaves', leave=False):
+    for subtree in tqdm(
+        list(t.subtrees(lambda x: x.height() == 2 and not has_type(x))), desc='remove leaves', leave=False
+    ):
         del_elem(subtree.parent(), subtree.parent_index())

@@ -2,6 +2,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum
 from os.path import commonprefix
+
 from nltk.tokenize.util import align_tokens
 
 TREE_POS = tuple[int, ...]

@@ -6,11 +6,11 @@ from typing import IO
 
 import mlflow
 from nltk import Production
-from tqdm import trange, tqdm
+from tqdm import tqdm, trange
 
 from architxt import operations, tree
 from architxt.model import NodeType
-from architxt.similarity import equiv_cluster, METRIC_FUNC, DEFAULT_METRIC, TREE_CLUSTER, similarity, get_equiv_of
+from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster, get_equiv_of, similarity
 from architxt.tree import has_type
 
 DEFAULT_OPERATIONS = (
@@ -25,22 +25,25 @@ DEFAULT_OPERATIONS = (
 
 
 def rewrite(
-        root_tree: tree.ParentedTree, *,
-        tau: float = 0.7,
-        epoch: int = 100,
-        min_support: int | None = None,
-        metric: METRIC_FUNC = DEFAULT_METRIC,
-        edit_ops: Sequence[operations.OPERATION] = DEFAULT_OPERATIONS,
-        stream: IO[str] = sys.stdout
+    root_tree: tree.ParentedTree,
+    *,
+    tau: float = 0.7,
+    epoch: int = 100,
+    min_support: int | None = None,
+    metric: METRIC_FUNC = DEFAULT_METRIC,
+    edit_ops: Sequence[operations.OPERATION] = DEFAULT_OPERATIONS,
+    stream: IO[str] = sys.stdout,
 ) -> None:
     min_support = min_support or max((len(root_tree) // 10), 2)
-    mlflow.log_params({
-        'tau': tau,
-        'epoch': epoch,
-        'min_support': min_support,
-        'metric': metric.__name__,
-        'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops))
-    })
+    mlflow.log_params(
+        {
+            'tau': tau,
+            'epoch': epoch,
+            'min_support': min_support,
+            'metric': metric.__name__,
+            'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)),
+        }
+    )
 
     stream.write(
         f'Params:\n'
@@ -115,7 +118,9 @@ def _post_process(root_tree: tree.ParentedTree, equiv_subtrees: TREE_CLUSTER, ta
     while operations.find_subgroups(root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees):
         equiv_subtrees = equiv_cluster(root_tree, tau=tau, metric=metric)
 
-    while operations.find_relationship(root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True):
+    while operations.find_relationship(
+        root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True
+    ):
         continue
 
     while operations.find_collections(root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees):
@@ -138,7 +143,7 @@ def _get_productions(root_tree: tree.Tree) -> Counter:
 
 def _log_metrics(iteration: int, root_tree: tree.Tree, equiv_subtrees: TREE_CLUSTER = ()):
     nb_prod = len(_get_productions(root_tree))
-    labels = set(subtree.label() for subtree in root_tree.subtrees())
+    labels = {subtree.label() for subtree in root_tree.subtrees()}
     nb_unlabelled = sum(not has_type(x) for x in root_tree.subtrees())
 
     nb_ent = sum(has_type(x, NodeType.ENT) for x in labels)
@@ -157,28 +162,27 @@ def _log_metrics(iteration: int, root_tree: tree.Tree, equiv_subtrees: TREE_CLUS
     nb_rel_instance = sum(has_type(x, NodeType.REL) for x in root_tree.subtrees())
     rel_ratio = nb_rel_instance / nb_rel if nb_rel != 0 else 0
 
-    mlflow.log_metrics({
-        'nb_prod': nb_prod,
-        'nb_non_terminal': len(labels),
-        'nb_unlabelled_node': nb_unlabelled,
-        'nb_equiv_subtrees': len(equiv_subtrees),
-
-        'nb_ent': nb_ent,
-        'nb_ent_instance': nb_ent_instance,
-        'ent_ratio': ent_ratio,
-
-        'nb_group': nb_group,
-        'nb_group_instance': nb_group_instance,
-        'group_ratio': group_ratio,
-
-        'nb_coll': nb_coll,
-        'nb_coll_instance': nb_coll_instance,
-        'coll_ratio': coll_ratio,
-
-        'nb_rel': nb_rel,
-        'nb_rel_instance': nb_rel_instance,
-        'rel_ratio': rel_ratio,
-    }, step=iteration)
+    mlflow.log_metrics(
+        {
+            'nb_prod': nb_prod,
+            'nb_non_terminal': len(labels),
+            'nb_unlabelled_node': nb_unlabelled,
+            'nb_equiv_subtrees': len(equiv_subtrees),
+            'nb_ent': nb_ent,
+            'nb_ent_instance': nb_ent_instance,
+            'ent_ratio': ent_ratio,
+            'nb_group': nb_group,
+            'nb_group_instance': nb_group_instance,
+            'group_ratio': group_ratio,
+            'nb_coll': nb_coll,
+            'nb_coll_instance': nb_coll_instance,
+            'coll_ratio': coll_ratio,
+            'nb_rel': nb_rel,
+            'nb_rel_instance': nb_rel_instance,
+            'rel_ratio': rel_ratio,
+        },
+        step=iteration,
+    )
 
 
 def _display_clusters(equiv_subtrees: TREE_CLUSTER, stream: IO[str]):
