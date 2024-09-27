@@ -6,47 +6,58 @@ import typer
 from nltk import Production
 
 from architxt.algo import rewrite
+from architxt.generator import gen_instance
 from architxt.model import NodeLabel, NodeType
-from architxt.nlp import get_annotated_rooted_forest, get_sentence_from_disk
+from architxt.nlp import get_enriched_forest, get_sentence_from_disk
+from architxt.tree import ParentedTree
 
 
-def cli(corpus_path: Path, *, tau: float = 0.5, epoch: int = 100, min_support: int = 10):
+def cli(
+    corpus_path: Path,
+    *,
+    tau: float = 0.5,
+    epoch: int = 100,
+    min_support: int = 10,
+    corenlp_url: str = 'http://localhost:9001',
+    gen_instances: int = 0,
+):
     mlflow.log_params(
         {
-            'has_instance': False,
             'has_corpus': True,
+            'has_instance': bool(gen_instances),
         }
     )
 
-    # print('Generate instance...')
-    # gen_tree = gen_instance(
-    #     groups={
-    #         'SOSY': ('SOSY', 'ANATOMIE', 'SUBSTANCE'),
-    #         'TREATMENT': ('SUBSTANCE', 'DOSE', 'MODE', 'FREQUENCE'),
-    #         'EXAM': ('EXAMEN', 'ANATOMIE'),
-    #     },
-    #     rels={
-    #         'PRESCRIPTION': ('SOSY', 'TREATMENT'),
-    #         'EXAM': ('EXAM', 'SOSY'),
-    #     },
-    #     size=50
-    # )
-
     print(f'Load corpus: {corpus_path.absolute()}')
-    sentences = list(get_sentence_from_disk(corpus_path))[:150]
-
-    corpus_tree = get_annotated_rooted_forest(sentences, url='http://localhost:9001')
+    sentences = get_sentence_from_disk(corpus_path)
+    forest = get_enriched_forest(sentences, corenlp_url=corenlp_url)
+    forest = ParentedTree('ROOT', forest)
     print('Dataset loaded!')
 
-    tree = corpus_tree  # gen_tree.merge(corpus_tree)
-    mlflow.log_param('nb_sentences', len(tree))
+    if gen_instances:
+        print('Generate instance...')
+        gen_trees = gen_instance(
+            groups={
+                'SOSY': ('SOSY', 'ANATOMIE', 'SUBSTANCE'),
+                'TREATMENT': ('SUBSTANCE', 'DOSE', 'MODE', 'FREQUENCE'),
+                'EXAM': ('EXAMEN', 'ANATOMIE'),
+            },
+            rels={
+                'PRESCRIPTION': ('SOSY', 'TREATMENT'),
+                'EXAM': ('EXAM', 'SOSY'),
+            },
+            size=gen_instances,
+        )
+        forest = forest.merge(gen_trees)
+
+    # mlflow.log_param('nb_sentences', len(trees))
     with open('debug.txt', 'w', encoding='utf8') as log_file:
-        rewrite(tree, tau=tau, epoch=epoch, min_support=min_support, stream=log_file)
+        final_tree = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, stream=log_file)
     print('Done!')
 
     productions = []
     schema = {}
-    for prod in tree.productions():
+    for prod in final_tree.productions():
         if prod.is_nonlexical():
             if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type == NodeType.COLL:
                 productions.append(Production(prod.lhs(), [prod.rhs()[0]]))
@@ -63,9 +74,10 @@ def cli(corpus_path: Path, *, tau: float = 0.5, epoch: int = 100, min_support: i
 
                     schema[prod.lhs()] = sorted(old | new)
 
-    schema_str = ""
-    for key, value in sorted(schema.items(), key=lambda x: (x[0].symbol().type, x[0].symbol().name)):
-        schema_str += f"{key} -> {', '.join(value)}\n"
+    schema_str = "\n".join(
+        f"{key} -> {', '.join(value)}"
+        for key, value in sorted(schema.items(), key=lambda x: (x[0].symbol().type, x[0].symbol().name))
+    )
 
     print(schema_str)
     mlflow.log_text(schema_str, 'schema.txt')
@@ -78,8 +90,6 @@ def cli(corpus_path: Path, *, tau: float = 0.5, epoch: int = 100, min_support: i
         production: Production
         if production.is_nonlexical():
             print(f'[{count}] {production}')
-
-    tree.draw()
 
 
 def main():

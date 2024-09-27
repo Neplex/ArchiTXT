@@ -1,7 +1,7 @@
 from nltk.grammar import Production
+from nltk.tokenize.util import align_tokens
 from nltk.tree import ParentedTree as NLTKParentedTree
 from nltk.tree import Tree as NLTKTree
-from tqdm import tqdm
 
 from architxt.model import Entity, NodeLabel, NodeType, Relation, TreeEntity, TreeRel
 
@@ -18,7 +18,7 @@ __all__ = [
     'fix_all_coord',
     'ins_ent',
     'ins_rel',
-    'ins_ent_list',
+    'enrich_tree',
     'unnest_ent',
     'update_cache',
 ]
@@ -66,83 +66,194 @@ def update_cache(x: ParentedTree) -> None:
             del SIM_CACHE[key]
 
 
-def has_type(t: Tree | Production | NodeLabel, types: set[str] | str | None = None) -> bool:
+def has_type(t: Tree | Production | NodeLabel, types: set[NodeType | str] | NodeType | str | None = None) -> bool:
     """
     Check if the given tree object has the specified type(s).
 
     :param t: The object to check type for (can be a Tree, Production, or NodeLabel).
     :param types: The types to check for (can be a set of strings, a string, or None).
     :return: True if the object has the specified type(s), False otherwise.
+
+    Example:
+    >>> tree = Tree('S', [Tree(NodeLabel(NodeType.ENT), ['Alice']), Tree(NodeLabel(NodeType.REL), ['Bob'])])
+    >>> has_type(tree, NodeType.ENT)  # Check if the tree is of type 'S'
+    False
+    >>> has_type(tree[0], NodeType.ENT)
+    True
+    >>> has_type(tree[0], 'ENT')
+    True
+    >>> has_type(tree[1], NodeType.ENT)
+    False
+    >>> has_type(tree[1], {NodeType.ENT, NodeType.REL})
+    True
     """
+    # Normalize types input
     if types is None:
         types = set(NodeType)
-
-    elif isinstance(types, str):
+    elif not isinstance(types, set):
         types = {types}
 
-    return (
-        (isinstance(t, NodeLabel) and t.type in types)
-        or (isinstance(t, Production) and isinstance(t.lhs().symbol(), NodeLabel) and t.lhs().symbol().type in types)
-        or (isinstance(t, Tree) and isinstance(t.label(), NodeLabel) and t.label().type in types)
-    )
+    types = {t.value if isinstance(t, NodeType) else str(t) for t in types}
+
+    # Check for the type in the respective object
+    if isinstance(t, NodeLabel):
+        label = t
+    elif isinstance(t, Tree):
+        label = t.label()
+    elif isinstance(t, Production):
+        label = t.lhs().symbol()
+    else:
+        return False
+
+    return isinstance(label, NodeLabel) and label.type.value in types
 
 
 def ins_elem(t: ParentedTree, x: Tree, pos: int) -> None:
+    """
+    Inserts a tree element `x` into the parented tree `t` at the specified position `pos`.
+
+    :param t: The `ParentedTree` in which the element is to be inserted.
+    :param x: The `Tree` element to insert, which will be converted to a `ParentedTree`.
+    :param pos: The position (index) where the new element `x` will be inserted in the tree.
+    :return: None. The function modifies the input tree `t` in place.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (VP (VB like) (NP (NNS apples))))")
+    >>> x = Tree("NP", ["Alice"])
+    >>> ins_elem(t, x, 0)
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (VP (VB like) (NP (NNS apples))))
+    """
+    # Insert the element `x` into the tree `t` at the specified position `pos`
     t.insert(pos, ParentedTree.convert(x))
-    update_cache(t[pos])
+
+    # Update the cache for the inserted subtree
+    update_cache(t)
 
 
 def del_elem(t: ParentedTree, pos: int) -> None:
-    if not isinstance(t, Tree) or t.root() == t:
-        return
+    """
+    Deletes an element from the parented tree `t` at the specified position `pos`.
+    If the parent tree becomes empty after the deletion, recursively deletes the parent node.
 
+    :param t: The `ParentedTree` from which an element is to be deleted.
+    :param pos: The position (index) of the element to delete in the tree.
+    :return: None. The function modifies the input tree `t` in place.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> print(t[(1, 1)].pformat(margin=255))
+    (NP (NNS apples))
+    >>> del_elem(t[(1, 1)], 0)
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (VP (VB like)))
+    >>> del_elem(t, 0)
+    >>> print(t.pformat(margin=255))
+    (S (VP (VB like)))
+    >>> del_elem(t, 0)
+    >>> print(t.pformat(margin=255))
+    (S )
+    """
+    # Remove the element at the given position `pos`
     t.pop(pos)
+
+    # Update the cache for the current tree
     update_cache(t)
 
-    if len(t) == 0:
+    # If the tree becomes empty after the deletion, recursively delete the parent node
+    if len(t) == 0 and t.parent() is not None:
         del_elem(t.parent(), t.parent_index())
 
 
-def reduce(t: ParentedTree, pos: int, types: set[NodeType | str] | None = None) -> bool:
+def reduce(t: ParentedTree, pos: int, types: set[str | NodeType] | None = None) -> bool:
+    """
+    Reduces a subtree within a `ParentedTree` at the specified position `pos`. The reduction occurs only
+    if the subtree at `pos` has exactly one child, or if it don't match a specific set of node types.
+    If the subtree  can be reduced, its children are lifted into the parent node at `pos`.
+
+    :param t: The `ParentedTree` in which the reduction will take place.
+    :param pos: The index of the subtree to attempt to reduce.
+    :param types: A set of `NodeType` or string labels that should be kept, or `None` to reduce based on length.
+    :return: `True` if the subtree was reduced, `False` otherwise.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> reduce(t[1], 1)
+    True
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (VP (VB like) (NNS apples)))
+    >>> reduce(t, 0)
+    True
+    >>> print(t.pformat(margin=255))
+    (S Alice (VP (VB like) (NNS apples)))
+    """
+    # Check if the tree at the specified position can be reduced
     if (
-        not isinstance(t, Tree)
-        or not isinstance(t[pos], Tree)
-        or (types and has_type(t[pos], types))
-        or (not types and len(t[pos]) > 1)
+        not isinstance(t[pos], Tree)  # Ensure the subtree at `pos` is a Tree
+        or (types and has_type(t[pos], types))  # Check if it matches the specified types
+        or (not types and len(t[pos]) > 1)  # If no types, only reduce if it has one child
     ):
         return False
 
+    # Convert children of the subtree into a list of `Tree` objects
     children = [Tree.convert(child) for child in t[pos]]
+
+    # Remove the subtree at position `pos` and update the cache
     t.pop(pos)
     update_cache(t)
 
+    # Insert each child of the original subtree into the parent at `pos`
     for i, child in enumerate(children):
         t.insert(pos + i, ParentedTree.convert(child))
 
     return True
 
 
-def reduce_all(t: ParentedTree, skip_types: set[NodeType | str] | None = None):
-    if not isinstance(t, Tree):
-        return
+def reduce_all(t: ParentedTree, skip_types: set[str | NodeType] | None = None) -> None:
+    """
+    Recursively attempts to reduce all eligible subtrees in a `ParentedTree`. The reduction process continues
+    until no further reductions are possible. Subtrees can be skipped if their types are listed in `skip_types`.
 
+    :param t: The `ParentedTree` in which reductions will be attempted.
+    :param skip_types: A set of `NodeType` or string labels that should be kept, or `None` to reduce based on length.
+    :return: None. The tree `t` is modified in place.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (X (Y (Z (NP Alice)))) (VP (VB likes) (NP (NNS apples))))")
+    >>> reduce_all(t)
+    >>> print(t.pformat(margin=255))
+    (S Alice (VP likes apples))
+    """
     reduced = True
     while reduced:
         reduced = False
-        for pos in tqdm(t.treepositions(), desc='reduce all', leave=False):
-            if len(pos) < 1 or isinstance(t[pos], str) or (skip_types and has_type(t[pos], skip_types)):
-                continue
 
-            if reduce(t[pos[:-1]], pos[-1]):
+        for subtree in t.subtrees(lambda st: isinstance(st, ParentedTree) and st.parent() is not None):
+            if reduce(subtree.parent(), subtree.parent_index(), types=skip_types):
                 reduced = True
                 break
 
 
 def fix_coord(t: ParentedTree, pos: int) -> bool:
-    if not isinstance(t, Tree):
-        return False
+    """
+    Fixes the coordination structure in a `ParentedTree` at the specified position `pos`.
+    This function modifies the tree to ensure that the conjunctions are structured correctly
+    according to the grammar rules of coordination.
 
+    :param t: The `ParentedTree` in which coordination adjustments will be made.
+    :param pos: The index of the subtree within the parent tree that contains the coordination to fix.
+    :return: `True` if the coordination was successfully fixed, `False` otherwise.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB eats) (NP (NNS apples) (COORD (CCONJ and) (NP (NNS oranges))))))")
+    >>> fix_coord(t[1], 1)
+    True
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)))))
+    """
     coord = None
+
+    # Identify the coordination subtree
     for child in t[pos]:
         if (
             isinstance(child, ParentedTree)
@@ -153,25 +264,27 @@ def fix_coord(t: ParentedTree, pos: int) -> bool:
             coord = child
             break
 
-    if not coord:
+    if coord is None:
         return False
 
     coord_index = coord.parent_index()
 
-    left = (
-        Tree(t[pos].label(), children=[Tree.convert(child) for child in t[pos][:coord_index]])
-        if coord_index > 1
-        else t[pos][0]
+    # Create the left and right parts of the conjunction
+    left = Tree(t[pos].label(), children=[Tree.convert(child) for child in t[pos][:coord_index]])
+    right = [Tree.convert(child) for child in coord[1:]]  # Get all NPs after the conjunction
+
+    # Create the conjunction tree
+    conj = Tree('CONJ', children=[left, *right])  # CONJ should include the left NP and the conjuncts
+
+    # Insert the new structure back into the tree
+    # If children remains on the right of the coordination, we keep the existing level
+    new_tree = (
+        Tree(t[pos].label(), children=[conj] + [Tree.convert(child) for child in remaining_children])
+        if (remaining_children := t[pos][coord_index + 1 :])
+        else conj
     )
-    conjuncts = Tree('CONJUNCTS', children=[Tree.convert(conj) for conj in coord[1:]]) if len(coord) > 2 else coord[1]
-    conj = Tree('CONJ', children=[left, Tree.convert(coord[0]), conjuncts])
 
-    if len(t[pos][coord_index + 1 :]) > 0:
-        new_tree = Tree(t[pos].label(), children=[conj] + [Tree.convert(child) for child in t[pos][coord_index + 1 :]])
-    else:
-        new_tree = conj
-
-    # Replace tree
+    # Replace the old subtree
     t.pop(pos)
     t.insert(pos, ParentedTree.convert(new_tree))
 
@@ -179,33 +292,74 @@ def fix_coord(t: ParentedTree, pos: int) -> bool:
 
 
 def fix_conj(t: ParentedTree, pos: int) -> bool:
-    if not isinstance(t, Tree) or not isinstance(t[pos], Tree) or t[pos].label() != 'CONJ':
+    """
+    Fixes conjunction structures in a `ParentedTree` at the specified position `pos`.
+    If the node at `pos` is labeled 'CONJ', the function flattens any nested conjunctions
+    by replacing the node with a new tree that combines its children.
+
+    :param t: The `ParentedTree` in which the conjunction structure will be fixed.
+    :param pos: The index of the 'CONJ' node to be processed.
+
+    :return: `True` if the conjunction structure was modified, `False` otherwise.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)))))")
+    >>> fix_conj(t[1], 1)
+    False
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (CONJ (NP (NNS oranges)) (NP (NNS bananas))))))")
+    >>> fix_conj(t[1], 1)
+    True
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)) (NP (NNS bananas)))))
+    """
+    # Check if the specified position is valid and corresponds to a 'CONJ' node
+    if not isinstance(t[pos], Tree) or t[pos].label() != 'CONJ':
         return False
 
     new_children = []
+    # Collect children, flattening nested conjunctions
     for child in t[pos]:
         if isinstance(child, Tree) and child.label() == 'CONJ':
-            new_children.extend(child)
+            new_children.extend(child)  # Extend with children of the nested CONJ
         else:
-            new_children.append(child)
+            new_children.append(child)  # Append non-CONJ children
 
+    # If no changes were made, return False
     if len(new_children) <= len(t[pos]):
         return False
 
+    # Create a new tree for the flattened conjunction
     new_tree = Tree('CONJ', children=[Tree.convert(t) for t in new_children])
 
-    # Replace tree
+    # Replace the original 'CONJ' node with the new tree
     t.pop(pos)
     t.insert(pos, ParentedTree.convert(new_tree))
 
     return True
 
 
-def fix_all_coord(t: ParentedTree):
-    if not isinstance(t, Tree):
-        return
+def fix_all_coord(t: ParentedTree) -> None:
+    """
+    Fixes all coordination structures in a `ParentedTree`.
 
-    # Fix coord
+    This function iteratively applies `fix_coord` and `fix_conj` to the tree
+    until no further modifications can be made. It ensures that the tree adheres
+    to the correct syntactic structure for coordination and conjunctions.
+
+    :param t: The `ParentedTree` in which coordination structures will be fixed.
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB eats) (NP (NNS apples) (COORD (CCONJ and) (NP (NNS oranges))))))")
+    >>> fix_all_coord(t)
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)))))
+
+    >>> t2 = ParentedTree.fromstring("(S (NP Alice) (VP (VB eats) (NP (NNS apples) (COORD (CCONJ and) (NP (NNS oranges) (COORD (CCONJ and) (NP (NNS bananas))))))))")
+    >>> fix_all_coord(t2)
+    >>> print(t2.pformat(margin=255))
+    (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)) (NP (NNS bananas)))))
+    """
+    # Fix coordination
     coord_fixed = True
     while coord_fixed:
         coord_fixed = False
@@ -213,10 +367,12 @@ def fix_all_coord(t: ParentedTree):
             if len(pos) < 1:
                 continue
 
-            if coord_fixed := fix_coord(t[pos[:-1]], pos[-1]):
+            # Attempt to fix coordination
+            if fix_coord(t[pos[:-1]], pos[-1]):
+                coord_fixed = True
                 break
 
-    # Fix conj
+    # Fix conjunctions
     conj_fixed = True
     while conj_fixed:
         conj_fixed = False
@@ -224,61 +380,129 @@ def fix_all_coord(t: ParentedTree):
             if len(pos) < 1:
                 continue
 
-            if conj_fixed := fix_conj(t[pos[:-1]], pos[-1]):
+            # Attempt to fix conjunctions
+            if fix_conj(t[pos[:-1]], pos[-1]):
+                conj_fixed = True
                 break
 
 
-def unnest_ent(t: ParentedTree, pos: int) -> None:
-    if not isinstance(t, Tree) or not has_type(t[pos], NodeType.ENT):
-        return
+def ins_ent(t: ParentedTree, tree_ent: TreeEntity) -> ParentedTree:
+    """
+    Inserts a tree entity into the appropriate position within a parented tree. The function modifies the tree
+    structure to insert an entity at the correct level based on its positions and root position.
 
-    ent_tree = Tree(t[pos].label(), children=t[pos].leaves())
-    nested_ents = Tree(
-        'nested', children=[Tree.convert(ent_child) for ent_child in t[pos] if has_type(ent_child, NodeType.ENT)]
-    )
-    new_tree = Tree(NodeLabel(NodeType.REL), children=[ent_tree, nested_ents])
+    :param t: A `ParentedTree` representing the syntactic tree.
+    :param tree_ent: A `TreeEntity` containing the entity name and its positions in the tree.
+    :return: The updated subtree where the entity was inserted.
 
-    # Replace tree
-    t.pop(pos)
-    t.insert(pos, ParentedTree.convert(new_tree if nested_ents else ent_tree))
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> tree_ent1 = TreeEntity(name="person", positions=[(0, 0)])
+    >>> tree_ent2 = TreeEntity(name="fruit", positions=[(1, 1, 0, 0)])
+    >>> ent_tree = ins_ent(t, tree_ent1)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::person Alice) (VP (VB like) (NP (NNS apples))))
+    >>> ent_tree = ins_ent(t, tree_ent2)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::person Alice) (VP (VB like) (ENT::fruit apples)))
 
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> tree_ent = TreeEntity(name="xxx", positions=[(1, 0, 0), (1, 1, 0, 0)])
+    >>> ent_tree = ins_ent(t, tree_ent)
+    >>> print(t.pformat(margin=255))
+    (S (NP Alice) (ENT::xxx like apples))
 
-def ins_ent(t: ParentedTree, tree_ent: TreeEntity) -> ParentedTree | None:
-    if not isinstance(t, Tree):
-        return None
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> tree_ent = TreeEntity(name="xxx", positions=[(0, 0), (1, 1, 0, 0)])
+    >>> ent_tree = ins_ent(t, tree_ent)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::xxx Alice apples) (VP (VB like)))
 
-    if sum(tree_ent.positions[0][len(tree_ent.root_pos) + 1 :]) > 0:
-        # Attach to common parent at first child index + 1 (as nodes remain at the child index)
-        anchor_pos = tree_ent.root_pos
-        entity_index = tree_ent.positions[0][len(tree_ent.root_pos)] + 1
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> tree_ent = TreeEntity(name="xxx", positions=[(0, 0), (1, 0, 0), (1, 1, 0, 0)])
+    >>> ent_tree = ins_ent(t, tree_ent)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::xxx Alice like apples))
+    >>> tree_ent = TreeEntity(name="yyy", positions=[(0, 2)])
+    >>> ent_tree = ins_ent(t, tree_ent)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::xxx Alice like (ENT::yyy apples)))
+    """
+    # Determine the insertion point based on the positions of the entity
+    anchor_pos = tree_ent.root_pos
+    anchor_pos_len = len(anchor_pos)
+    child_pos = tree_ent.positions[0]
+
+    if sum(child_pos[anchor_pos_len + 1 :]) > 0:
+        # Entity has children; attach to the common parent at the first child index + 1
+        entity_index = child_pos[anchor_pos_len] + 1
 
     elif (
-        tree_ent.positions[0][len(tree_ent.root_pos)] > 0  # Elements in the left-hand side are not part of the entity
-        or tree_ent.positions[-1][len(tree_ent.root_pos)]
-        < (len(t[tree_ent.root_pos]) - 1)  # Elements remain in the right-hand side
+        t[tree_ent.root_pos].parent() is None
+        or child_pos[anchor_pos_len] > 0
+        or tree_ent.positions[-1][anchor_pos_len] < (len(t[tree_ent.root_pos]) - 1)
     ):
-        anchor_pos = tree_ent.root_pos
-        entity_index = tree_ent.positions[0][len(tree_ent.root_pos)]
+        # Attach to common parent at the correct index
+        entity_index = child_pos[anchor_pos_len]
 
     else:
-        # As we are the common parent, attach to the grandparent at the common parent index (parent is deleted through recursive deletion)
+        # Attach to the grandparent at the common parent index
         entity_index = tree_ent.root_pos[-1]
         anchor_pos = tree_ent.root_pos[:-1]
 
-        while len(t[anchor_pos]) == 1:
+        # Adjust anchor position upwards if necessary
+        while len(t[anchor_pos]) == 1 and t[anchor_pos].parent():
             entity_index = anchor_pos[-1]
             anchor_pos = anchor_pos[:-1]
 
+    # Collect and delete children from the original positions
     children = []
     for child_position in reversed(tree_ent.positions):
         child = t[child_position]
-        children.append(Tree.convert(child))
-        del_elem(t[child_position[:-1]], child_position[-1])
+        children.append(Tree.convert(child))  # Convert the child to a tree structure
+        del_elem(t[child_position[:-1]], child_position[-1])  # Delete child after conversion
 
+    # Create a new tree node for the entity and insert it into the tree
     new_tree = Tree(NodeLabel(NodeType.ENT, tree_ent.name), children=reversed(children))
     ins_elem(t[anchor_pos], new_tree, entity_index)
 
+    # Return the modified subtree where the entity was inserted
     return t[anchor_pos][entity_index]
+
+
+def unnest_ent(t: ParentedTree, pos: int) -> None:
+    """
+    Un-nests an entity in a `ParentedTree` at the specified position `pos`.
+    If the node at `pos` is labeled as an entity (ENT), the function converts
+    the nested structure into a flat structure, creating a relationship (REL)
+    between the entity and its nested entities.
+
+    :param t: The `ParentedTree` in which the entity will be un-nested.
+    :param pos: The index of the 'ENT' node to be processed.
+
+    Example:
+    >>> t = ParentedTree('S', [ParentedTree(NodeLabel(NodeType.ENT, 'person'), ['Alice', ParentedTree(NodeLabel(NodeType.ENT, 'person'), ['Bob']), ParentedTree(NodeLabel(NodeType.ENT, 'person'), ['Charlie'])])])
+    >>> unnest_ent(t, 0)
+    >>> print(t.pformat(margin=255))
+    (S (REL (ENT::person Alice Bob Charlie) (nested (ENT::person Bob) (ENT::person Charlie))))
+    """
+    # Check if the specified position corresponds to an 'ENT' node
+    if not has_type(t[pos], NodeType.ENT):
+        return
+
+    # Create the main entity tree and collect nested entities
+    entity_tree = Tree(t[pos].label(), children=t[pos].leaves())
+
+    # Collect nested entities and ensure they are only from the children of the current entity
+    nested_entities = [child for child in t[pos] if has_type(child, NodeType.ENT)]
+    nested_tree = Tree('nested', children=[Tree.convert(ne) for ne in nested_entities])
+
+    # Construct a new relationship tree with the entity and its nested entities
+    new_tree = Tree(NodeLabel(NodeType.REL), children=[entity_tree, nested_tree]) if nested_entities else entity_tree
+
+    # Replace the original entity node with the new structure
+    t.pop(pos)
+    t.insert(pos, ParentedTree.convert(new_tree))
 
 
 def ins_rel(t: ParentedTree, tree_rel: TreeRel) -> None:
@@ -286,31 +510,55 @@ def ins_rel(t: ParentedTree, tree_rel: TreeRel) -> None:
         return
 
 
-def ins_ent_list(t: ParentedTree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:
-    if not isinstance(t, Tree):
-        return
+def enrich_tree(t: ParentedTree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:
+    """
+    Enriches a syntactic tree (`ParentedTree`) by inserting entities and relationships, and removing unused subtrees.
 
-    entities = sorted(entities, key=lambda x: -len(x))
+    The function processes a list of entities and relations, inserting them into the tree, unnesting entities as needed,
+    and finally deleting any subtrees that are not part of the enriched structure.
+
+    :param t: A `ParentedTree` representing the syntactic tree to enrich.
+    :param sentence: The original sentence from which the tree is derived.
+    :param entities: A list of `Entity` objects to be inserted into the tree.
+    :param relations: A list of `Relation` objects representing the relationships between entities (currently not used).
+
+    Example:
+    >>> t = ParentedTree.fromstring("(S (NP Alice) (VP (VB likes) (NP (NNS apples) (CCONJ and) (NNS oranges))))")
+    >>> e1 = Entity(name="person", start=0, end=5, id="E1")
+    >>> e2 = Entity(name="fruit", start=12, end=18, id="E2")
+    >>> e3 = Entity(name="fruit", start=23, end=30, id="E3")
+    >>> enrich_tree(t, "Alice likes apples and oranges", [e1, e2, e3], [])
+    >>> print(t.pformat(margin=255))
+    (S (ENT::person Alice) (VP (NP (ENT::fruit apples) (ENT::fruit oranges))))
+    """
+    tokens = align_tokens(t.leaves(), sentence)
+
+    entities_tokens: list[tuple[Entity, tuple[int, ...]]] = []
+    for entity in entities:
+        token_indexes = tuple(i for i, token in enumerate(tokens) if entity.start <= token[1] and token[0] < entity.end)
+        entities_tokens.append((entity, token_indexes))
+
+    # Insert entities into the tree by length (descending) to handle larger entities first
     entities_tree = []
-
-    # Insert entities
-    for entity in tqdm(entities, desc='insert entity', leave=False):
-        tree_entity = TreeEntity(
-            entity.name, [t.leaf_treeposition(i)[:-1] for i in entity.token_index(sentence, t.leaves())]
-        )
+    # print(sentence)
+    # print(t.pformat(margin=255))
+    for entity, tokens in sorted(entities_tokens, key=lambda x: -len(x[1])):
+        tree_entity = TreeEntity(entity.name, [t.leaf_treeposition(i) for i in tokens])
         entity_tree = ins_ent(t, tree_entity)
         entities_tree.append(entity_tree)
+        # print('+++', entity.name, tokens)
+        # print('=>', entity_tree.pformat(margin=255))
 
-    # Unnest entities
-    for entity_tree in tqdm(reversed(entities_tree), desc='unnest entity', leave=False):
+    # Unnest any nested entities in reverse order (to avoid modifying parent indices during the process)
+    for entity_tree in entities_tree:
+        # print('---', entity_tree.pformat(margin=255))
         unnest_ent(entity_tree.parent(), entity_tree.parent_index())
 
-    # Insert relations
-    # for relation in tqdm(relations, desc='insert relation', leave=False):
+    # Currently, the relations part is commented out, but can be enabled when relations are processed.
+    # for relation in relations:
     #     tree_rel = None
     #     ins_rel(t, tree_rel)
 
-    for subtree in tqdm(
-        list(t.subtrees(lambda x: x.height() == 2 and not has_type(x))), desc='remove leaves', leave=False
-    ):
+    # Remove subtrees that have no specific entity or relation (i.e., generic subtrees)
+    for subtree in list(t.subtrees(lambda x: x.height() == 2 and not has_type(x))):
         del_elem(subtree.parent(), subtree.parent_index())

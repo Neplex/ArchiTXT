@@ -1,9 +1,6 @@
-from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum
 from os.path import commonprefix
-
-from nltk.tokenize.util import align_tokens
 
 TREE_POS = tuple[int, ...]
 
@@ -26,6 +23,9 @@ class NodeLabel(str):
         self.name = str(label)
         self.type = label_type
 
+    def __str__(self):
+        return f'{self.type.value}::{self.name}' if self.name else self.type.value
+
 
 @dataclass
 class Entity:
@@ -33,13 +33,6 @@ class Entity:
     start: int
     end: int
     id: str
-
-    def token_index(self, sentence: str, tokens: list[str]) -> Generator[int]:
-        token_spans = align_tokens(tokens, sentence)
-
-        for i, token in enumerate(token_spans):
-            if self.start <= token[1] and token[0] < self.end:
-                yield i
 
     def __len__(self):
         return self.end - self.start
@@ -51,7 +44,7 @@ class Entity:
 @dataclass
 class TreeEntity:
     name: str
-    positions: list[TREE_POS, ...]
+    positions: list[TREE_POS]
 
     @property
     def root_pos(self) -> TREE_POS:
@@ -62,7 +55,10 @@ class TreeEntity:
         return len(self.positions)
 
 
-class Relation(tuple[Entity, Entity]):
+@dataclass
+class Relation:
+    src: str  # Ent id
+    dst: str  # Ent id
     name: str
 
 

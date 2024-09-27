@@ -69,7 +69,8 @@ trio = "^0.22.0"
 [tool.pytest.ini_options]
 minversion = "7.0"
 junit_family = "legacy"
-testpaths = ["test"]
+testpaths = ["architxt", "test"]
+addopts = ["--doctest-modules"]
 
 [tool.coverage.run]
 source = ["architxt/*"]

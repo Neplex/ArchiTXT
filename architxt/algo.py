@@ -33,7 +33,7 @@ def rewrite(
     metric: METRIC_FUNC = DEFAULT_METRIC,
     edit_ops: Sequence[operations.OPERATION] = DEFAULT_OPERATIONS,
     stream: IO[str] = sys.stdout,
-) -> None:
+) -> tree.ParentedTree:
     min_support = min_support or max((len(root_tree) // 10), 2)
     mlflow.log_params(
         {
@@ -99,6 +99,7 @@ def rewrite(
 
     _display_productions(root_tree, stream)
     # _log_metrics(iteration + 2, root_tree, equiv_subtrees)
+    return root_tree
 
 
 def _pre_process(root_tree: tree.ParentedTree) -> None:
