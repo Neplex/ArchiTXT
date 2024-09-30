@@ -13,36 +13,108 @@ from architxt.model import AnnotatedSentence, Entity, NodeType, Relation
 from architxt.tree import ParentedTree, enrich_tree, fix_all_coord, reduce_all
 
 
-def split_sentences(text):
-    text = unidecode(text)
-    return text.split('\n')
+def split_sentences(text: str) -> list[str]:
+    """
+    Remove unicode Splits the input text into sentences based on line breaks as it is common for brat annotation formats.
+
+    :param text: The input text to be split into sentences.
+    :return: A list of sentences split by line breaks with unicode removed.
+
+    Example:
+    >>> split_sentences("This is à test\\nAnothér-test here")
+    ['This is a test', 'Another-test here']
+    """
+
+    return unidecode(text).split('\n')
 
 
-def convert_brat_file(brat_file: BratFile) -> Generator[AnnotatedSentence]:
+def convert_brat_file(
+    brat_file: BratFile,
+    *,
+    entities_filter: set[str] | None = None,
+    relations_filter: set[str] | None = None,
+    entities_mapping: dict[str, str] | None = None,
+    relations_mapping: dict[str, str] | None = None,
+) -> Generator[AnnotatedSentence]:
+    """
+    Converts a BratFile object into annotated sentences, filtering and mapping entities and relations as specified.
+
+    :param brat_file: A `BratFile` object containing the .txt and .ann file data.
+    :param entities_filter: A set of entity types to exclude from the output. If None, no filtering is applied.
+    :param relations_filter: A set of relation types to exclude from the output. If None, no filtering is applied.
+    :param entities_mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
+    :param relations_mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
+    :return: A generator yielding `AnnotatedSentence` objects for each sentence in the text.
+    """
     file_path = Path(brat_file.txt_path)
-
     text = file_path.read_text(encoding='utf-8')
 
+    # Split the text into sentences
     sentences = list(split_sentences(text))
-    entities = list(split_entities(convert_brat_entities(brat_file.entities), sentences))
-    relationships = split_relations(convert_brat_relations(brat_file.relations), entities)
 
-    for sentence, entities, rels in zip(sentences, entities, relationships):
-        if sentence:
-            yield AnnotatedSentence(sentence, entities, rels)
+    # Convert and filter entities, split by sentences
+    entities = list(
+        split_entities(
+            convert_brat_entities(brat_file.entities, filter=entities_filter, mapping=entities_mapping), sentences
+        )
+    )
+
+    # Convert and filter relations, split by entities
+    relationships = split_relations(
+        convert_brat_relations(brat_file.relations, filter=relations_filter, mapping=relations_mapping), entities
+    )
+
+    # Yield AnnotatedSentence objects for each sentence with its corresponding entities and relations
+    for sentence, sentence_entities, sentence_relations in zip(sentences, entities, relationships):
+        if sentence and sentence_entities:  # Yield only non-empty sentences
+            yield AnnotatedSentence(sentence, sentence_entities, sentence_relations)
 
 
-def convert_brat_entities(entities: Iterable[BratEntity]) -> Generator[Entity]:
+def convert_brat_entities(
+    entities: Iterable[BratEntity],
+    *,
+    filter: set[str] | None = None,
+    mapping: dict[str, str] | None = None,
+) -> Generator[Entity, None, None]:
+    """
+    Converts a list of `BratEntity` objects into `Entity` objects, while filtering out certain types of tags.
+
+    :param entities: An iterable of `BratEntity` objects to convert.
+    :param filter: A set of entity types to exclude from the output. If None, no filtering is applied.
+    :param mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
+    :return: A generator yielding `Entity` objects.
+
+    Example:
+    >>> ents = [
+    ...     BratEntity(spans=[(0, 5)], tag="person", mention="E1"),
+    ...     BratEntity(spans=[(10, 15)], tag="FREQ", mention="E2"),
+    ...     BratEntity(spans=[(20, 25)], tag="MOMENT", mention="E3")
+    ... ]
+    >>> ents = list(convert_brat_entities(ents, filter={"MOMENT"}, mapping={"FREQ": "FREQUENCE"}))
+    >>> len(ents)
+    2
+    >>> print(ents[0].name)
+    PERSON
+    >>> print(ents[1].name)
+    FREQUENCE
+    """
+    filter = filter or set()
+    mapping = mapping or {}
+
     for brat_entity in entities:
+        # Start and end positions based on the spans of the entity
         start = brat_entity.spans[0][0]
         end = brat_entity.spans[-1][-1]
+
+        # Rename tag if needed
         tag = brat_entity.tag.upper()
+        tag = mapping.get(tag, tag)
+
+        # Generate the identity of the entity based on its spans
         identity = tuple(brat_entity.spans)
 
-        if tag == 'FREQ':
-            tag = 'FREQUENCE'
-
-        if tag not in ['MOMENT', 'DUREE', 'DATE']:
+        # Filter out entities with specific tags
+        if tag not in filter:
             yield Entity(name=tag, start=start, end=end, id=str(identity))
 
 
@@ -80,7 +152,7 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
     True
     """
     # Sort entities by their start position
-    entities = sorted(entities, key=lambda ent: ent.start)
+    entities = sorted(entities, key=lambda ent: (ent.start, ent.end))
 
     ent_i = 0  # Index to track the current entity
     sent_i = 0  # Index to track the current sentence
@@ -111,13 +183,44 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
         yield sent_entities
 
 
-def convert_brat_relations(relations: Iterable[BratRelation]) -> Generator[Relation]:
+def convert_brat_relations(
+    relations: Iterable[BratRelation],
+    *,
+    filter: set[str] | None = None,
+    mapping: dict[str, str] | None = None,
+) -> Generator[Relation, None, None]:
+    """
+    Converts a list of `BratRelation` objects into `Relation` objects while filtering out certain types of relations.
+
+    :param relations: An iterable of `BratRelation` objects to convert.
+    :param filter: A set of relation types to exclude from the output. If None, no filtering is applied.
+    :param mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
+    :return: A generator yielding `Relation` objects.
+
+    Example:
+    >>> rels = [
+    ...     BratRelation(arg1=BratEntity(spans=[(0, 5)], tag='X', mention='E1'), arg2=BratEntity(spans=[(10, 15)], tag='Y', mention='E2'), relation="part-of"),
+    ...     BratRelation(arg1=BratEntity(spans=[(20, 25)], tag='X', mention='E3'), arg2=BratEntity(spans=[(30, 35)], tag='Z', mention='E3'), relation="TEMPORALITE")
+    ... ]
+    >>> rels = list(convert_brat_relations(rels, filter={"TEMPORALITE"}))
+    >>> len(rels)
+    1
+    >>> print(rels[0].name)
+    PART-OF
+    """
+    filter = filter or set()
+    mapping = mapping or {}
+
     for brat_relation in relations:
         src = str(tuple(brat_relation.arg1.spans))
         dst = str(tuple(brat_relation.arg2.spans))
-        relation = brat_relation.relation.upper()
 
-        if relation not in ['TEMPORALITE', 'CAUSE-CONSEQUENCE'] and 'INCERTAIN' not in relation:
+        # Rename relation if needed
+        relation = brat_relation.relation.upper()
+        relation = mapping.get(relation, relation)
+
+        # Filter out specific relation types
+        if relation not in filter and 'INCERTAIN' not in relation:
             yield Relation(src=src, dst=dst, name=relation)
 
 
@@ -171,7 +274,14 @@ def split_relations(relations: Iterable[Relation], entities: Sequence[Sequence[E
     return relationship
 
 
-def get_sentence_from_disk(path: Path) -> Generator[AnnotatedSentence]:
+def get_sentence_from_disk(
+    path: Path,
+    *,
+    entities_filter: set[str] | None = None,
+    relations_filter: set[str] | None = None,
+    entities_mapping: dict[str, str] | None = None,
+    relations_mapping: dict[str, str] | None = None,
+) -> Generator[AnnotatedSentence]:
     dataset: BratDataset = BratDataset.from_directory(path.absolute())
     brat_file: BratFile
 
@@ -179,10 +289,16 @@ def get_sentence_from_disk(path: Path) -> Generator[AnnotatedSentence]:
         file_path = Path(brat_file.txt_path)
         pbar.set_description(f'Load {file_path.name}')
 
-        yield from convert_brat_file(brat_file)
+        yield from convert_brat_file(
+            brat_file,
+            entities_filter=entities_filter,
+            relations_filter=relations_filter,
+            entities_mapping=entities_mapping,
+            relations_mapping=relations_mapping,
+        )
 
 
-def _get_trees(
+def get_trees(
     sentences: Iterable[AnnotatedSentence], *, corenlp_url: str, language: str
 ) -> Generator[tuple[AnnotatedSentence, ParentedTree], None, None]:
     """
@@ -225,7 +341,10 @@ def _get_trees(
 
 
 def get_enriched_forest(
-    sentences: Iterable[AnnotatedSentence], *, corenlp_url: str, language: str = 'French'
+    sentences: Iterable[AnnotatedSentence],
+    *,
+    corenlp_url: str,
+    language: str = 'French',
 ) -> Generator[ParentedTree, None, None]:
     """
     Enriches and processes syntax trees for a given collection of sentences.
@@ -247,7 +366,7 @@ def get_enriched_forest(
 
     """
     # Iterate over the parsed trees and associated sentences
-    for sentence, tree in _get_trees(sentences, corenlp_url=corenlp_url, language=language):
+    for sentence, tree in get_trees(sentences, corenlp_url=corenlp_url, language=language):
         # Replace specific parenthesis tokens ('-LRB-' for '(', '-RRB-' for ')') in the leaf nodes
         for subtree in tree.subtrees(lambda x: x.height() == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
             subtree[0] = '(' if subtree[0] == '-LRB-' else ')'
@@ -261,4 +380,6 @@ def get_enriched_forest(
         # Reduce the tree structure removing unneeded nodes
         reduce_all(tree, set(NodeType))
 
-        yield tree
+        # Don't yield empty tree
+        if len(tree):
+            yield tree

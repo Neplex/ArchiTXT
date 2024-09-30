@@ -29,9 +29,13 @@ def cli(
     )
 
     print(f'Load corpus: {corpus_path.absolute()}')
-    sentences = get_sentence_from_disk(corpus_path)
-    forest = get_enriched_forest(sentences, corenlp_url=corenlp_url)
-    forest = ParentedTree('ROOT', forest)
+    sentences = get_sentence_from_disk(
+        corpus_path,
+        entities_filter={'MOMENT', 'DUREE', 'DATE'},
+        relations_filter={'TEMPORALITE', 'CAUSE-CONSEQUENCE'},
+        entities_mapping={'FREQ': 'FREQUENCE'},
+    )
+    forest = ParentedTree('ROOT', get_enriched_forest(sentences, corenlp_url=corenlp_url))
     print('Dataset loaded!')
 
     if gen_instances:
@@ -94,7 +98,3 @@ def cli(
 
 def main():
     typer.run(cli)
-
-
-if __name__ == "__main__":
-    main()

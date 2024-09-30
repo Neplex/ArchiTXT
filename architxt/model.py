@@ -34,6 +34,12 @@ class Entity:
     end: int
     id: str
 
+    def __post_init__(self):
+        if self.start < 0:
+            raise ValueError("Start cannot be negative.")
+        if self.start >= self.end:
+            raise ValueError("Start cannot be larger than end.")
+
     def __len__(self):
         return self.end - self.start
 
@@ -50,6 +56,10 @@ class TreeEntity:
     def root_pos(self) -> TREE_POS:
         prefix = commonprefix(self.positions)
         return prefix if prefix != self.positions[0] else prefix[:-1]
+
+    def __post_init__(self):
+        if not self.positions:
+            raise ValueError("Cannot have empty list of positions.")
 
     def __len__(self):
         return len(self.positions)
