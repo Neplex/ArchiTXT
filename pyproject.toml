@@ -64,7 +64,7 @@ hypothesis = "^6.68.0"
 
 # Async libs for tests
 asyncio = "^3.4.0"
-trio = "^0.22.0"
+trio = "^0.26.2"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
