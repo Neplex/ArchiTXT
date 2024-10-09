@@ -39,7 +39,7 @@ levenshtein = "*"
 more-itertools = "*"
 bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
 mlflow = "^2.6.0"
-numba = "^0.57.1"
+numba = "^0.60.0"
 shelved-cache = "^0.3.1"
 typer = "^0.12.5"
 anyio = "^4.6.0"
