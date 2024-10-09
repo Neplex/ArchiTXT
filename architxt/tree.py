@@ -1,3 +1,8 @@
+import contextlib
+from collections import Counter
+from collections.abc import Generator, Iterable
+from functools import cached_property
+
 from nltk.grammar import Production
 from nltk.tokenize.util import align_tokens
 from nltk.tree import ParentedTree as NLTKParentedTree
@@ -25,29 +30,101 @@ __all__ = [
 
 
 class Tree(NLTKTree):
+    def __init__(self, node: NodeLabel | str, children: Iterable['Tree | str'] | None = None):
+        super().__init__(node, children)
+
+        if isinstance(node, NodeLabel):
+            return
+
+        if '::' in self._label:
+            node_type, _, name = self._label.partition('::')
+            with contextlib.suppress(ValueError):
+                self._label = NodeLabel(NodeType(node_type), name)
+
+        else:
+            with contextlib.suppress(ValueError):
+                self._label = NodeLabel(NodeType(self._label))
+
     def __hash__(self) -> int:
         return id(self)
 
-    def entities(self) -> list:
-        return list(self.subtrees(lambda st: has_type(st, NodeType.ENT)))
+    def __reduce__(self):
+        return self.__class__, (str(self.label()), tuple(self))
+
+    # def as_list(self):
+    #     return [self.label()] #+ [Tree.convert(child).as_list() if isinstance(child, Tree) else child for child in self]
+
+    @property
+    def entities(self) -> Generator['Tree', None, None]:
+        """
+        Returns a generator for subtrees that are entities.
+
+        Example:
+        >>> t = ParentedTree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> list(t.entities) == [t[0, 0], t[0, 1], t[1, 0], t[1, 1]]
+        True
+        """
+        return self.subtrees(lambda st: has_type(st, NodeType.ENT))
+
+    @cached_property
+    def entity_labels(self) -> set[str]:
+        """
+        Return a set of entity labels present in the tree.
+
+        Example:
+        >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> sorted(t.entity_labels)
+        ['animal', 'fruit', 'person']
+        """
+        return {node.label().name for node in self.entities}
+
+    @cached_property
+    def entity_label_count(self) -> Counter[NodeLabel]:
+        """
+        Returns a Counter object that counts the labels of entity subtrees.
+
+        Example:
+        >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> t.entity_label_count
+        Counter({'person': 2, 'fruit': 1, 'animal': 1})
+        """
+        return Counter(ent.label().name for ent in self.entities)
+
+    @cached_property
+    def has_duplicate_entity(self) -> bool:
+        """
+        Checks if there are duplicate entity labels.
+
+        Example:
+        >>> from architxt.tree import Tree
+        >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> t.has_duplicate_entity
+        True
+        >>> t[0].has_duplicate_entity
+        False
+        """
+        return any(v > 1 for v in self.entity_label_count.values())
 
     def merge(self, tree: NLTKTree) -> 'Tree':
-        return Tree(
+        """
+        Merge two trees into one.
+        The root of both tree become one while maintaining the level of each subtree.
+        """
+        return self.__class__(
             'ROOT',
             [
-                *Tree.convert(self),
-                *Tree.convert(tree),
+                *self.__class__.convert(self),
+                *self.__class__.convert(tree),
             ],
         )
+
+    def __repr__(self) -> str:
+        return f'{self.__class__}(len={len(self)})'
 
 
 class ParentedTree(Tree, NLTKParentedTree):
     def depth(self) -> int:
         return len(self.treeposition()) + 1
-
-    def merge(self, tree: NLTKTree) -> 'ParentedTree':
-        merged_tree = super().merge(tree)
-        return ParentedTree.convert(merged_tree)
 
 
 def update_cache(x: ParentedTree) -> None:
@@ -75,7 +152,7 @@ def has_type(t: Tree | Production | NodeLabel, types: set[NodeType | str] | Node
     :return: True if the object has the specified type(s), False otherwise.
 
     Example:
-    >>> tree = Tree('S', [Tree(NodeLabel(NodeType.ENT), ['Alice']), Tree(NodeLabel(NodeType.REL), ['Bob'])])
+    >>> tree = Tree.fromstring('(S (ENT Alice) (REL Bob))')
     >>> has_type(tree, NodeType.ENT)  # Check if the tree is of type 'S'
     False
     >>> has_type(tree[0], NodeType.ENT)
@@ -499,7 +576,7 @@ def unnest_ent(t: ParentedTree, pos: int) -> None:
     :param pos: The index of the 'ENT' node to be processed.
 
     Example:
-    >>> t = ParentedTree('S', [ParentedTree(NodeLabel(NodeType.ENT, 'person'), ['Alice', ParentedTree(NodeLabel(NodeType.ENT, 'person'), ['Bob']), ParentedTree(NodeLabel(NodeType.ENT, 'person'), ['Charlie'])])])
+    >>> t = ParentedTree.fromstring('(S (ENT::person Alice (ENT::person Bob) (ENT::person Charlie)))')
     >>> unnest_ent(t, 0)
     >>> print(t.pformat(margin=255))
     (S (REL (ENT::person Alice Bob Charlie) (nested (ENT::person Bob) (ENT::person Charlie))))

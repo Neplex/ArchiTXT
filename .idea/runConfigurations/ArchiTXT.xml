@@ -5,6 +5,7 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
       <env name="PYTHONDEVMODE" value="1" />
       <env name="PYTHONFAULTHANDLER" value="1" />
       <env name="PYTHONOPTIMIZE" value="0" />

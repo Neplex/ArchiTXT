@@ -65,7 +65,7 @@ def convert_brat_file(
     )
 
     # Yield AnnotatedSentence objects for each sentence with its corresponding entities and relations
-    for sentence, sentence_entities, sentence_relations in zip(sentences, entities, relationships):
+    for sentence, sentence_entities, sentence_relations in zip(sentences, entities, relationships, strict=False):
         if sentence and sentence_entities:  # Yield only non-empty sentences
             yield AnnotatedSentence(sentence, sentence_entities, sentence_relations)
 
@@ -344,7 +344,7 @@ def get_enriched_forest(
     sentences: Iterable[AnnotatedSentence],
     *,
     corenlp_url: str,
-    language: str = 'French',
+    language: str,
 ) -> Generator[ParentedTree, None, None]:
     """
     Enriches and processes syntax trees for a given collection of sentences.
