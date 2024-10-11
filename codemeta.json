@@ -1,53 +1,54 @@
 {
-    "@context": "https://w3id.org/codemeta/3.0",
-    "type": "SoftwareSourceCode",
-    "applicationCategory": "Database",
-    "author": [
-        {
-            "id": "https://orcid.org/0000-0003-4318-4906",
-            "type": "Person",
-            "affiliation": {
-                "type": "Organization",
-                "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
-            },
-            "email": "nicolas.hiot@etu.univ-orleans.fr",
-            "familyName": "Hiot",
-            "givenName": "Nicolas"
-        },
-        {
-            "id": "http://orcid.org/0000-0003-1460-9979",
-            "type": "Person",
-            "affiliation": {
-                "type": "Organization",
-                "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
-            },
-            "email": "jchabin@univ-orleans.fr",
-            "familyName": "Chabin",
-            "givenName": "Jacques"
-        },
-        {
-            "id": "http://orcid.org/0000-0003-2601-3224",
-            "type": "Person",
-            "affiliation": {
-                "type": "Organization",
-                "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
-            },
-            "email": "mirian@univ-orleans.fr",
-            "familyName": "Halfeld-Ferrari",
-            "givenName": "Mirian"
-        }
-    ],
-    "codeRepository": "git+https://github.com/Neplex/ArchiTXT.git",
-    "dateCreated": "2023-01-01",
-    "datePublished": "2024-04-01",
-    "funder": {
+  "@context": "https://w3id.org/codemeta/3.0",
+  "type": "SoftwareSourceCode",
+  "applicationCategory": "Database",
+  "author": [
+    {
+      "id": "https://orcid.org/0000-0003-4318-4906",
+      "type": "Person",
+      "affiliation": {
         "type": "Organization",
-        "name": "APR-IA DOING, ENNOV"
+        "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
+      },
+      "email": "nicolas.hiot@etu.univ-orleans.fr",
+      "familyName": "Hiot",
+      "givenName": "Nicolas"
     },
-    "isPartOf": "https://www.univ-orleans.fr/lifo/evenements/doing/",
-    "name": "ArchiTXT",
-    "programmingLanguage": "Python",
-    "version": "1.0.0",
-    "developmentStatus": "concept",
-    "funding": "AE 2021-1850, 2001LIF0000"
+    {
+      "id": "http://orcid.org/0000-0003-1460-9979",
+      "type": "Person",
+      "affiliation": {
+        "type": "Organization",
+        "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
+      },
+      "email": "jchabin@univ-orleans.fr",
+      "familyName": "Chabin",
+      "givenName": "Jacques"
+    },
+    {
+      "id": "http://orcid.org/0000-0003-2601-3224",
+      "type": "Person",
+      "affiliation": {
+        "type": "Organization",
+        "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
+      },
+      "email": "mirian@univ-orleans.fr",
+      "familyName": "Halfeld-Ferrari",
+      "givenName": "Mirian"
+    }
+  ],
+  "license": "https://spdx.org/licenses/CC-BY-NC-4.0",
+  "codeRepository": "git+https://github.com/Neplex/ArchiTXT.git",
+  "dateCreated": "2023-01-01",
+  "datePublished": "2024-04-01",
+  "funder": {
+    "type": "Organization",
+    "name": "APR-IA DOING, ENNOV"
+  },
+  "isPartOf": "https://www.univ-orleans.fr/lifo/evenements/doing/",
+  "name": "ArchiTXT",
+  "programmingLanguage": "Python",
+  "version": "1.0.0",
+  "developmentStatus": "concept",
+  "funding": "AE 2021-1850, 2001LIF0000"
 }
