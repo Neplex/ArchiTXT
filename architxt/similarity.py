@@ -1,7 +1,7 @@
 import math
 import multiprocessing
 from collections import defaultdict
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Iterable
 from itertools import combinations
 from threading import RLock
 
@@ -15,7 +15,7 @@ from scipy.cluster import hierarchy
 from tqdm import tqdm
 
 from architxt.model import TREE_POS
-from architxt.tree import ParentedTree
+from architxt.tree import Forest, ParentedTree
 
 METRIC_FUNC = Callable[[set[str], set[str]], float]
 TREE_CLUSTER = set[tuple[ParentedTree, ...], ...]
@@ -138,7 +138,7 @@ def sim(x: ParentedTree, y: ParentedTree, tau: float, metric: METRIC_FUNC = DEFA
 
 @ray.remote
 def compute_distance(
-    t: ParentedTree, positions: Iterable[tuple[int, TREE_POS, TREE_POS]], *, metric: METRIC_FUNC, pbar
+    batch: Iterable[tuple[int, ray.ObjectRef, TREE_POS, ray.ObjectRef, TREE_POS]], *, metric: METRIC_FUNC, pbar
 ) -> list[tuple[int, np.uint16]]:
     """
     Compute the distance between two subtrees.
@@ -148,26 +148,28 @@ def compute_distance(
     we transform the similarity score into an integer and invert it to create a
     distance metric, which is stored as an unsigned short (np.ushort) to minimize memory usage.
 
-    :param t: The root of the tree containing the subtrees.
-    :param positions: A, iterable of index and tree position pair to compute.
+    :param batch: A, iterable of index and tree position pair to compute.
     :param metric: A callable similarity metric to compute the similarity between the two trees.
     :return: The computed distance as an unsigned short integer, representing the scaled  and inverted similarity score.
     """
     distances_idx = []
-    for batch in more_itertools.chunked(positions, 100):
-        for idx, x_pos, y_pos in batch:
-            distance = np.uint16((1 - similarity(t[x_pos], t[y_pos], metric=metric)) * 10000)
+
+    for sub_batch in more_itertools.chunked(batch, 100):
+        for idx, x_ref, x_pos, y_ref, y_pos in sub_batch:
+            x, y = ray.get([x_ref, y_ref])
+            distance = np.uint16((1 - similarity(x[x_pos], y[y_pos], metric=metric)) * 10000)
             distances_idx.append((idx, distance))
-        pbar.update.remote(len(batch))
+        pbar.update.remote(len(sub_batch))
 
     return distances_idx
-    # return [
-    #     (idx, np.uint16((1 - similarity(t[x_pos], t[y_pos], metric=metric)) * 10000)) for idx, x_pos, y_pos in positions
-    # ]
 
 
 def compute_dist_matrix(
-    subtrees: list[ParentedTree], *, metric: METRIC_FUNC, max_tasks: int | None = None, batch_size: int = 1_000_000
+    subtrees: list[ParentedTree],
+    *,
+    metric: METRIC_FUNC,
+    max_tasks: int | None = None,
+    batch_size: int = 1_000_000,
 ) -> np.ndarray[np.uint16]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
@@ -186,31 +188,32 @@ def compute_dist_matrix(
     if not max_tasks:
         max_tasks = int(ray.available_resources().get('CPU', multiprocessing.cpu_count())) - 1
 
-    # Get the reference to the root tree (assuming all subtrees share the same root)
-    tree_ref = ray.put(subtrees[0].root())
+    # Get the reference to the root trees
+    trees = list({subtree.root() for subtree in subtrees})
+    trees_refs = [ray.put(tree) for tree in trees]
 
     # Prepare the pair combinations, we skip tree that are not close enough
     pair_combinations = (
-        (idx, x.treeposition(), y.treeposition())
+        (idx, trees_refs[trees.index(x.root())], x.treeposition(), trees_refs[trees.index(y.root())], y.treeposition())
         for idx, (x, y) in enumerate(combinations(subtrees, 2))
         if abs(x.height() - y.height()) < 5
     )
 
     # Condensed distance matrix (1D array of the triangular part)
     nb_combinations = math.comb(len(subtrees), 2)
-    dist_matrix = np.full(nb_combinations, np.inf, dtype=np.uint16)
+    dist_matrix = np.full(nb_combinations, np.nan, dtype=np.uint16)
 
-    # Dictionary to track task references and their corresponding index
     task_refs: list[ray.ObjectRef] = []
 
     # Iterate over combinations and launch tasks
     remote_tqdm = ray.remote(tqdm_ray.tqdm)
     pbar = remote_tqdm.remote(total=nb_combinations, desc='similarity')
+
     for pair_batch in more_itertools.chunked(pair_combinations, batch_size):
-        distance_ref = compute_distance.remote(tree_ref, pair_batch, metric=metric, pbar=pbar)
+        distance_ref = compute_distance.remote(pair_batch, metric=metric, pbar=pbar)
         task_refs.append(distance_ref)
 
-        # Process tasks when the limit of max_tasks is reached
+        # Wait for tasks to complete when max_tasks is reached
         if len(task_refs) >= max_tasks:
             ready_refs, task_refs = ray.wait(task_refs, num_returns=1)
             for task in ray.get(ready_refs):
@@ -218,7 +221,7 @@ def compute_dist_matrix(
                     dist_matrix[idx] = distance
                 # pbar.update(batch_size)
 
-    # Process any remaining tasks
+    # Process remaining tasks
     for task in ray.get(task_refs):
         for idx, distance in task:
             dist_matrix[idx] = distance
@@ -244,13 +247,15 @@ def compute_dist_matrix_local(subtrees: list[ParentedTree], *, metric: METRIC_FU
     """
     nb_combinations = math.comb(len(subtrees), 2)
 
+    distances = (
+        np.uint16((1 - similarity(x, y, metric=metric)) * 10000) if abs(x.height() - y.height()) < 5 else np.nan
+        for x, y in combinations(subtrees, 2)
+    )
+
     return np.fromiter(
         tqdm(
-            (
-                np.uint16((1 - similarity(x, y, metric=metric)) * 10000)
-                for x, y in combinations(subtrees, 2)
-                if abs(x.height() - y.height()) < 5
-            ),
+            distances,
+            desc='similarity',
             total=nb_combinations,
             leave=False,
             unit_scale=True,
@@ -260,14 +265,14 @@ def compute_dist_matrix_local(subtrees: list[ParentedTree], *, metric: METRIC_FU
     )
 
 
-def equiv_cluster(trees: Collection[ParentedTree], *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> TREE_CLUSTER:
+def equiv_cluster(trees: Forest[ParentedTree], *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> TREE_CLUSTER:
     """
     Clusters subtrees of a given `ParentedTree` based on their similarity. The clusters are created by applying
     a distance threshold `tau` to the linkage matrix, which is derived from pairwise subtree similarity calculations.
     Subtrees that are sufficiently similar (based on `tau` and the `metric`) are grouped into clusters. Each cluster
     is represented as a tuple of subtrees.
 
-    :param t: The `ParentedTree` from which to extract and cluster subtrees.
+    :param trees: The forest from which to extract and cluster subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
@@ -313,7 +318,7 @@ def get_equiv_of(
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
     """
     for cluster in tqdm(sorted(equiv_subtrees, key=len, reverse=True), desc='Searching equivalent class', leave=False):
-        if all(sim(x, t, tau, metric) for x in cluster):
+        if any(sim(x, t, tau, metric) for x in cluster):
             return cluster
 
     return None

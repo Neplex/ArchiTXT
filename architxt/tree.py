@@ -1,7 +1,8 @@
 import contextlib
 from collections import Counter
-from collections.abc import Generator, Iterable
+from collections.abc import Collection, Generator, Iterable
 from functools import cached_property
+from typing import TypeAlias, TypeVar
 
 from nltk.grammar import Production
 from nltk.tokenize.util import align_tokens
@@ -14,6 +15,7 @@ __all__ = [
     'has_type',
     'Tree',
     'ParentedTree',
+    'Forest',
     'ins_elem',
     'del_elem',
     'reduce',
@@ -51,10 +53,7 @@ class Tree(NLTKTree):
     def __reduce__(self):
         return self.__class__, (str(self.label()), tuple(self))
 
-    # def as_list(self):
-    #     return [self.label()] #+ [Tree.convert(child).as_list() if isinstance(child, Tree) else child for child in self]
-
-    @property
+    @cached_property
     def entities(self) -> Generator['Tree', None, None]:
         """
         Returns a generator for subtrees that are entities.
@@ -64,7 +63,12 @@ class Tree(NLTKTree):
         >>> list(t.entities) == [t[0, 0], t[0, 1], t[1, 0], t[1, 1]]
         True
         """
-        return self.subtrees(lambda st: has_type(st, NodeType.ENT))
+        for child in self:
+            if has_type(child, NodeType.ENT):
+                yield child
+
+            if isinstance(child, Tree):
+                yield from child.entities
 
     @cached_property
     def entity_labels(self) -> set[str]:
@@ -105,6 +109,21 @@ class Tree(NLTKTree):
         """
         return any(v > 1 for v in self.entity_label_count.values())
 
+    @cached_property
+    def has_entity_child(self) -> bool:
+        """
+        Checks if there is at least one entity as direct children.
+
+        Example:
+        >>> from architxt.tree import Tree
+        >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> t.has_entity_child
+        False
+        >>> t[0].has_entity_child
+        True
+        """
+        return any(has_type(child, NodeType.ENT) for child in self)
+
     def merge(self, tree: NLTKTree) -> 'Tree':
         """
         Merge two trees into one.
@@ -125,6 +144,10 @@ class Tree(NLTKTree):
 class ParentedTree(Tree, NLTKParentedTree):
     def depth(self) -> int:
         return len(self.treeposition()) + 1
+
+
+_Tree = TypeVar('_Tree', bound=Tree)
+Forest: TypeAlias = Collection[_Tree]
 
 
 def update_cache(x: ParentedTree) -> None:

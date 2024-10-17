@@ -34,7 +34,7 @@ def cli(
     if corpus_cache_path.exists():
         print(f'Load corpus from cache: {corpus_cache_path.absolute()}')
         with open(corpus_cache_path, 'rb') as cache_file:
-            trees = cloudpickle.load(cache_file)
+            forest = cloudpickle.load(cache_file)
 
     else:
         print(f'Load corpus from disk: {corpus_path.absolute()}')
@@ -44,14 +44,14 @@ def cli(
             relations_filter={'TEMPORALITE', 'CAUSE-CONSEQUENCE'},
             entities_mapping={'FREQ': 'FREQUENCE'},
         )
-        trees = tuple(get_enriched_forest(sentences, corenlp_url=corenlp_url, language=language))
+        forest = tuple(get_enriched_forest(sentences, corenlp_url=corenlp_url, language=language))
 
         print(f'Save cache file to: {corpus_cache_path.absolute()}')
         with open(corpus_cache_path, 'wb') as cache_file:
-            cloudpickle.dump(trees, cache_file)
+            cloudpickle.dump(forest, cache_file)
 
     # forest = ParentedTree('ROOT', trees)
-    print(f'Dataset loaded! {len(trees)} sentences found')
+    print(f'Dataset loaded! {len(forest)} sentences found')
 
     if gen_instances:
         print('Generate instance...')
@@ -67,8 +67,9 @@ def cli(
             },
             size=gen_instances,
         )
-        trees.extend(gen_trees)
+        forest.extend(gen_trees)
 
+    trees = forest
     # mlflow.log_param('nb_sentences', len(trees))
     with open('debug.txt', 'w', encoding='utf8') as log_file:
         forest = ParentedTree('ROOT', trees)
