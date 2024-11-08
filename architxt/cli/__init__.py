@@ -1,4 +1,5 @@
 import hashlib
+import subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from architxt.nlp import get_enriched_forest, get_sentence_from_disk
 from architxt.tree import Tree
 
 
-def cli(
+def cli_run(
     corpus_path: Path,
     *,
     tau: float = 0.5,
@@ -24,7 +25,7 @@ def cli(
     gen_instances: int = 0,
     language: str = 'French',
     debug: bool = False,
-):
+) -> None:
     mlflow.log_params(
         {
             'has_corpus': True,
@@ -125,5 +126,17 @@ def cli(
             print(f'[{count}] {production}')
 
 
-def main():
-    typer.run(cli)
+def cli_ui() -> None:
+    from .. import ui
+
+    subprocess.run(['streamlit', 'run', ui.__file__])
+
+
+def main() -> None:
+    """Main function"""
+    mlflow.set_experiment('ArchiTXT')
+
+    app = typer.Typer()
+    app.command('run')(cli_run)
+    app.command('ui')(cli_ui)
+    app()

@@ -44,6 +44,13 @@ shelved-cache = "^0.3.1"
 typer = "^0.12.5"
 anyio = "^4.6.0"
 ray = {extras = ["default"], version = "^2.37.0"}
+streamlit = "^1.39.0"
+streamlit-agraph = "^0.0.45"
+streamlit-tags = "^1.2.8"
+pynvml = "^11.5.3"
+pandas-stubs = "^2.2.3.241009"
+types-tqdm = "^4.66.0.20240417"
+types-requests = "^2.32.0.20241016"
 
 [tool.poetry.group.dev.dependencies]
 wheel = "^0.38.0"
