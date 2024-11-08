@@ -1,14 +1,9 @@
 version: "3.7"
 
 services:
-  corenlp-en:
-    image: nlpbox/corenlp
-    ports:
-      - "9000:9000"
-
-  corenlp-fr:
+  corenlp:
     image: corenlp
     build:
       context: corenlp
     ports:
-      - "9001:9000"
+      - "9000:9000"

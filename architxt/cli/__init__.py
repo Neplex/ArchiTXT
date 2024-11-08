@@ -21,7 +21,7 @@ def cli_run(
     tau: float = 0.5,
     epoch: int = 100,
     min_support: int = 10,
-    corenlp_url: str = 'http://localhost:9001',
+    corenlp_url: str = 'http://localhost:9000',
     gen_instances: int = 0,
     language: str = 'French',
     debug: bool = False,
