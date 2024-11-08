@@ -328,14 +328,14 @@ def get_trees(
 
     for sentence in sentences:
         try:
-            # Parse the sentence text using the CoreNLP server configured for French
+            # Parse the sentence text using the CoreNLP server
             for rooted_tree in nltk_parser.parse_text(sentence.txt, properties=properties):
                 # Each rooted_tree may contain multiple sentence subtrees; iterate over each
                 for sent_tree in rooted_tree:
                     # Convert each subtree into a tree and yield along with the original sentence
                     yield sentence, Tree.convert(sent_tree)
 
-        except requests.exceptions.ConnectionError as error:
+        except requests.exceptions.ConnectionError as error:  # noqa: PERF203
             # Handle connection issues with the CoreNLP server
             print(f'Cannot parse the following text due to {error.strerror} : "{sentence.txt}"')
 

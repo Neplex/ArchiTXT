@@ -22,35 +22,26 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry.dependencies]
 python = "^3.10"
 
-joblib = ">=1.1"
+joblib = "^1.1"
 tqdm = "*"
 pqdm = "*"
 nltk = "*"
 chatette = ">=1.6.2"
 unidecode = "*"
-cachetools = "*"
-pytokenizations = "0.8.1"
-matplotlib = ">=3.4"
+pytokenizations = "~0.8.0"
 requests = "*"
-scikit-learn = "*"
-numpy = "*"
-scipy = "*"
+numpy = "^1.26.0"
 levenshtein = "*"
 more-itertools = "*"
 bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
 mlflow = "^2.6.0"
-numba = "^0.57.1"
-shelved-cache = "^0.3.1"
-typer = "^0.12.5"
+typer = "^0.12.0"
 anyio = "^4.6.0"
-ray = {extras = ["default"], version = "^2.37.0"}
+ray = {extras = ["default"], version = "^2.30.0"}
 streamlit = "^1.39.0"
-streamlit-agraph = "^0.0.45"
-streamlit-tags = "^1.2.8"
-pynvml = "^11.5.3"
-pandas-stubs = "^2.2.3.241009"
-types-tqdm = "^4.66.0.20240417"
-types-requests = "^2.32.0.20241016"
+streamlit-agraph = "*"
+streamlit-tags = "*"
+pynvml = "*"
 
 [tool.poetry.group.dev.dependencies]
 wheel = "^0.38.0"
@@ -61,6 +52,10 @@ pre-commit = "^3.8.0"
 pylint = "^2.14"
 mypy = ">=0.910,<1.4"
 ruff = "^0.6.7"
+
+pandas-stubs = "*"
+types-tqdm = "*"
+types-requests = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2"
@@ -107,6 +102,10 @@ select = [
     "LOG", # Logger usage
     "PIE", # Miscs
     "RUF", # Ruff-specific auto-fixable rules
+    "PD" , # Pandas checks
+    "NPY", # NumPy checks
+    "PERF", # Performance anti-pattern checks
+    "FURB", # Check old Python code
 ]
 
 [tool.ruff.format]
