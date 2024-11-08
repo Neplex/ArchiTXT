@@ -1,3 +1,4 @@
+import hashlib
 from collections import Counter
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from architxt.algo import rewrite
 from architxt.generator import gen_instance
 from architxt.model import NodeLabel, NodeType
 from architxt.nlp import get_enriched_forest, get_sentence_from_disk
-from architxt.tree import ParentedTree
+from architxt.tree import Tree
 
 
 def cli(
@@ -22,6 +23,7 @@ def cli(
     corenlp_url: str = 'http://localhost:9001',
     gen_instances: int = 0,
     language: str = 'French',
+    debug: bool = False,
 ):
     mlflow.log_params(
         {
@@ -30,7 +32,15 @@ def cli(
         }
     )
 
-    corpus_cache_path = Path() / f'{corpus_path.name}.pkl'
+    entities_filter = {'MOMENT', 'DUREE', 'DATE'}
+    relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
+
+    # Load the corpus from the cache if available, else load it from the disk
+    key = hashlib.md5(
+        (corpus_path.name + 'E'.join(sorted(entities_filter)) + 'R'.join(sorted(relations_filter))).encode()
+    ).hexdigest()
+    corpus_cache_path = Path() / f'{key}.pkl'
+
     if corpus_cache_path.exists():
         print(f'Load corpus from cache: {corpus_cache_path.absolute()}')
         with open(corpus_cache_path, 'rb') as cache_file:
@@ -50,9 +60,9 @@ def cli(
         with open(corpus_cache_path, 'wb') as cache_file:
             cloudpickle.dump(forest, cache_file)
 
-    # forest = ParentedTree('ROOT', trees)
     print(f'Dataset loaded! {len(forest)} sentences found')
 
+    # Generate a synthetic database instance
     if gen_instances:
         print('Generate instance...')
         gen_trees = gen_instance(
@@ -69,12 +79,17 @@ def cli(
         )
         forest.extend(gen_trees)
 
-    trees = forest
-    # mlflow.log_param('nb_sentences', len(trees))
-    with open('debug.txt', 'w', encoding='utf8') as log_file:
-        forest = ParentedTree('ROOT', trees)
-        final_tree = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, stream=log_file)
+    # Rewrite tree
+    forest = rewrite(
+        forest,
+        tau=tau,
+        epoch=epoch,
+        min_support=min_support,
+        debug=debug,
+    )
     print('Done!')
+
+    final_tree = Tree('ROOT', forest)
 
     productions = []
     schema = {}
@@ -102,13 +117,10 @@ def cli(
 
     print(schema_str)
     mlflow.log_text(schema_str, 'schema.txt')
-    mlflow.log_artifact('debug.txt')
-    mlflow.log_artifact('trace.txt')
 
     print('\n' + '=' * 10 + '\n')
 
     for production, count in Counter(productions).most_common():
-        production: Production
         if production.is_nonlexical():
             print(f'[{count}] {production}')
 

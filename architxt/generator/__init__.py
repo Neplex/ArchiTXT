@@ -5,13 +5,13 @@ Generator of instances
 from collections.abc import Generator, Iterable
 
 from architxt.model import NodeLabel, NodeType
-from architxt.tree import ParentedTree
+from architxt.tree import Tree
 
 GROUP_SCHEMA = dict[str, tuple[str, ...]]
 REL_SCHEMA = dict[str, tuple[str, str]]
 
 
-def gen_group(name: str, elements: tuple[str, ...]) -> ParentedTree:
+def gen_group(name: str, elements: tuple[str, ...]) -> Tree:
     """
     Generates a group tree structure with the given name and elements.
     :param name: The name of the group.
@@ -24,11 +24,11 @@ def gen_group(name: str, elements: tuple[str, ...]) -> ParentedTree:
     (GROUP::Fruits (ENT::Apple ) (ENT::Banana ) (ENT::Cherry ))
     """
     label = NodeLabel(NodeType.GROUP, name)
-    element_trees = [ParentedTree(NodeLabel(NodeType.ENT, element), []) for element in elements]
-    return ParentedTree(label, element_trees)
+    element_trees = [Tree(NodeLabel(NodeType.ENT, element), []) for element in elements]
+    return Tree(label, element_trees)
 
 
-def gen_relation(name: str, sub: str, obj: str, groups: GROUP_SCHEMA) -> ParentedTree:
+def gen_relation(name: str, sub: str, obj: str, groups: GROUP_SCHEMA) -> Tree:
     """
     Generates a relation tree structure based on the given parameters.
     :param name: The name of the relationship.
@@ -46,10 +46,10 @@ def gen_relation(name: str, sub: str, obj: str, groups: GROUP_SCHEMA) -> Parente
     label = NodeLabel(NodeType.REL, name)
     subject_tree = gen_group(sub, groups[sub])
     object_tree = gen_group(obj, groups[obj])
-    return ParentedTree(label, [subject_tree, object_tree])
+    return Tree(label, [subject_tree, object_tree])
 
 
-def gen_collection(name: str, elements: Iterable[ParentedTree]) -> ParentedTree:
+def gen_collection(name: str, elements: Iterable[Tree]) -> Tree:
     """
     Generate a collection tree.
     :param name: The name of the collection.
@@ -58,25 +58,25 @@ def gen_collection(name: str, elements: Iterable[ParentedTree]) -> ParentedTree:
 
     Example:
     >>> from architxt.tree import Tree
-    >>> elems = [ParentedTree('Element1', []), ParentedTree('Element2', [])]
+    >>> elems = [Tree('Element1', []), Tree('Element2', [])]
     >>> collection_tree = gen_collection('Collection', elems)
     >>> print(collection_tree.pformat(margin=255))
     (COLL::Collection (Element1 ) (Element2 ))
     """
     label = NodeLabel(NodeType.COLL, name)
-    return ParentedTree(label, elements)
+    return Tree(label, elements)
 
 
 def gen_instance(
     groups: GROUP_SCHEMA, rels: REL_SCHEMA, *, size: int = 200, generate_collections: bool = True
-) -> Generator[ParentedTree, None, None]:
+) -> Generator[Tree, None, None]:
     """
     Generate a database instances as a tree based on the given groups and relations schema.
     :param groups: A dictionary containing group names as keys and elements as values.
     :param rels: A dictionary containing relation names as keys and tuples of sub and obj as values.
     :param size: An integer specifying the size of the generated trees.
     :param generate_collections: A boolean indicating whether to generate collections or not.
-    :return: A ParentedTree instance representing the generated instance.
+    :return: A tree representing the generated instance.
     """
     # Generate tree instances for each group
     for group_name, elements in groups.items():

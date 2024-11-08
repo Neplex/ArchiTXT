@@ -1,17 +1,17 @@
-import sys
-import uuid
+import functools
 from collections import Counter
 from collections.abc import Sequence
-from typing import IO
+from copy import deepcopy
 
 import mlflow
-from nltk import Production
-from tqdm import tqdm, trange
+from nltk import Production, TreePrettyPrinter
+from pqdm.processes import pqdm
+from tqdm import trange
 
-from architxt import operations, tree
+from architxt import operations
 from architxt.model import NodeType
-from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster, get_equiv_of, similarity
-from architxt.tree import has_type
+from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
+from architxt.tree import Forest, Tree, has_type, reduce_all
 
 DEFAULT_OPERATIONS = (
     operations.find_subgroups,
@@ -25,18 +25,20 @@ DEFAULT_OPERATIONS = (
 
 
 def rewrite(
-    root_tree: tree.ParentedTree,
+    forest: Forest,
     *,
     tau: float = 0.7,
     epoch: int = 100,
     min_support: int | None = None,
     metric: METRIC_FUNC = DEFAULT_METRIC,
     edit_ops: Sequence[operations.OPERATION] = DEFAULT_OPERATIONS,
-    stream: IO[str] = sys.stdout,
-) -> tree.ParentedTree:
-    min_support = min_support or max((len(root_tree) // 10), 2)
+    debug: bool = False,
+    n_jobs: int = 6,
+) -> Forest:
+    min_support = min_support or max((len(forest) // 10), 2)
     mlflow.log_params(
         {
+            'nb_sentences': len(forest),
             'tau': tau,
             'epoch': epoch,
             'min_support': min_support,
@@ -45,164 +47,227 @@ def rewrite(
         }
     )
 
-    stream.write(
-        f'Params:\n'
-        f'tau: {tau}\n'
-        f'epoch: {epoch}\n'
-        f'min_support: {min_support}\n'
-        f'metric: {metric.__name__}\n'
-        f'edit_ops: {[f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)]}\n\n'
-    )
-    stream.write('== Init ====================\n')
-    root_tree.pretty_print(stream=stream)
+    with mlflow.start_span('rewriting'):
+        for iteration in trange(epoch, desc='rewrite trees'):
+            with mlflow.start_span('iteration', attributes={'step': iteration}):
+                forest, has_simplified = _rewrite_step(
+                    iteration,
+                    forest,
+                    tau=tau,
+                    min_support=min_support,
+                    metric=metric,
+                    edit_ops=edit_ops,
+                    debug=debug,
+                    n_jobs=n_jobs,
+                )
 
-    for iteration in trange(epoch, desc='rewrite trees'):
-        stream.write(f'== Iteration: {iteration} ====================\n')
-        root_tree.pretty_print(stream=stream)
-        stream.flush()
-        similarity.cache_clear()
-        get_equiv_of.cache_clear()
-
-        _pre_process(root_tree)
-
-        equiv_subtrees = equiv_cluster(root_tree, tau=tau, metric=metric)
-        _display_clusters(equiv_subtrees, stream)
-
-        operations.find_groups(root_tree, equiv_subtrees, tau=tau, min_support=min_support, metric=metric)
-
-        if iteration > 0:
-            has_simplified = False
-            for op_id, edit_op in enumerate(edit_ops):
-                stream.write(f'Run: {edit_op.__name__}\n')
-                if has_simplified := edit_op(root_tree, equiv_subtrees, tau, min_support, metric):
-                    mlflow.log_metric('edit_op', op_id, step=iteration + 1)
+                if iteration != 0 and not has_simplified:
                     break
 
-        for _ in range(3):
-            operations.find_relationship(root_tree, equiv_subtrees, tau, min_support, metric, naming_only=True)
-            operations.find_collections(root_tree, equiv_subtrees, tau, min_support, metric, naming_only=True)
+    return forest
 
-        _display_productions(root_tree, stream)
-        _log_metrics(iteration, root_tree, equiv_subtrees)
 
-        if iteration != 0 and not has_simplified:
+def _rewrite_step(
+    iteration: int,
+    forest: Forest,
+    *,
+    tau: float,
+    min_support: int,
+    metric: METRIC_FUNC,
+    edit_ops: Sequence[operations.OPERATION],
+    debug: bool,
+    n_jobs: int,
+):
+    if debug:
+        # Log the forest as SVG
+        rooted_forest = Tree('ROOT', deepcopy(forest))
+        mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), f'debug/{iteration}/tree.html')
+
+    with mlflow.start_span('reduce_all'):
+        for tree in forest:
+            reduce_all(tree, {NodeType.ENT})
+
+    with mlflow.start_span('equiv_cluster'):
+        equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
+        if debug:
+            _log_clusters(iteration, equiv_subtrees)
+
+    with mlflow.start_span('find_groups'):
+        operations.find_groups(Tree('', []), equiv_subtrees, tau=tau, min_support=min_support, metric=metric)
+
+    has_simplified = False
+    for op_id, edit_op in enumerate(edit_ops):
+        operation = functools.partial(
+            edit_op, equiv_subtrees=equiv_subtrees, tau=tau, min_support=min_support, metric=metric
+        )
+
+        with mlflow.start_span(edit_op.__name__):
+            result = pqdm(
+                forest,
+                operation,
+                n_jobs=n_jobs,
+                exception_behaviour='immediate',
+                leave=False,
+                desc=edit_op.__name__,
+            )
+
+        forest, simplified = zip(*result)
+        if has_simplified := any(simplified):
+            mlflow.log_metric('edit_op', op_id, step=iteration)
             break
 
-    # Post-processing to uniformize the rules
-    # _post_process(root_tree, equiv_subtrees, tau=tau, metric=metric)
+    _post_process(forest, tau, metric)
 
-    grammar = ""
-    for production, count in _get_productions(root_tree).items():
-        grammar += f'[{count}] {production}\n'
+    # _log_productions(rooted_forest)
+    _log_metrics(iteration, forest, equiv_subtrees)
 
-    mlflow.log_text(grammar, 'grammar.txt')
-
-    _display_productions(root_tree, stream)
-    # _log_metrics(iteration + 2, root_tree, equiv_subtrees)
-    return root_tree
+    return forest, has_simplified
 
 
-def _pre_process(root_tree: tree.ParentedTree) -> None:
-    for subtree in tqdm(list(root_tree.subtrees(lambda x: x != root_tree.root())), desc='pre_process', leave=False):
-        if not has_type(subtree, NodeType.ENT):
-            subtree.set_label(uuid.uuid4().hex[:8])
-        if subtree.height() > 2 and not tree.has_type(subtree, NodeType.ENT):
-            tree.reduce(subtree.parent(), subtree.parent_index())
+def _post_process(forest: Forest, tau: float, metric: METRIC_FUNC) -> None:
+    equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
+
+    forest, _ = zip(
+        *(
+            operations.find_relationship(
+                tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True
+            )
+            for tree in forest
+        )
+    )
+
+    forest, _ = zip(
+        *(
+            operations.find_collections(
+                tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True
+            )
+            for tree in forest
+        )
+    )
 
 
-def _post_process(root_tree: tree.ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, metric: METRIC_FUNC) -> None:
-    tau /= 2
-    equiv_subtrees = equiv_cluster(root_tree, tau=tau, metric=metric)
+def _get_productions(forest: Forest) -> Counter[str]:
+    """
+    Extracts and counts non-lexical productions from a forest.
 
-    print('post processing')
+    :param forest: A forest to extract productions from.
+    :return: A `Counter` object containing the counts of each production rule.
+    """
+    production_counter: Counter[str] = Counter()
 
-    while operations.find_subgroups(root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees):
-        equiv_subtrees = equiv_cluster(root_tree, tau=tau, metric=metric)
+    for tree in forest:
+        for production in tree.productions():
+            if production.is_lexical():
+                continue  # Skip lexical productions
 
-    while operations.find_relationship(
-        root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True
-    ):
-        continue
-
-    while operations.find_collections(root_tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees):
-        continue
-
-
-def _get_productions(root_tree: tree.Tree) -> Counter:
-    counter = Counter()
-
-    for production in root_tree.productions():
-        if production.is_nonlexical():
             lhs = production.lhs().symbol()
-            rhs = sorted(x.symbol() for x in production.rhs())
+            rhs = sorted(symbol.symbol() for symbol in production.rhs())
             rhs_str = f'{rhs[0]}+' if has_type(lhs, NodeType.COLL) else ' '.join(rhs)
 
-            counter.update([f'{lhs} -> {rhs_str}'])
+            production_rule = f'{lhs} -> {rhs_str}'
+            production_counter.update([production_rule])
 
-    return counter
+    return production_counter
 
 
-def _log_metrics(iteration: int, root_tree: tree.Tree, equiv_subtrees: TREE_CLUSTER = ()):
-    nb_prod = len(_get_productions(root_tree))
-    labels = {subtree.label() for subtree in root_tree.subtrees()}
-    nb_unlabelled = sum(not has_type(x) for x in root_tree.subtrees())
+def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()):
+    """
+    Logs various metrics related to a forest of trees and equivalent subtrees.
 
-    nb_ent = sum(has_type(x, NodeType.ENT) for x in labels)
-    nb_ent_instance = sum(has_type(x, NodeType.ENT) for x in root_tree.subtrees())
-    ent_ratio = nb_ent_instance / nb_ent if nb_ent != 0 else 0
+    This function calculates and logs the metrics that provide insights into the forest's structure, including counts of
+    productions, labeled and unlabeled nodes, and entity/group/collection/relation statistics.
 
-    nb_group = sum(has_type(x, NodeType.GROUP) for x in labels)
-    nb_group_instance = sum(has_type(x, NodeType.GROUP) for x in root_tree.subtrees())
-    group_ratio = nb_group_instance / nb_group if nb_group != 0 else 0
+    :param iteration: The current iteration number for logging.
+    :param forest: A forest of tree objects to analyze.
+    :param equiv_subtrees: A set of clusters representing equivalent subtrees.
+    :return: None
+    """
+    # Compute the number of production rules in the forest
+    num_productions = len(_get_productions(forest))
 
-    nb_coll = sum(has_type(x, NodeType.COLL) for x in labels)
-    nb_coll_instance = sum(has_type(x, NodeType.COLL) for x in root_tree.subtrees())
-    coll_ratio = nb_coll_instance / nb_coll if nb_coll != 0 else 0
+    # Count labels for all nodes in the forest
+    label_counts = Counter(subtree.label() for tree in forest for subtree in tree.subtrees())
 
-    nb_rel = sum(has_type(x, NodeType.REL) for x in labels)
-    nb_rel_instance = sum(has_type(x, NodeType.REL) for x in root_tree.subtrees())
-    rel_ratio = nb_rel_instance / nb_rel if nb_rel != 0 else 0
+    # Calculate the number of unlabeled nodes
+    num_unlabeled = sum(not has_type(label) for label in label_counts)
 
+    # Entity statistics
+    num_entities = sum(has_type(label, NodeType.ENT) for label in label_counts)
+    num_entity_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.ENT))
+    entity_ratio = num_entity_instances / num_entities if num_entities else 0
+
+    # Group statistics
+    num_groups = sum(has_type(label, NodeType.GROUP) for label in label_counts)
+    num_group_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.GROUP))
+    group_ratio = num_group_instances / num_groups if num_groups else 0
+
+    # Relation statistics
+    num_relations = sum(has_type(label, NodeType.REL) for label in label_counts)
+    num_relation_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.REL))
+    relation_ratio = num_relation_instances / num_relations if num_relations else 0
+
+    # Collection statistics
+    num_collections = sum(has_type(label, NodeType.COLL) for label in label_counts)
+    num_collection_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.COLL))
+    collection_ratio = num_collection_instances / num_collections if num_collections else 0
+
+    # Log the calculated metrics
     mlflow.log_metrics(
         {
-            'nb_prod': nb_prod,
-            'nb_non_terminal': len(labels),
-            'nb_unlabelled_node': nb_unlabelled,
-            'nb_equiv_subtrees': len(equiv_subtrees),
-            'nb_ent': nb_ent,
-            'nb_ent_instance': nb_ent_instance,
-            'ent_ratio': ent_ratio,
-            'nb_group': nb_group,
-            'nb_group_instance': nb_group_instance,
+            'num_productions': num_productions,
+            'num_non_terminal_nodes': len(label_counts),
+            'num_unlabeled_nodes': num_unlabeled,
+            'num_equiv_subtrees': len(equiv_subtrees),
+            'num_entities': num_entities,
+            'num_entity_instances': num_entity_instances,
+            'entity_ratio': entity_ratio,
+            'num_groups': num_groups,
+            'num_group_instances': num_group_instances,
             'group_ratio': group_ratio,
-            'nb_coll': nb_coll,
-            'nb_coll_instance': nb_coll_instance,
-            'coll_ratio': coll_ratio,
-            'nb_rel': nb_rel,
-            'nb_rel_instance': nb_rel_instance,
-            'rel_ratio': rel_ratio,
+            'num_relations': num_relations,
+            'num_relation_instances': num_relation_instances,
+            'relation_ratio': relation_ratio,
+            'num_collections': num_collections,
+            'num_collection_instances': num_collection_instances,
+            'collection_ratio': collection_ratio,
         },
         step=iteration,
     )
 
 
-def _display_clusters(equiv_subtrees: TREE_CLUSTER, stream: IO[str]):
-    clusters_info = [f'clusters (count, max_len, elems): {len(equiv_subtrees)}\n']
-    for equiv_class in sorted(equiv_subtrees, key=lambda x: -len(x)):
-        cluster = [equiv_tree.treeposition() for equiv_tree in equiv_class]
-        max_len = max(len(equiv_tree.leaves()) for equiv_tree in equiv_class)
+def _log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER):
+    """
+    Logs information about the clusters of equivalent subtrees.
 
-        cluster_info = f'- {len(cluster)} {max_len} {cluster}\n'
-        clusters_info.append(cluster_info)
+    This function processes each cluster of subtrees, extracting the entity labels, count, and maximum label length,
+    and then logs this information using MLFlow.
 
-    stream.writelines(clusters_info)
+    :param iteration: The current iteration number.
+    :param equiv_subtrees: The set of equivalent subtrees to process.
+    """
+    elems = []
+    count = []
+    max_len = []
+
+    for equiv_class in equiv_subtrees:
+        elems.append({str(equiv_tree.label()) for equiv_tree in equiv_class})
+        count.append(len(equiv_class))
+        max_len.append(len(max(equiv_class, key=len)))
+
+    mlflow.log_table(
+        {
+            'elems': elems,
+            'count': count,
+            'max_len': max_len,
+        },
+        f'debug/{iteration}/tree.json',
+    )
 
 
-def _display_productions(root_tree: tree.Tree, stream: IO[str]):
-    stream.write('Result:\n')
-    root_tree.pretty_print(stream=stream)
+def _log_productions(root_tree: Tree):
     production_count = Counter(root_tree.productions())
     for production, count in production_count.most_common():
         production: Production
         if production.is_nonlexical():
-            stream.write(f'[{count}] {production}\n')
+            # stream.write(f'[{count}] {production}\n')
+            pass

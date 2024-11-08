@@ -3,10 +3,10 @@ import multiprocessing
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from itertools import combinations
-from threading import RLock
 
 import more_itertools
 import numpy as np
+import numpy.typing as npt
 import ray
 from Levenshtein import jaro_winkler
 from Levenshtein import ratio as levenshtein_ratio
@@ -14,14 +14,11 @@ from ray.experimental import tqdm_ray
 from scipy.cluster import hierarchy
 from tqdm import tqdm
 
-from architxt.model import TREE_POS
-from architxt.tree import Forest, ParentedTree
+from architxt.model import TREE_POS, NodeType
+from architxt.tree import Forest, Tree, has_type
 
 METRIC_FUNC = Callable[[set[str], set[str]], float]
-TREE_CLUSTER = set[tuple[ParentedTree, ...], ...]
-
-SIM_CACHE = {}
-SIM_CACHE_LOCK = RLock()
+TREE_CLUSTER = set[tuple[Tree, ...]]
 
 
 def jaccard(x: set[str], y: set[str]) -> float:
@@ -70,21 +67,21 @@ DEFAULT_METRIC: METRIC_FUNC = jaro  # jaccard, levenshtein, jaro
 
 
 # @cached(cache=SIM_CACHE, lock=SIM_CACHE_LOCK, key=lambda x, y, *, metric: (x.treeposition(), y.treeposition()))
-def similarity(x: ParentedTree, y: ParentedTree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
+def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
     """
-    Computes the similarity between two `ParentedTree` objects based on their entity labels and context.
+    Computes the similarity between two tree objects based on their entity labels and context.
     The function uses a specified metric (such as Jaccard, Levenshtein, or Jaro-Winkler) to calculate the
     similarity between the labels of entities in the trees. The similarity is computed as recursive weighted
     mean for each tree anestor.
 
-    :param x: The first `ParentedTree` object.
-    :param y: The second `ParentedTree` object.
+    :param x: The first tree object.
+    :param y: The second tree object.
     :param metric: A metric function to compute the similarity between the entity labels of the two trees.
     :return: A similarity score between 0 and 1, where 1 indicates maximum similarity.
 
     Example:
-    >>> from architxt.tree import ParentedTree
-    >>> t = ParentedTree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+    >>> from architxt.tree import Tree
+    >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
     >>> similarity(t[0], t[1], metric=jaccard)
     0.5555555555555555
     """
@@ -97,8 +94,8 @@ def similarity(x: ParentedTree, y: ParentedTree, *, metric: METRIC_FUNC = DEFAUL
 
     while x is not None and y is not None:
         # Extract the entity labels as sets for faster lookup
-        x_labels = x.entity_labels
-        y_labels = y.entity_labels
+        x_labels = x.entity_labels()
+        y_labels = y.entity_labels()
 
         # If no common entity labels, return 0 similarity early
         if x_labels.isdisjoint(y_labels):
@@ -117,19 +114,19 @@ def similarity(x: ParentedTree, y: ParentedTree, *, metric: METRIC_FUNC = DEFAUL
     return min(max(sim_sum / weight_sum, 0), 1)  # Need to fix float issues
 
 
-def sim(x: ParentedTree, y: ParentedTree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> bool:
+def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> bool:
     """
-    Determines whether the similarity between two `ParentedTree` objects exceeds a given threshold `tau`.
+    Determines whether the similarity between two tree objects exceeds a given threshold `tau`.
 
-    :param x: The first `ParentedTree` object to compare.
-    :param y: The second `ParentedTree` object to compare.
+    :param x: The first tree object to compare.
+    :param y: The second tree object to compare.
     :param tau: The threshold value for similarity.
     :param metric: A callable similarity metric to compute the similarity between the two trees.
     :return: `True` if the similarity between `x` and `y` is greater than or equal to `tau`, otherwise `False`.
 
     Example:
-    >>> from architxt.tree import ParentedTree
-    >>> t = ParentedTree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+    >>> from architxt.tree import Tree
+    >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
     >>> sim(t[0], t[1], tau=0.5, metric=jaccard)
     True
     """
@@ -165,12 +162,12 @@ def compute_distance(
 
 
 def compute_dist_matrix(
-    subtrees: list[ParentedTree],
+    subtrees: list[Tree],
     *,
     metric: METRIC_FUNC,
     max_tasks: int | None = None,
     batch_size: int = 1_000_000,
-) -> np.ndarray[np.uint16]:
+) -> npt.NDArray[np.uint16]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
 
@@ -232,7 +229,7 @@ def compute_dist_matrix(
     return dist_matrix
 
 
-def compute_dist_matrix_local(subtrees: list[ParentedTree], *, metric: METRIC_FUNC) -> np.ndarray[np.uint16]:
+def compute_dist_matrix_local(subtrees: list[Tree], *, metric: METRIC_FUNC) -> npt.NDArray[np.uint16]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
 
@@ -265,9 +262,9 @@ def compute_dist_matrix_local(subtrees: list[ParentedTree], *, metric: METRIC_FU
     )
 
 
-def equiv_cluster(trees: Forest[ParentedTree], *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> TREE_CLUSTER:
+def equiv_cluster(trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> TREE_CLUSTER:
     """
-    Clusters subtrees of a given `ParentedTree` based on their similarity. The clusters are created by applying
+    Clusters subtrees of a given tree based on their similarity. The clusters are created by applying
     a distance threshold `tau` to the linkage matrix, which is derived from pairwise subtree similarity calculations.
     Subtrees that are sufficiently similar (based on `tau` and the `metric`) are grouped into clusters. Each cluster
     is represented as a tuple of subtrees.
@@ -280,7 +277,7 @@ def equiv_cluster(trees: Forest[ParentedTree], *, tau: float, metric: METRIC_FUN
     subtrees = [
         subtree
         for tree in trees
-        for subtree in tree.subtrees(lambda x: isinstance(x, ParentedTree) and not x.has_duplicate_entity)
+        for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and not x.has_duplicate_entity())
     ]
 
     if len(subtrees) < 2:
@@ -305,20 +302,20 @@ def equiv_cluster(trees: Forest[ParentedTree], *, tau: float, metric: METRIC_FUN
 
 
 def get_equiv_of(
-    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC
-) -> tuple[ParentedTree, ...] | None:
+    t: Tree, equiv_subtrees: TREE_CLUSTER, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC
+) -> tuple[Tree, ...]:
     """
     Returns the cluster containing the specified tree `t` based on similarity comparisons
     with the given set of clusters. The clusters are assessed using the provided similarity
     metric and threshold `tau`.
 
-    :param t: The `ParentedTree` from which to extract and cluster subtrees.
+    :param t: The tree from which to extract and cluster subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
     """
-    for cluster in tqdm(sorted(equiv_subtrees, key=len, reverse=True), desc='Searching equivalent class', leave=False):
+    for cluster in sorted(equiv_subtrees, key=len, reverse=True):
         if any(sim(x, t, tau, metric) for x in cluster):
             return cluster
 
-    return None
+    return ()

@@ -1,14 +1,14 @@
-import math
-from collections import Counter, deque
+from collections import Counter
 from collections.abc import Callable
+from copy import deepcopy
 from itertools import combinations, groupby
 
-from joblib import Parallel, delayed
-from tqdm import tqdm
+import mlflow
+from mlflow.entities import SpanEvent
 
 from architxt.model import NodeLabel, NodeType
 from architxt.similarity import METRIC_FUNC, TREE_CLUSTER, get_equiv_of
-from architxt.tree import ParentedTree, Tree, del_elem, has_type, ins_elem, update_cache
+from architxt.tree import Tree, has_type
 
 __all__ = [
     'OPERATION',
@@ -19,421 +19,524 @@ __all__ = [
     'find_collections',
     'reduce_bottom',
     'reduce_top',
-    'merge_sentences',
 ]
 
-OPERATION = Callable[[ParentedTree, TREE_CLUSTER, float, int, METRIC_FUNC], bool]
-TASK_POOL = Parallel(n_jobs=-2, require='sharedmem', return_as='generator', batch_size=1)
-
-trace = open('trace.txt', 'w')  # noqa SIM115
+OPERATION = Callable[[Tree, TREE_CLUSTER, float, int, METRIC_FUNC], tuple[Tree, bool]]
 
 
 def reduce_bottom(
-    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
-) -> bool:
-    # return any([
-    #     reduce(subtree.parent(), subtree.parent_index(), set(NodeType))
-    #     for subtree in t.subtrees(lambda x: not has_type(x) and any(has_type(child, NodeType.ENT) for child in x))
-    # ])
+    tree: Tree, _equiv_subtrees: TREE_CLUSTER, _tau: float, _min_support: int, _metric: METRIC_FUNC
+) -> tuple[Tree, bool]:
+    """
+    Reduces the unlabelled nodes of a tree at the bottom-level
 
-    for subtree in reversed(
-        list(
-            t.subtrees(
-                lambda x: not has_type(x)
-                and any(has_type(child, NodeType.ENT) for child in x)
-                and x.height() < (t.height() - 1)
-            )
-        )
-    ):
+    This function identifies subtrees that do not have a specific type but contain children of type `ENT`.
+    It then repositions these subtrees' children directly under their parent nodes, effectively "flattening"
+    the tree structure at this level.
+
+    :param tree: The tree to perform the reduction on.
+    :param _equiv_subtrees: The set of equivalent subtrees.
+    :param _tau: Threshold for subtree similarity when clustering.
+    :param _min_support: Minimum support of groups.
+    :param _metric: The metric function used to compute similarity between subtrees.
+
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
+    reduced = False
+
+    # Iterate through subtrees in reverse order to ensure bottom-up processing
+    for subtree in tree.subtrees(lambda x: not has_type(x) and x.parent() and x.has_entity_child()):
         parent = subtree.parent()
-
-        if not parent:
-            continue
-
         position = subtree.treeposition()
         label = subtree.label()
-        old = [child.label() for child in parent]
+        old_labels = tuple(child.label() for child in parent)
 
-        new_children = [Tree.convert(child) for child in subtree]
+        # Convert subtree's children into independent nodes
+        new_children = [deepcopy(child) for child in subtree]
 
+        # Put children in the parent at the original subtree position
         parent_pos = subtree.parent_index()
-        parent.pop(parent_pos)
+        parent[parent_pos:parent_pos] = reversed(new_children)
 
-        for child in reversed(new_children):
-            ins_elem(parent, child, parent_pos)
+        new_labels = tuple(child.label() for child in parent)
+        if span := mlflow.get_current_active_span():
+            span.add_event(
+                SpanEvent(
+                    'reduce_bottom',
+                    attributes={
+                        'label': str(label),
+                        'position': position,
+                        'labels.old': old_labels,
+                        'labels.new': new_labels,
+                    },
+                )
+            )
 
-        new = [child.label() for child in parent]
-        print(f'reduce_bottom {label} ({position}) {old} -> {new}', file=trace)
-        return True
+        reduced = True
 
-    return False
+    return tree, reduced
 
 
 def reduce_top(
-    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC, level: int = 2
-) -> bool:
-    # return any([
-    #     reduce(subtree.parent(), subtree.parent_index(), set(NodeType))
-    #     for subtree in t.subtrees(lambda x: not has_type(x) and x.height() == (t.height() - 1))
-    # ])
+    tree: Tree, _equiv_subtrees: TREE_CLUSTER, _tau: float, _min_support: int, _metric: METRIC_FUNC
+) -> tuple[Tree, bool]:
+    """
+    Reduces the unlabelled nodes of a tree at the top-level
+
+    This function identifies subtrees that do not have a specific type but contain children of type `ENT`.
+    It then repositions these subtrees' children directly under their parent nodes, effectively "flattening"
+    the tree structure at this level.
+
+    :param tree: The tree to perform the reduction on.
+    :param _equiv_subtrees: The set of equivalent subtrees.
+    :param _tau: Threshold for subtree similarity when clustering.
+    :param _min_support: Minimum support of groups.
+    :param _metric: The metric function used to compute similarity between subtrees.
+
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
     reduced = False
 
-    for subtree in t.subtrees(lambda x: not has_type(x) and x.height() == (t.height() - level)):
+    for subtree in tree.subtrees(lambda x: not has_type(x) and x.parent()):
         parent = subtree.parent()
         position = subtree.treeposition()
         label = subtree.label()
-        old = [child.label() for child in parent]
+        old_labels = tuple(child.label() for child in parent)
 
-        new_children = [Tree.convert(child) for child in subtree]
+        # Convert subtree's children into independent nodes
+        new_children = [deepcopy(child) for child in subtree]
 
+        # Put children in the parent at the original subtree position
         parent_pos = subtree.parent_index()
-        parent.pop(parent_pos)
+        parent[parent_pos:parent_pos] = reversed(new_children)
 
-        for child in reversed(new_children):
-            ins_elem(parent, child, parent_pos)
+        new_labels = tuple(child.label() for child in parent)
+        if span := mlflow.get_current_active_span():
+            span.add_event(
+                SpanEvent(
+                    'reduce_top',
+                    attributes={
+                        'label': str(label),
+                        'position': position,
+                        'labels.old': old_labels,
+                        'labels.new': new_labels,
+                    },
+                )
+            )
 
-        new = [child.label() for child in parent]
-        print(f'reduce_top {label} ({position}) {old} -> {new}', file=trace)
         reduced = True
 
-    return reduced
+    return tree, reduced
 
 
-def merge_sentences(
-    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
-) -> bool:
-    return reduce_top(t, equiv_subtrees, tau, min_support, metric, 1)
+def _create_group(subtree: Tree, group_index: int) -> None:
+    """
+    Creates a group node from a subtree and inserts it into its parent node.
+
+    :param subtree: The subtree to convert into a group.
+    :param group_index: The index to use for naming the group.
+    """
+    # Convert entity subtrees to trees and create a group node
+    entity_trees = tuple(deepcopy(entity) for entity in subtree.subtrees(lambda node: has_type(node, NodeType.ENT)))
+    label = NodeLabel(NodeType.GROUP, str(group_index))
+    group_node = Tree(label, children=entity_trees)
+
+    if parent_node := subtree.parent():
+        # Replace the original subtree with the new group node in its parent
+        parent_node[subtree.parent_index()] = group_node
+
+    else:
+        subtree.clear()
+        subtree.append(group_node)
 
 
-def _create_group(subtree: ParentedTree, k: int) -> None:
-    entity_trees = (Tree.convert(ent_tree) for ent_tree in subtree.subtrees(lambda x: has_type(x, NodeType.ENT)))
-    group_tree = Tree(NodeLabel(NodeType.GROUP, str(k)), children=entity_trees)
+def find_groups(
+    tree: Tree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> tuple[Tree, bool]:
+    """
+    Finds and creates groups in the tree based on equivalent subtrees.
 
-    group_parent = subtree.parent()
-    group_pos = subtree.parent_index()
-    group_parent.pop(group_pos)
-    ins_elem(group_parent, group_tree, group_pos)
+    :param tree: The tree to perform the reduction on.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
 
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
+    frequent_clusters = filter(lambda cluster: len(cluster) >= min_support, equiv_subtrees)
+    frequent_clusters = sorted(
+        frequent_clusters,
+        key=lambda cluster: sum((subtree.depth() / (len(subtree) or 1)) for subtree in cluster) / len(cluster),
+    )
 
-def find_groups(t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC):
-    frequent_subtrees = filter(lambda x: len(x) >= min_support, equiv_subtrees)
-    frequent_subtrees = sorted(frequent_subtrees, key=lambda x: sum((y.depth() / (len(y) or 1)) for y in x) / len(x))
+    group_created = False
+    for group_index, subtree_cluster in enumerate(frequent_clusters):
+        # Create a group for each subtree in the cluster
+        for subtree in sorted(subtree_cluster, key=lambda x: x.depth()):
+            if (
+                has_type(subtree, NodeType.GROUP)
+                or any(has_type(node, NodeType.GROUP) for node in subtree)
+                or (subtree.parent() and has_type(subtree.parent(), NodeType.GROUP))
+                or len(subtree) < 2
+            ):
+                continue
 
-    for k, min_group in enumerate(tqdm(frequent_subtrees, desc='find groups', leave=False)):
-        # Skip frequent subtrees containing or contain in groups
-        if any(
-            has_type(x, NodeType.GROUP) or has_type(subtree, NodeType.GROUP) for subtree in min_group for x in subtree
-        ):
-            continue
+            _create_group(subtree, group_index)
+            group_created = True
 
-        deque(TASK_POOL(delayed(_create_group)(subtree, k) for subtree in tqdm(min_group, leave=False)), maxlen=0)
+        # if group_created:
+        group_labels = tuple(sorted({label for subtree in subtree_cluster for label in subtree.entity_labels()}))
+        if span := mlflow.get_current_active_span():
+            span.add_event(
+                SpanEvent(
+                    'create_group',
+                    attributes={
+                        'group': group_index,
+                        'num_instance': len(subtree_cluster),
+                        'labels': group_labels,
+                    },
+                )
+            )
 
-    print('=' * 50, file=trace)
-    trace.flush()
+    return tree, group_created
 
 
 def _find_subgroups_inner(
-    subtree: ParentedTree,
-    sub_group: tuple[ParentedTree, ...],
+    subtree: Tree,
+    sub_group: tuple[Tree, ...],
     equiv_subtrees: TREE_CLUSTER,
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
-) -> tuple[ParentedTree, int] | None:
-    if max(Counter(x.label() for x in sub_group).values()) > 1:
-        return None
+) -> tuple[Tree, int] | None:
+    """
+    Attempts to add a new subtree by creating a new `GROUP` for a given `sub_group` of entities, and evaluates its
+    support within the `equiv_subtrees` equivalence class.
 
-    # Copy the tree
-    new_tree = subtree.root().copy(deep=True)
+    :param subtree: The tree structure within which a potential subgroup will be created.
+    :param sub_group: A tuple of `Tree` entities to be grouped into a new `GROUP` node.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+
+    :return: A tuple containing the modified subtree and its support count if the modified subtree
+             meets the minimum support threshold; otherwise, `None`.
+    """
+    # Create a copy of the tree we worked on
+    new_tree = deepcopy(subtree.root())
     new_subtree = new_tree[subtree.treeposition()]
 
-    group_tree = Tree(NodeLabel(NodeType.GROUP), children=[Tree.convert(ent_tree) for ent_tree in sub_group])
+    # Create the new GROUP node
+    group_tree = Tree(NodeLabel(NodeType.GROUP), children=[deepcopy(ent_tree) for ent_tree in sub_group])
 
+    # Removed used entity trees from the subtree
     for ent_tree in sorted(sub_group, key=lambda x: x.parent_index(), reverse=True):
-        del_elem(new_subtree, ent_tree.parent_index())
+        new_subtree.pop(ent_tree.parent_index())
 
-    group_pos = min(ent_tree.parent_index() for ent_tree in sub_group)
-    ins_elem(new_subtree, group_tree, group_pos)
+    # Insert the GROUP node at the position of the earliest entity in sub_group
+    insertion_index = min(ent_tree.parent_index() for ent_tree in sub_group)
+    new_subtree.insert(insertion_index, group_tree)
 
-    # Compute equivalent class
-    equiv_group = get_equiv_of(new_subtree[group_pos], equiv_subtrees, tau=tau, metric=metric)
-    support = len(equiv_group)
+    # Compute the support of the new subtree's GROUP node
+    support = len(get_equiv_of(new_subtree[insertion_index], equiv_subtrees, tau=tau, metric=metric))
 
-    if support <= min_support:
-        return None
-
-    return new_subtree, support
+    # Return the modified subtree and its support count if support exceeds the threshold
+    return (new_subtree, support) if support > min_support else None
 
 
 def find_subgroups(
-    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
-) -> bool:
+    tree: Tree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> tuple[Tree, bool]:
+    """
+    Identifies and create subgroup of entities for each subtree if the support of the newly created subgroup is greater
+    that the support of the subtree.
+
+    :param tree: The tree to perform on.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
     simplified = False
 
-    for subtree in tqdm(
-        list(
-            reversed(
-                list(
-                    t.subtrees(
-                        lambda x: not isinstance(x, str)
-                        and x != t.root()
-                        and x.parent() != t.root()
-                        and not has_type(x)
-                        and any(has_type(y, NodeType.ENT) for y in x)
-                    )
-                )
-            )
+    for subtree in sorted(
+        tree.subtrees(
+            lambda sub: not has_type(sub, {NodeType.ENT, NodeType.REL, NodeType.COLL})
+            and any(has_type(child, NodeType.ENT) for child in sub)
         ),
-        desc='find subgroups',
-        leave=False,
+        key=lambda sub: sub.height(),
     ):
+        # Calculate initial support for the subtree
         group_support = len(get_equiv_of(subtree, equiv_subtrees, tau=tau, metric=metric))
-        entity_trees = list(filter(lambda x: has_type(x, NodeType.ENT), subtree))
-        parent_idx = subtree.parent_index()
+        entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
         parent = subtree.parent()
+        parent_idx = subtree.parent_index()
 
-        k = len(entity_trees)
+        k = min(len(entity_trees), len(subtree) - 1)
 
-        if len(entity_trees) == len(subtree):
-            k -= 1
+        # Recursively creating k-sized groups, decreasing k if necessary
+        while k > 1:
+            # Generate k-sized combinations of entity trees and keep the one with maximum support
+            # nb_combinations = math.comb(len(entity_trees), k)
+            k_groups = combinations(entity_trees, k)
+            k_groups_support = (
+                _find_subgroups_inner(
+                    subtree,
+                    sub_group,
+                    equiv_subtrees=equiv_subtrees,
+                    tau=tau,
+                    min_support=max(group_support, min_support - 1),
+                    metric=metric,
+                )
+                for sub_group in k_groups
+                if all(count == 1 for count in Counter(ent.label() for ent in sub_group).values())
+                # tqdm(
+                #         k_groups,
+                #         leave=False,
+                #         total=nb_combinations,
+                #         desc=f'{subtree.label()} n={len(entity_trees)} k={k}',
+                #     )
+            )
 
-        with tqdm(desc='k-groups', total=k, leave=False) as pbar:
-            while k > 1:
-                pbar.update(k)
+            # Get the subgroup with the maximum support
+            max_subtree: Tree | None
+            max_subtree, max_support = max(
+                filter(lambda result: result is not None, k_groups_support),
+                key=lambda result: result[1],
+                default=(None, None),
+            )
 
-                # Get k-subgroup with maximum support
-                nb_combinations = math.comb(len(entity_trees), k)
-                k_groups = combinations(entity_trees, k)
-                k_groups_support = TASK_POOL(
-                    delayed(_find_subgroups_inner)(
-                        subtree,
-                        sub_group,
-                        equiv_subtrees=equiv_subtrees,
-                        tau=tau,
-                        min_support=group_support,
-                        metric=metric,
+            # No suitable k-group found; decrease k and try again
+            if not max_subtree:
+                k -= 1
+                continue
+
+            # Successfully found a valid k-group, mark the tree as simplified
+            simplified = True
+            if span := mlflow.get_current_active_span():
+                span.add_event(
+                    SpanEvent(
+                        'find_subgroup',
+                        attributes={
+                            'num_instance': max_support,
+                            'labels': [str(ent.label()) for ent in max_subtree],
+                        },
                     )
-                    for sub_group in tqdm(
-                        k_groups,
-                        leave=False,
-                        total=nb_combinations,
-                        desc=f'{subtree.label()} n={len(entity_trees)} k={k}',
-                    )
                 )
 
-                # Compute max merge
-                max_subtree, _ = max(
-                    filter(lambda x: x is not None, k_groups_support), key=lambda x: x[1], default=(None, None)
-                )
+            # Replace subtree with the newly constructed one
+            if parent:
+                subtree = parent[parent_idx] = deepcopy(max_subtree)
 
-                # If no k-group found, we reduce group size
-                if not max_subtree:
-                    k -= 1
-                    continue
+            else:
+                subtree.clear()
+                subtree.extend(deepcopy(max_subtree[:]))
 
-                # A group is found, we need to add the new subgroup tree
-                print(
-                    f'find_subgroups {subtree.treeposition()} k={k}:\t{[x.label() for x in subtree]} -> {[x.label() for x in max_subtree]}',
-                    file=trace,
-                )
-                trace.flush()
-                simplified = True
+            # Update entity trees and reset k for remaining entities
+            entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
+            k = min(len(entity_trees), k)
 
-                # Replace subtree with the newly constructed one
-                parent.pop(parent_idx)
-                parent.insert(parent_idx, ParentedTree.convert(Tree.convert(max_subtree)))
-                update_cache(parent[parent_idx])
-
-                # Remove used entity trees and start over
-                entity_trees = list(filter(lambda x: has_type(x, NodeType.ENT), max_subtree))
-
-                # Keep searching k-group (reduce k if the number of remaining entities is lower than current k)
-                k = min(len(entity_trees), k)
-
-    return simplified
+    return tree, simplified
 
 
 def _merge_groups_inner(
-    subtree: ParentedTree,
-    combined_groups: tuple[ParentedTree, ...],
+    subtree: Tree,
+    combined_groups: tuple[Tree, ...],
     equiv_subtrees: TREE_CLUSTER,
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
-) -> tuple[ParentedTree | None, int]:
+) -> tuple[Tree, int] | None:
+    """
+    Attempts to merge specified `GROUP` and `ENT` nodes within a subtree by replacing them with a single `GROUP` node,
+    given that it meets minimum support and subtree similarity requirements.
+
+    :param subtree:
+    :param combined_groups:
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+
+    :return: A tuple containing the modified subtree and its support count if the modified subtree
+             meets the minimum support threshold; otherwise, `None`.
+    """
     sub_group = []
     max_sub_group_support = 0
-    nb_group = 0
-    group_name: NodeLabel
+    group_count = 0
 
-    for group_ent in combined_groups:
-        if has_type(group_ent, NodeType.ENT):
-            sub_group.append(group_ent)
+    for group_entity in combined_groups:
+        # Directly append single `ENT` nodes
+        if has_type(group_entity, NodeType.ENT):
+            sub_group.append(group_entity)
 
-        elif has_type(group_ent, NodeType.GROUP):
-            if len(group_ent) == 1:  # Group of size 1 are treated as entities
-                sub_group.append(group_ent[0])
+        # Process `GROUP` nodes, treating single-element groups as entities
+        elif has_type(group_entity, NodeType.GROUP):
+            if len(group_entity) == 1:  # Group of size 1 are treated as entities
+                sub_group.append(group_entity[0])
 
             else:
-                nb_group += 1
-                group_name = group_ent.label()
-                sub_group_support = len(get_equiv_of(group_ent, equiv_subtrees, tau=tau, metric=metric))
-                if sub_group_support > max_sub_group_support:
-                    max_sub_group_support = sub_group_support
+                group_count += 1
+                group_support = len(get_equiv_of(group_entity, equiv_subtrees, tau=tau, metric=metric))
+                max_sub_group_support = max(max_sub_group_support, group_support)
+                sub_group.extend(group_entity.entities())
 
-                sub_group.extend(group_ent.entities())
-
-    # Skip invalid groups with duplicate entities
-    # assert all(has_type(ent, NodeType.ENT) for ent in sub_group)
-    if (
-        not all(has_type(ent, NodeType.ENT) for ent in sub_group)
-        or not sub_group
-        or nb_group != 1
-        or max(Counter(x.label() for x in sub_group).values())
-    ):
-        return None, 0
+    # Skip if invalid conditions are met: duplicates entities, empty groups, or no valid subgroups
+    if not sub_group or group_count == 0 or max(Counter(ent.label() for ent in sub_group).values()) > 1:
+        return None
 
     # Copy the tree
-    new_tree = subtree.root().copy(deep=True)
+    new_tree = deepcopy(subtree.root())
     new_subtree = new_tree[subtree.treeposition()]
 
-    # Create new tree version
-    group_tree = Tree(group_name, children=[Tree.convert(ent_tree) for ent_tree in sub_group])
-    group_pos = min(group_ent.parent_index() for group_ent in combined_groups)
+    # Create new `GROUP` node with selected entities
+    group_tree = Tree(NodeLabel(NodeType.GROUP), children=[deepcopy(ent) for ent in sub_group])
 
+    # Removed used entity trees from the subtree
     for group_ent in sorted(combined_groups, key=lambda x: x.parent_index(), reverse=True):
         new_subtree.pop(group_ent.parent_index())
-    ins_elem(new_subtree, group_tree, group_pos)
 
-    # Compute equivalent class
-    equiv_group = get_equiv_of(new_subtree[group_pos], equiv_subtrees, tau=tau, metric=metric)
-    support = len(equiv_group)
+    # Insert the newly created `GROUP` node at the appropriate position
+    group_position = min(group_entity.parent_index() for group_entity in combined_groups)
+    new_subtree.insert(group_position, group_tree)
 
-    if support < min_support:  # or support < max_sub_group_support:
-        return None, 0
+    # Compute support for the newly formed group
+    support = len(get_equiv_of(new_subtree[group_position], equiv_subtrees, tau=tau, metric=metric))
 
-    if equiv_group and has_type(equiv_group[0], NodeType.GROUP):
-        new_subtree[group_pos].set_label(equiv_group[0].label())
-
-    return new_subtree, support
+    # Return the modified subtree and its support count if support exceeds the threshold
+    return (new_subtree, support) if support >= min_support and support >= max_sub_group_support else None
 
 
 def merge_groups(
-    t: ParentedTree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
-) -> bool:
+    tree: Tree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
+) -> tuple[Tree, bool]:
+    """
+    Attempts to add `ENT` to existing `GROUP` within a tree by forming new `GROUP` nodes that does not reduce the
+    support of the given group.
+
+    :param tree: The tree to perform on.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
     simplified = False
 
-    for subtree in tqdm(
-        list(
-            reversed(
-                list(
-                    t.subtrees(
-                        lambda x: not isinstance(x, str)
-                        and x != t.root()
-                        and x.parent() != t.root()
-                        and not has_type(x)
-                        and any(has_type(y, NodeType.GROUP) for y in x)
-                    )
-                )
-            )
-        ),
-        desc='merge groups',
-        leave=False,
+    for subtree in sorted(
+        tree.subtrees(lambda x: not has_type(x) and any(has_type(y, NodeType.GROUP) for y in x)),
+        key=lambda x: x.height(),
     ):
-        # group_support = len(get_equiv_of(subtree, equiv_subtrees, tau=tau, metric=metric))
-        group_ent_trees = list(
-            filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.ENT}) or not has_type(x), subtree)
-        )
+        # Identify `GROUP` and `ENT` nodes in the subtree that could be merged
+        group_ent_trees = tuple(filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.ENT}), subtree))
         parent = subtree.parent()
         parent_idx = subtree.parent_index()
 
-        k = len({get_equiv_of(x, equiv_subtrees, tau=tau, metric=metric) or x.label() for x in group_ent_trees})
         k = len({x.label() for x in group_ent_trees})
-        with tqdm(desc='k-groups', total=k, leave=False) as pbar:
-            while k > 1:
-                pbar.update(k)
 
-                nb_combinations = math.comb(len(group_ent_trees), k)
-                k_groups = combinations(group_ent_trees, k)
+        # Recursively creating k-sized groups, decreasing k if necessary
+        while k > 1:
+            # Get k-subgroup with maximum support
+            # nb_combinations = math.comb(len(group_ent_trees), k)
+            k_groups = combinations(group_ent_trees, k)
+            k_groups_support = (
+                _merge_groups_inner(
+                    subtree,
+                    combined_groups,
+                    equiv_subtrees=equiv_subtrees,
+                    tau=tau,
+                    min_support=min_support,
+                    metric=metric,
+                )
+                for combined_groups in k_groups
+                # tqdm(
+                #     k_groups,
+                #     leave=False,
+                #     total=nb_combinations,
+                #     desc=f'{subtree.label()} n={len(group_ent_trees)} k={k}',
+                # )
+            )
 
-                if not k_groups:
-                    break
+            # Identify the best possible merge based on maximum support
+            max_subtree: Tree | None
+            max_subtree, max_support = max(
+                filter(lambda x: x is not None, k_groups_support),
+                key=lambda x: x[1],
+                default=(None, None),
+            )
 
-                # Get k-subgroup with maximum support
-                k_groups_support = list(
-                    filter(
-                        lambda x: x[0] is not None,
-                        TASK_POOL(
-                            delayed(_merge_groups_inner)(
-                                subtree,
-                                combined_groups,
-                                equiv_subtrees=equiv_subtrees,
-                                tau=tau,
-                                min_support=min_support,
-                                metric=metric,
-                            )
-                            for combined_groups in tqdm(
-                                k_groups,
-                                leave=False,
-                                total=nb_combinations,
-                                desc=f'{subtree.label()} n={len(group_ent_trees)} k={k}',
-                            )
-                        ),
+            # If no valid k-sized group was found, reduce k and continue
+            if max_subtree is None:
+                k -= 1
+                continue
+
+            # A group is found, we need to add the new subgroup tree
+            simplified = True
+            if span := mlflow.get_current_active_span():
+                span.add_event(
+                    SpanEvent(
+                        'group_merged',
+                        attributes={
+                            'num_instance': max_support,
+                            'labels': [str(ent.label()) for ent in max_subtree],
+                        },
                     )
                 )
 
-                # Compute max merge
-                if k_groups_support:
-                    max_subtree, _ = max(
-                        k_groups_support,
-                        key=lambda x: x[1],  # if x[1] >= group_support else float('-inf'),
-                        default=(None, 0),
-                    )
+            # Replace subtree with the newly constructed one
+            if parent:
+                subtree = parent[parent_idx] = deepcopy(max_subtree)
 
-                else:
-                    max_subtree = None
+            else:
+                subtree.clear()
+                subtree.extend(deepcopy(max_subtree[:]))
 
-                # If no k-group found, we reduce group size
-                if max_subtree is None:
-                    k -= 1
-                    continue
+            # Update entity trees and reset k for remaining entities
+            group_ent_trees = tuple(filter(lambda child: has_type(child, {NodeType.GROUP, NodeType.ENT}), subtree))
+            k = min(len(group_ent_trees), k)
 
-                # A group is found, we need to add the new subgroup tree
-                print(
-                    f'merge_groups {subtree.treeposition()} k={k}:\t{[x.label() for x in subtree]} -> {[x.label() for x in max_subtree]}',
-                    file=trace,
-                )
-                trace.flush()
-                simplified = True
-
-                # Replace subtree with the newly constructed one
-                parent.pop(parent_idx)
-                parent.insert(parent_idx, ParentedTree.convert(Tree.convert(max_subtree)))
-                update_cache(parent[parent_idx])
-
-                # Remove used entity trees and start over
-                entity_trees = list(filter(lambda x: has_type(x, NodeType.ENT), max_subtree))
-
-                # Keep searching k-group (reduce k if the number of remaining entities is lower than current k)
-                k = min(len(entity_trees), k)
-
-    return simplified
+    return tree, simplified
 
 
 def find_relationship(
-    t: ParentedTree,
+    tree: Tree,
     equiv_subtrees: TREE_CLUSTER,
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
     naming_only: bool = False,
-) -> bool:
+) -> tuple[Tree, bool]:
+    """
+    Identifies and establishes hierarchical relationships between `GROUP` nodes within a tree structure.
+
+    The function scans for subtrees that contain at least two distinct elements. When a `GROUP` node is found to have a
+    relationship with a collection, that relationship is distributed between the `GROUP` node itself and each individual
+    member of the collection.
+
+    This function can also apply naming-only transformations without structural modifications.
+
+    :param tree: The tree to perform on.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
     simplified = False
 
-    for subtree in tqdm(
-        list(t.subtrees(lambda x: len(x) == 2 and not has_type(x) and x != t.root() and x.parent() != t.root())),
-        desc='find relations',
-        leave=False,
+    # Traverse subtrees, starting with the deepest, containing exactly 2 children
+    for subtree in sorted(
+        tree.subtrees(
+            lambda x: len(x) == 2 and not has_type(x) and any(has_type(y, {NodeType.GROUP, NodeType.COLL}) for y in x)
+        ),
+        key=lambda x: x.depth(),
+        reverse=True,
     ):
         group = None
         collection = None
@@ -444,101 +547,155 @@ def find_relationship(
             and has_type(subtree[1], NodeType.GROUP)
             and subtree[0].label().name != subtree[1].label().name
         ):
+            # Create and set relationship label
             label = sorted([subtree[0].label().name, subtree[1].label().name])
-            subtree.set_label(NodeLabel(NodeType.REL, f'{label[0]} <-> {label[1]}'))
+            subtree.set_label(NodeLabel(NodeType.REL, f'{label[0]}<->{label[1]}'))
+
+            # Log relation creation in MLFlow, if active
+            if span := mlflow.get_current_active_span():
+                span.add_event(
+                    SpanEvent(
+                        'find_relation',
+                        attributes={
+                            'name': f'{label[0]}<->{label[1]}',
+                        },
+                    )
+                )
             continue
 
+        # If only naming relationships, skip further processing
         if naming_only:
             continue
 
-        # Collection <-> Group
-        elif has_type(subtree[0], NodeType.COLL) and has_type(subtree[1], NodeType.GROUP):
-            collection = subtree[0]
-            group = subtree[1]
-
         # Group <-> Collection
-        elif has_type(subtree[0], NodeType.GROUP) and has_type(subtree[1], NodeType.COLL):
-            group = subtree[0]
-            collection = subtree[1]
+        if has_type(subtree[0], NodeType.GROUP) and has_type(subtree[1], NodeType.COLL):
+            group, collection = subtree[0], subtree[1]
 
+        elif has_type(subtree[0], NodeType.COLL) and has_type(subtree[1], NodeType.GROUP):
+            collection, group = subtree[0], subtree[1]
+
+        # If a valid Group-Collection pair is found, create relationships for each
         if group and collection:
             simplified = True
-            print(
-                f'find_relationship {subtree.treeposition()}:\tgroup={group.label()} coll={collection.label()}',
-                file=trace,
-            )
-            trace.flush()
+
+            # Create relationship nodes for each element in the collection
             for coll_group in collection:
-                label = sorted([group.label().name, coll_group.label().name])
-                rel_tree = Tree(NodeLabel(NodeType.REL, f'{label[0]} <-> {label[1]}'), children=[group, coll_group])
-                ins_elem(subtree, rel_tree, 0)
+                label1, label2 = sorted([group.label().name, coll_group.label().name])
+                rel_label = NodeLabel(NodeType.REL, f'{label1}<->{label2}')
+                rel_tree = Tree(rel_label, children=deepcopy([group, coll_group]))
+                subtree.append(rel_tree)  # Add new relationship to subtree
 
-            del_elem(subtree, group.parent_index())
-            del_elem(subtree, collection.parent_index())
+                # Log relation creation in MLFlow, if active
+                if span := mlflow.get_current_active_span():
+                    span.add_event(
+                        SpanEvent(
+                            'find_relation',
+                            attributes={
+                                'name': rel_label.name,
+                            },
+                        )
+                    )
 
-    return simplified
+            subtree.remove(group)
+            subtree.remove(collection)
+
+    return tree, simplified
 
 
 def find_collections(
-    t: ParentedTree,
+    tree: Tree,
     equiv_subtrees: TREE_CLUSTER,
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
     naming_only: bool = False,
-) -> bool:
+) -> tuple[Tree, bool]:
+    """
+    Identifies and groups nodes into collections within a tree.
+
+    This function can also apply naming-only transformations without structural modifications.
+
+    :param tree: The tree to perform on.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+
+    :return: The modified tree and boolean indicating if the tree was reduced.
+    """
     simplified = False
 
-    for subtree in tqdm(list(reversed(list(t.subtrees()))), desc='find collections', leave=False):
-        # Make collection of group / rels or merge collections
+    for subtree in sorted(
+        tree.subtrees(
+            lambda x: not has_type(x) and any(has_type(y, {NodeType.GROUP, NodeType.REL, NodeType.COLL}) for y in x)
+        ),
+        key=lambda x: x.depth(),
+        reverse=True,
+    ):
+        # Naming-only mode: apply labels without modifying tree structure
+        if naming_only:
+            if all(
+                has_type(x, {NodeType.GROUP, NodeType.REL}) and x.label().name == subtree[0].label().name
+                for x in subtree
+            ):
+                subtree.set_label(NodeLabel(NodeType.COLL, subtree[0].label().name))
+            continue
+
+        # Group nodes by shared label and organize them into collection sets for structural modification
         for coll_tree_set in sorted(
             filter(
                 lambda x: len(x) > 1,
                 (
                     sorted(equiv_set, key=lambda x: x.parent_index())
                     for _, equiv_set in groupby(
-                        sorted(
-                            filter(
-                                lambda x: isinstance(x, Tree)
-                                and has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}),
-                                subtree,
-                            ),
-                            key=lambda x: x.label().name,
-                        ),
+                        sorted(filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}), subtree)),
                         key=lambda x: x.label().name,
                     )
                 ),
             ),
             key=lambda x: x[0].parent_index(),
         ):
-            # Add an intermediate collection node. If it is a collection of collection we merge them into one
+            # Prepare a new collection of nodes (merging if some nodes are already collections)
             coll_elements = []
-            for tree in coll_tree_set:
-                if has_type(tree, NodeType.COLL):
-                    simplified = True
-                    coll_elements.extend(tree)
+            for coll_tree in coll_tree_set:
+                if has_type(coll_tree, NodeType.COLL):
+                    simplified = True  # Mark the tree as modified
+                    coll_elements.extend(coll_tree)  # Merge collection elements
                 else:
-                    coll_elements.append(tree)
+                    coll_elements.append(coll_tree)
 
+            # Prepare the collection node
             label = NodeLabel(NodeType.COLL, coll_tree_set[0].label().name)
-            coll_tree = Tree(label, children=[Tree.convert(tree) for tree in coll_elements])
+            children = [deepcopy(tree) for tree in coll_elements]
 
-            if naming_only:
-                continue
+            # Log the creation of a new collection in MLFlow, if active
+            if span := mlflow.get_current_active_span():
+                span.add_event(
+                    SpanEvent(
+                        'find_collection',
+                        attributes={
+                            'name': label.name,
+                            'size': len(children),
+                        },
+                    )
+                )
 
-            if len(subtree) == len(coll_tree_set) and subtree is not t.root():
-                index = subtree.parent_index()
-                subtree = subtree.parent()
-                subtree.pop(index)
+            # If the entire subtree is a single collection, update its label and structure directly
+            if len(subtree) == len(coll_tree_set):
+                subtree.set_label(label)
+                subtree.clear()
+                subtree.extend(children)
 
             else:
                 simplified = True
-                print(f'find_collections {subtree.treeposition()}:\t{[x.label() for x in coll_tree_set]}', file=trace)
-                trace.flush()
                 index = coll_tree_set[0].parent_index()
-                for tree in coll_tree_set:
-                    subtree.pop(tree.parent_index())
 
-            ins_elem(subtree, coll_tree, index)
+                # Remove nodes of the current collection set from the subtree
+                for coll_tree in coll_tree_set:
+                    subtree.pop(coll_tree.parent_index(), recursive=False)
 
-    return simplified
+                # Insert the new collection node at the appropriate index
+                coll_tree = Tree(label, children=children)
+                subtree.insert(index, coll_tree)
+
+    return tree, simplified

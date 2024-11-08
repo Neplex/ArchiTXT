@@ -10,7 +10,7 @@ from tqdm import tqdm
 from unidecode import unidecode
 
 from architxt.model import AnnotatedSentence, Entity, NodeType, Relation
-from architxt.tree import ParentedTree, enrich_tree, fix_all_coord, reduce_all
+from architxt.tree import Tree, enrich_tree, fix_all_coord, reduce_all
 
 
 def split_sentences(text: str) -> list[str]:
@@ -35,7 +35,7 @@ def convert_brat_file(
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-) -> Generator[AnnotatedSentence]:
+) -> Generator[AnnotatedSentence, None, None]:
     """
     Converts a BratFile object into annotated sentences, filtering and mapping entities and relations as specified.
 
@@ -281,7 +281,7 @@ def get_sentence_from_disk(
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-) -> Generator[AnnotatedSentence]:
+) -> Generator[AnnotatedSentence, None, None]:
     dataset: BratDataset = BratDataset.from_directory(path.absolute())
     brat_file: BratFile
 
@@ -300,18 +300,18 @@ def get_sentence_from_disk(
 
 def get_trees(
     sentences: Iterable[AnnotatedSentence], *, corenlp_url: str, language: str
-) -> Generator[tuple[AnnotatedSentence, ParentedTree], None, None]:
+) -> Generator[tuple[AnnotatedSentence, Tree], None, None]:
     """
     Parses a collection of sentences into syntax trees using CoreNLP.
 
     This function takes an iterable of sentences and processes each sentence through a CoreNLP server to obtain its syntax tree.
-    The tree is then converted into a `ParentedTree` from NLTK.
+    The tree is then converted into a tree from NLTK.
 
     :param sentences: An iterable collection of `AnnotatedSentence` objects.
     :param corenlp_url: The URL of the CoreNLP server.
     :param language: The language to use for parsing.
 
-    :yields: A tuple of the original `AnnotatedSentence` and its corresponding `ParentedTree`.
+    :yields: A tuple of the original `AnnotatedSentence` and its corresponding tree.
 
     Example:
         .. code-block:: python
@@ -332,8 +332,8 @@ def get_trees(
             for rooted_tree in nltk_parser.parse_text(sentence.txt, properties=properties):
                 # Each rooted_tree may contain multiple sentence subtrees; iterate over each
                 for sent_tree in rooted_tree:
-                    # Convert each subtree into a ParentedTree and yield along with the original sentence
-                    yield sentence, ParentedTree.convert(sent_tree)
+                    # Convert each subtree into a tree and yield along with the original sentence
+                    yield sentence, Tree.convert(sent_tree)
 
         except requests.exceptions.ConnectionError as error:
             # Handle connection issues with the CoreNLP server
@@ -345,7 +345,7 @@ def get_enriched_forest(
     *,
     corenlp_url: str,
     language: str,
-) -> Generator[ParentedTree, None, None]:
+) -> Generator[Tree, None, None]:
     """
     Enriches and processes syntax trees for a given collection of sentences.
 
@@ -356,7 +356,7 @@ def get_enriched_forest(
     :param corenlp_url: The URL of the CoreNLP server.
     :param language: The language to use for parsing.
 
-    :yields: An enriched `ParentedTree` object for each sentence.
+    :yields: An enriched tree object for each sentence.
 
     Example:
         .. code-block:: python
