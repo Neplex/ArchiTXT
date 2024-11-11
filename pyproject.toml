@@ -35,7 +35,7 @@ levenshtein = "*"
 more-itertools = "*"
 bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
 mlflow = "^2.6.0"
-typer = "^0.12.0"
+typer = "^0.13.0"
 anyio = "^4.6.0"
 ray = {extras = ["default"], version = "^2.30.0"}
 streamlit = "^1.39.0"
