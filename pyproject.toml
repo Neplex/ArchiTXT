@@ -30,7 +30,7 @@ chatette = ">=1.6.2"
 unidecode = "*"
 pytokenizations = "~0.8.0"
 requests = "*"
-numpy = "^1.26.0"
+numpy = "^2.1.3"
 levenshtein = "*"
 more-itertools = "*"
 bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
