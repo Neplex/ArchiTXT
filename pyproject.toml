@@ -51,7 +51,7 @@ pre-commit = "^3.8.0"
 
 pylint = "^3.3"
 mypy = ">=0.910,<1.14"
-ruff = "^0.6.7"
+ruff = "^0.7.3"
 
 pandas-stubs = "*"
 types-tqdm = "*"
