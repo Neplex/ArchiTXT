@@ -136,18 +136,12 @@ def _create_group(subtree: Tree, group_index: int) -> None:
     :param subtree: The subtree to convert into a group.
     :param group_index: The index to use for naming the group.
     """
-    # Convert entity subtrees to trees and create a group node
-    entity_trees = tuple(deepcopy(entity) for entity in subtree.subtrees(lambda node: has_type(node, NodeType.ENT)))
     label = NodeLabel(NodeType.GROUP, str(group_index))
-    group_node = Tree(label, children=entity_trees)
+    subtree.set_label(label)
 
-    if parent_node := subtree.parent():
-        # Replace the original subtree with the new group node in its parent
-        parent_node[subtree.parent_index()] = group_node
-
-    else:
-        subtree.clear()
-        subtree.append(group_node)
+    new_children = [deepcopy(entity) for entity in subtree.entities()]
+    subtree.clear()
+    subtree.extend(new_children)
 
 
 def find_groups(
@@ -164,16 +158,21 @@ def find_groups(
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """
-    frequent_clusters = filter(lambda cluster: len(cluster) >= min_support, equiv_subtrees)
+    frequent_clusters = filter(lambda cluster: len(cluster) > min_support, equiv_subtrees)
     frequent_clusters = sorted(
         frequent_clusters,
-        key=lambda cluster: sum((subtree.depth() / (len(subtree) or 1)) for subtree in cluster) / len(cluster),
+        key=lambda cluster: (
+            len(cluster),
+            sum(len(st.entities()) for st in cluster) / len(cluster),
+            sum(st.depth() for st in cluster) / len(cluster),
+        ),
+        reverse=True,
     )
 
     group_created = False
     for group_index, subtree_cluster in enumerate(frequent_clusters):
         # Create a group for each subtree in the cluster
-        for subtree in sorted(subtree_cluster, key=lambda x: x.depth()):
+        for subtree in subtree_cluster:
             if (
                 any(has_type(node, NodeType.GROUP) for node in subtree)
                 or (subtree.parent() and has_type(subtree.parent(), NodeType.GROUP))
@@ -238,11 +237,20 @@ def _find_subgroups_inner(
     insertion_index = min(ent_tree.parent_index() for ent_tree in sub_group)
     new_subtree.insert(insertion_index, group_tree)
 
+    # If the subtree was a Group, it is not a valid one anymore and should not keep is label
+    if has_type(subtree, NodeType.GROUP):
+        new_subtree.set_label('')
+
     # Compute the support of the new subtree's GROUP node
-    support = len(get_equiv_of(new_subtree[insertion_index], equiv_subtrees, tau=tau, metric=metric))
+    equiv = get_equiv_of(new_subtree[insertion_index], equiv_subtrees, tau=tau, metric=metric)
+    support = len(equiv)
 
     # Return the modified subtree and its support count if support exceeds the threshold
-    return (new_subtree, support) if support > min_support else None
+    if support > min_support:
+        new_subtree[insertion_index].set_label(equiv[0].label())
+        return new_subtree, support
+
+    return None
 
 
 def find_subgroups(
@@ -404,10 +412,15 @@ def _merge_groups_inner(
     new_subtree.insert(group_position, group_tree)
 
     # Compute support for the newly formed group
-    support = len(get_equiv_of(new_subtree[group_position], equiv_subtrees, tau=tau, metric=metric))
+    equiv = get_equiv_of(new_subtree[group_position], equiv_subtrees, tau=tau, metric=metric)
+    support = len(equiv)
 
     # Return the modified subtree and its support count if support exceeds the threshold
-    return (new_subtree, support) if support >= min_support and support >= max_sub_group_support else None
+    if support > min_support and support >= max_sub_group_support:
+        new_subtree[group_position].set_label(equiv[0].label())
+        return new_subtree, support
+
+    return None
 
 
 def merge_groups(
