@@ -26,21 +26,37 @@ repository.
 ```sh
 $ architxt --help
 
- Usage: architxt [OPTIONS] CORPUS_PATH
+ Usage: architxt [OPTIONS] COMMAND [ARGS]...
 
-╭─ Arguments ──────────────────────────────────────────────────────────╮
-│ *    corpus_path      PATH  [default: None] [required]               │
-╰──────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────╮
-│ --tau                  FLOAT    [default: 0.5]                       │
-│ --epoch                INTEGER  [default: 2]                         │
-│ --min-support          INTEGER  [default: 10]                        │
-│ --corenlp-url          TEXT     [default: http://localhost:9000]     │
-│ --gen-instances        INTEGER  [default: 0]                         │
-│ --language             TEXT     [default: French]                    │
-│ --help                          Show this message and exit.          │
-╰──────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion          Install completion for the current shell.                                        │
+│ --show-completion             Show completion for the current shell, to copy it or customize the installation. │
+│ --help                        Show this message and exit.                                                      │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ run                                                                                                            │
+│ ui                                                                                                             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
+```sh
+$ architxt run --help
+
+ Usage: architxt run [OPTIONS] CORPUS_PATH
+
+╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    corpus_path      PATH  [default: None] [required]                                                         │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --tau                            FLOAT    [default: 0.5]                                                       │
+│ --epoch                          INTEGER  [default: 100]                                                       │
+│ --min-support                    INTEGER  [default: 5]                                                         │
+│ --corenlp-url                    TEXT     [default: http://localhost:9000]                                     │
+│ --gen-instances                  INTEGER  [default: 0]                                                         │
+│ --language                       TEXT     [default: French]                                                    │
+│ --debug            --no-debug             [default: no-debug]                                                  │
+│ --help                                    Show this message and exit.                                          │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 To deploy the CoreNLP server using the source repository, you can use Docker Compose with the following command:
 
