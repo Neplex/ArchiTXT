@@ -25,7 +25,7 @@ OPERATION = Callable[[Tree, TREE_CLUSTER, float, int, METRIC_FUNC], tuple[Tree, 
 
 
 def reduce_bottom(
-    tree: Tree, _equiv_subtrees: TREE_CLUSTER, _tau: float, _min_support: int, _metric: METRIC_FUNC
+    tree: Tree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
 ) -> tuple[Tree, bool]:
     """
     Reduces the unlabelled nodes of a tree at the bottom-level
@@ -35,10 +35,10 @@ def reduce_bottom(
     the tree structure at this level.
 
     :param tree: The tree to perform the reduction on.
-    :param _equiv_subtrees: The set of equivalent subtrees.
-    :param _tau: Threshold for subtree similarity when clustering.
-    :param _min_support: Minimum support of groups.
-    :param _metric: The metric function used to compute similarity between subtrees.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """
@@ -78,7 +78,7 @@ def reduce_bottom(
 
 
 def reduce_top(
-    tree: Tree, _equiv_subtrees: TREE_CLUSTER, _tau: float, _min_support: int, _metric: METRIC_FUNC
+    tree: Tree, equiv_subtrees: TREE_CLUSTER, tau: float, min_support: int, metric: METRIC_FUNC
 ) -> tuple[Tree, bool]:
     """
     Reduces the unlabelled nodes of a tree at the top-level
@@ -88,10 +88,10 @@ def reduce_top(
     the tree structure at this level.
 
     :param tree: The tree to perform the reduction on.
-    :param _equiv_subtrees: The set of equivalent subtrees.
-    :param _tau: Threshold for subtree similarity when clustering.
-    :param _min_support: Minimum support of groups.
-    :param _metric: The metric function used to compute similarity between subtrees.
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """
@@ -175,8 +175,7 @@ def find_groups(
         # Create a group for each subtree in the cluster
         for subtree in sorted(subtree_cluster, key=lambda x: x.depth()):
             if (
-                has_type(subtree, NodeType.GROUP)
-                or any(has_type(node, NodeType.GROUP) for node in subtree)
+                any(has_type(node, NodeType.GROUP) for node in subtree)
                 or (subtree.parent() and has_type(subtree.parent(), NodeType.GROUP))
                 or len(subtree) < 2
             ):
@@ -509,6 +508,7 @@ def find_relationship(
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
+    *,
     naming_only: bool = False,
 ) -> tuple[Tree, bool]:
     """
@@ -525,6 +525,7 @@ def find_relationship(
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
+    :param naming_only: If True, the operation only name valid relations without rewriting the tree.
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """
@@ -608,6 +609,7 @@ def find_collections(
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
+    *,
     naming_only: bool = False,
 ) -> tuple[Tree, bool]:
     """
@@ -620,6 +622,7 @@ def find_collections(
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
+    :param naming_only: If True, the operation only name valid collections without rewriting the tree.
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """

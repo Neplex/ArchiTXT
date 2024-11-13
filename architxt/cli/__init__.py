@@ -10,9 +10,9 @@ from ray import cloudpickle
 
 from architxt.algo import rewrite
 from architxt.generator import gen_instance
-from architxt.model import NodeLabel, NodeType
+from architxt.model import NodeType
 from architxt.nlp import get_enriched_forest, get_sentence_from_disk
-from architxt.tree import Tree
+from architxt.tree import Tree, has_type
 
 
 def cli_run(
@@ -20,7 +20,7 @@ def cli_run(
     *,
     tau: float = 0.5,
     epoch: int = 100,
-    min_support: int = 10,
+    min_support: int = 5,
     corenlp_url: str = 'http://localhost:9000',
     gen_instances: int = 0,
     language: str = 'French',
@@ -95,21 +95,19 @@ def cli_run(
     productions = []
     schema = {}
     for prod in final_tree.productions():
-        if prod.is_nonlexical():
-            if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type == NodeType.COLL:
+        if prod.is_nonlexical() and has_type(prod):
+            if has_type(prod, NodeType.COLL):
                 productions.append(Production(prod.lhs(), [prod.rhs()[0]]))
                 schema[prod.lhs()] = [str(prod.rhs()[0]) + '*']
+
             else:
                 productions.append(Production(prod.lhs(), sorted(prod.rhs())))
 
-                if isinstance(prod.lhs().symbol(), NodeLabel) and prod.lhs().symbol().type in (
-                    NodeType.GROUP,
-                    NodeType.REL,
-                ):
-                    old = set(schema[prod.lhs()]) if prod.lhs() in schema else set()
-                    new = {str(x) for x in prod.rhs()}
+                # Schema
+                old = set(schema[prod.lhs()]) if prod.lhs() in schema else set()
+                new = {str(x) for x in prod.rhs()}
 
-                    schema[prod.lhs()] = sorted(old | new)
+                schema[prod.lhs()] = sorted(old | new)
 
     schema_str = "\n".join(
         f"{key} -> {', '.join(value)}"
@@ -122,8 +120,7 @@ def cli_run(
     print('\n' + '=' * 10 + '\n')
 
     for production, count in Counter(productions).most_common():
-        if production.is_nonlexical():
-            print(f'[{count}] {production}')
+        print(f'[{count}] {production}')
 
 
 def cli_ui() -> None:

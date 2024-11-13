@@ -93,7 +93,13 @@ def _rewrite_step(
             _log_clusters(iteration, equiv_subtrees)
 
     with mlflow.start_span('find_groups'):
-        operations.find_groups(Tree('', []), equiv_subtrees, tau=tau, min_support=min_support, metric=metric)
+        operations.find_groups(
+            Tree('', []),
+            equiv_subtrees=equiv_subtrees,
+            tau=tau,
+            min_support=min_support,
+            metric=metric,
+        )
 
     has_simplified = False
     for op_id, edit_op in enumerate(edit_ops):
