@@ -98,7 +98,7 @@ class Tree(ParentedTree):
     @cache
     def group_instances(self, group_name: str) -> pd.DataFrame:
         """
-        Returns a DataFrame of all instances of a specified group within the tree.
+        Returns a DataFrame containing all instances of a specified group within the tree.
 
         Each row in the DataFrame represents an instance of the group, and each column represents an entity in that group, with the value being a concatenated string of that entity's leaves.
 
@@ -221,7 +221,7 @@ class Tree(ParentedTree):
     def merge(self, tree: 'Tree') -> 'Tree':
         """
         Merge two trees into one.
-        The root of both tree become one while maintaining the level of each subtree.
+        The root of both trees becomes one while maintaining the level of each subtree.
         """
         return type(self)('S', [*self, *tree])
 
@@ -328,7 +328,7 @@ def has_type(t: Tree | Production | NodeLabel, types: set[NodeType | str] | Node
     """
     assert t is not None
 
-    # Normalize types input
+    # Normalize type input
     if types is None:
         types = set(NodeType)
     elif not isinstance(types, set):
@@ -352,8 +352,8 @@ def has_type(t: Tree | Production | NodeLabel, types: set[NodeType | str] | Node
 def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bool:
     """
     Reduces a subtree within a tree at the specified position `pos`. The reduction occurs only
-    if the subtree at `pos` has exactly one child, or if it don't match a specific set of node types.
-    If the subtree  can be reduced, its children are lifted into the parent node at `pos`.
+    if the subtree at `pos` has exactly one child, or if it does not match a specific set of node types.
+    If the subtree can be reduced, its children are lifted into the parent node at `pos`.
 
     :param tree: The tree in which the reduction will take place.
     :param pos: The index of the subtree to attempt to reduce.
@@ -381,7 +381,7 @@ def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bo
     ):
         return False
 
-    # Replace original subtree by its children into the parent at `pos`
+    # Replace the original subtree by its children into the parent at `pos`
     tree[pos : pos + 1] = [deepcopy(child) for child in tree[pos]]
 
     return True
@@ -460,7 +460,7 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     conj = Tree('CONJ', children=[left, *right])  # CONJ should include the left NP and the conjuncts
 
     # Insert the new structure back into the tree
-    # If children remains on the right of the coordination, we keep the existing level
+    # If children remain on the right of the coordination, we keep the existing level
     new_tree = (
         Tree(tree[pos].label(), children=[conj] + [Tree.convert(child) for child in remaining_children])
         if (remaining_children := tree[pos][coord_index + 1 :])
@@ -741,7 +741,7 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
     for entity_tree in reversed(entities_tree):
         unnest_ent(entity_tree.parent(), entity_tree.parent_index())
 
-    # Currently, the relations part is commented out, but can be enabled when relations are processed.
+    # Currently, the relation part is commented out, but can be enabled when relations are processed.
     for relation in relations:
         tree_rel = TreeRel((), (), relation.name)
         ins_rel(tree, tree_rel)

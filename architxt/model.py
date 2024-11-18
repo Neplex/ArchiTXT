@@ -63,7 +63,7 @@ class TreeEntity:
 
     @property
     def root_pos(self) -> tuple[int, ...]:
-        """Get the position that cover every position of the entity."""
+        """Get the position that covers every position of the entity."""
         prefix = commonprefix(self.positions)
         return prefix if prefix != self.positions[0] else prefix[:-1]
 

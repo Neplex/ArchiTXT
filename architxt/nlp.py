@@ -15,10 +15,11 @@ from architxt.tree import Tree, enrich_tree, fix_all_coord, reduce_all
 
 def split_sentences(text: str) -> list[str]:
     """
-    Remove unicode Splits the input text into sentences based on line breaks as it is common for brat annotation formats.
+    Remove Unicode Splits the input text into sentences based on the line breaks
+    as it is common for brat annotation formats.
 
     :param text: The input text to be split into sentences.
-    :return: A list of sentences split by line breaks with unicode removed.
+    :return: A list of sentences split by line breaks with Unicode removed.
 
     Example:
     >>> split_sentences("This is à test\\nAnothér-test here")
@@ -304,7 +305,8 @@ def get_trees(
     """
     Parses a collection of sentences into syntax trees using CoreNLP.
 
-    This function takes an iterable of sentences and processes each sentence through a CoreNLP server to obtain its syntax tree.
+    This function takes an iterable of sentences and processes each
+    sentence through a CoreNLP server to get its syntax tree.
     The tree is then converted into a tree from NLTK.
 
     :param sentences: An iterable collection of `AnnotatedSentence` objects.
@@ -380,6 +382,6 @@ def get_enriched_forest(
         # Reduce the tree structure removing unneeded nodes
         reduce_all(tree, set(NodeType))
 
-        # Don't yield empty tree
+        # Don't yield an empty tree
         if len(tree):
             yield tree

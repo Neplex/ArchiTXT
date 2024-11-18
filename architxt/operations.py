@@ -237,7 +237,7 @@ def _find_subgroups_inner(
     insertion_index = min(ent_tree.parent_index() for ent_tree in sub_group)
     new_subtree.insert(insertion_index, group_tree)
 
-    # If the subtree was a Group, it is not a valid one anymore and should not keep is label
+    # If the subtree was a Group, it is not valid anymore and should not keep is label
     if has_type(subtree, NodeType.GROUP):
         new_subtree.set_label('')
 
@@ -245,7 +245,7 @@ def _find_subgroups_inner(
     equiv = get_equiv_of(new_subtree[insertion_index], equiv_subtrees, tau=tau, metric=metric)
     support = len(equiv)
 
-    # Return the modified subtree and its support count if support exceeds the threshold
+    # Return the modified subtree and its support counts if support exceeds the threshold
     if support > min_support:
         new_subtree[insertion_index].set_label(equiv[0].label())
         return new_subtree, support
@@ -383,7 +383,7 @@ def _merge_groups_inner(
 
         # Process `GROUP` nodes, treating single-element groups as entities
         elif has_type(group_entity, NodeType.GROUP):
-            if len(group_entity) == 1:  # Group of size 1 are treated as entities
+            if len(group_entity) == 1:  # Group of sizes 1 are treated as entities
                 sub_group.append(group_entity[0])
 
             else:
@@ -415,7 +415,7 @@ def _merge_groups_inner(
     equiv = get_equiv_of(new_subtree[group_position], equiv_subtrees, tau=tau, metric=metric)
     support = len(equiv)
 
-    # Return the modified subtree and its support count if support exceeds the threshold
+    # Return the modified subtree and its support counts if support exceeds the threshold
     if support > min_support and support >= max_sub_group_support:
         new_subtree[group_position].set_label(equiv[0].label())
         return new_subtree, support
@@ -527,9 +527,9 @@ def find_relationship(
     """
     Identifies and establishes hierarchical relationships between `GROUP` nodes within a tree structure.
 
-    The function scans for subtrees that contain at least two distinct elements. When a `GROUP` node is found to have a
-    relationship with a collection, that relationship is distributed between the `GROUP` node itself and each individual
-    member of the collection.
+    The function scans for subtrees that contain at least two distinct elements.
+    When a `GROUP` node is found to have a relationship with a collection, that relationship
+    is distributed between the `GROUP` node itself and each member of the collection.
 
     This function can also apply naming-only transformations without structural modifications.
 
@@ -538,7 +538,7 @@ def find_relationship(
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
-    :param naming_only: If True, the operation only name valid relations without rewriting the tree.
+    :param naming_only: If True, the operation only names valid relations without rewriting the tree.
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """
@@ -635,7 +635,7 @@ def find_collections(
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
-    :param naming_only: If True, the operation only name valid collections without rewriting the tree.
+    :param naming_only: If True, the operation only names valid collections without rewriting the tree.
 
     :return: The modified tree and boolean indicating if the tree was reduced.
     """

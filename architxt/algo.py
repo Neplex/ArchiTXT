@@ -181,7 +181,7 @@ def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = 
     Logs various metrics related to a forest of trees and equivalent subtrees.
 
     This function calculates and logs the metrics that provide insights into the forest's structure, including counts of
-    productions, labeled and unlabeled nodes, and entity/group/collection/relation statistics.
+    production rules, labeled and unlabeled nodes, and entity/group/collection/relation statistics.
 
     :param iteration: The current iteration number for logging.
     :param forest: A forest of tree objects to analyze.

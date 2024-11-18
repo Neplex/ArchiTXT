@@ -18,9 +18,9 @@ from architxt.tree import Tree, has_type
 def cli_run(
     corpus_path: Path,
     *,
-    tau: float = 0.5,
+    tau: float = 0.7,
     epoch: int = 100,
-    min_support: int = 5,
+    min_support: int = 20,
     corenlp_url: str = 'http://localhost:9000',
     gen_instances: int = 0,
     language: str = 'French',
@@ -80,7 +80,7 @@ def cli_run(
         )
         forest.extend(gen_trees)
 
-    # Rewrite tree
+    # Rewrite the trees
     forest = rewrite(
         forest,
         tau=tau,

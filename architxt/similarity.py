@@ -23,8 +23,7 @@ TREE_CLUSTER = set[tuple[Tree, ...]]
 
 def jaccard(x: set[str], y: set[str]) -> float:
     """
-    Computes the Jaccard similarity between two sequences (lists of strings). Unlike the original Jaccard similarity
-    for sets, this function accounts for the frequency of elements, making it suitable for lists with repeated items.
+    Jaccard similarity
 
     :param x: The first sequence of strings.
     :param y: The second sequence of strings.
@@ -51,14 +50,14 @@ def jaccard(x: set[str], y: set[str]) -> float:
 
 def levenshtein(x: set[str], y: set[str]) -> float:
     """
-    Levenshtein similarity for list
+    Levenshtein similarity
     """
     return levenshtein_ratio(sorted(x), sorted(y))
 
 
 def jaro(x: set[str], y: set[str]) -> float:
     """
-    Jaro winkler similarity for list
+    Jaro winkler similarity
     """
     return jaro_winkler(sorted(x), sorted(y))
 
@@ -97,7 +96,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
         x_labels = x.entity_labels()
         y_labels = y.entity_labels()
 
-        # If no common entity labels, return 0 similarity early
+        # If no common entity labels, return similarity 0 early
         if x_labels.isdisjoint(y_labels):
             return 0
 
@@ -147,7 +146,7 @@ def compute_distance(
 
     :param batch: A, iterable of index and tree position pair to compute.
     :param metric: A callable similarity metric to compute the similarity between the two trees.
-    :return: The computed distance as an unsigned short integer, representing the scaled  and inverted similarity score.
+    :return: The computed distance as an unsigned short integer, representing the scaled and inverted similarity score.
     """
     distances_idx = []
 
@@ -189,7 +188,7 @@ def compute_dist_matrix(
     trees = list({subtree.root() for subtree in subtrees})
     trees_refs = [ray.put(tree) for tree in trees]
 
-    # Prepare the pair combinations, we skip tree that are not close enough
+    # Prepare the pair combinations, we skip trees that are not close enough
     pair_combinations = (
         (idx, trees_refs[trees.index(x.root())], x.treeposition(), trees_refs[trees.index(y.root())], y.treeposition())
         for idx, (x, y) in enumerate(combinations(subtrees, 2))
@@ -266,7 +265,7 @@ def equiv_cluster(trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_ME
     """
     Clusters subtrees of a given tree based on their similarity. The clusters are created by applying
     a distance threshold `tau` to the linkage matrix, which is derived from pairwise subtree similarity calculations.
-    Subtrees that are sufficiently similar (based on `tau` and the `metric`) are grouped into clusters. Each cluster
+    Subtrees that are similar enough (based on `tau` and the `metric`) are grouped into clusters. Each cluster
     is represented as a tuple of subtrees.
 
     :param trees: The forest from which to extract and cluster subtrees.
@@ -310,6 +309,7 @@ def get_equiv_of(
     metric and threshold `tau`.
 
     :param t: The tree from which to extract and cluster subtrees.
+    :param equiv_subtrees: The set of equivalent subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
