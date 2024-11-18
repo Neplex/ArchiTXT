@@ -3,7 +3,7 @@ from collections import Counter
 from collections.abc import Collection, Iterable
 from copy import deepcopy
 from functools import cache
-from typing import TypeAlias
+from typing import Any, TypeAlias, overload
 
 import pandas as pd
 from nltk.grammar import Production
@@ -239,11 +239,17 @@ class Tree(ParentedTree):
         if parent := self.parent():
             parent.__reset_cache()
 
-    def __setitem__(self, pos: TREE_POS | slice, subtree: 'Tree'):
+    @overload
+    def __setitem__(self, pos: TREE_POS, subtree: 'Tree | str'): ...
+
+    @overload
+    def __setitem__(self, pos: slice, subtree: 'list[Tree | str]'): ...
+
+    def __setitem__(self, pos: TREE_POS | slice, subtree: 'list[Tree | str] | Tree | str'):
         super().__setitem__(pos, subtree)
         self.__reset_cache()
 
-    def __delitem__(self, pos: TREE_POS | slice):
+    def __delitem__(self, pos: TREE_POS | slice) -> None:
         super().__delitem__(pos)
         self.__reset_cache()
 
@@ -251,26 +257,26 @@ class Tree(ParentedTree):
         super().set_label(label)
         self.__reset_cache()
 
-    def append(self, child: 'Tree') -> None:
+    def append(self, child: 'Tree | str') -> None:
         super().append(child)
         self.__reset_cache()
 
-    def extend(self, children: 'Iterable[Tree]') -> None:
+    def extend(self, children: 'Iterable[Tree | str]') -> None:
         super().extend(children)
         self.__reset_cache()
 
-    def remove(self, child: 'Tree', recursive: bool = True) -> None:
+    def remove(self, child: 'Tree | str', recursive: bool = True) -> None:
         super().remove(child)
         self.__reset_cache()
 
         if recursive and len(self) == 0 and (parent := self._parent) is not None:
             parent.remove(self)
 
-    def insert(self, pos: int, child: 'Tree') -> None:
+    def insert(self, pos: int, child: 'Tree | str') -> None:
         super().insert(pos, child)
         self.__reset_cache()
 
-    def pop(self, pos: int = -1, recursive: bool = True) -> 'Tree':
+    def pop(self, pos: int = -1, recursive: bool = True) -> 'Tree | str':
         """
         Deletes an element from the treeat the specified position `pos`.
         If the parent tree becomes empty after the deletion, recursively deletes the parent node.
@@ -305,7 +311,7 @@ class Tree(ParentedTree):
 Forest: TypeAlias = Collection[Tree]
 
 
-def has_type(t: Tree | Production | NodeLabel, types: set[NodeType | str] | NodeType | str | None = None) -> bool:
+def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool:
     """
     Check if the given tree object has the specified type(s).
 

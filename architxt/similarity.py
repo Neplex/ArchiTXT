@@ -98,7 +98,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
 
         # If no common entity labels, return similarity 0 early
         if x_labels.isdisjoint(y_labels):
-            return 0
+            return 0.0
 
         # Calculate similarity for current level and accumulate weighted sum
         weight = 1 / distance
