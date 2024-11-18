@@ -58,7 +58,7 @@ types-tqdm = "*"
 types-requests = "*"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.2"
+pytest = "^8.3"
 pytest-cov = "*"
 pytest-xdist = "*"
 pytest-mock = "*"
