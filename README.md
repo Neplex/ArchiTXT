@@ -57,6 +57,7 @@ $ architxt run --help
 │ --debug            --no-debug             [default: no-debug]                                                  │
 │ --help                                    Show this message and exit.                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
 
 To deploy the CoreNLP server using the source repository, you can use Docker Compose with the following command:
 
