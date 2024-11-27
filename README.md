@@ -28,14 +28,17 @@ $ architxt --help
 
  Usage: architxt [OPTIONS] COMMAND [ARGS]...
 
+ ArchiTXT is a tool for structuring textual data into a valid database model.
+ It is guided by a meta-grammar and uses an iterative process of tree rewriting.
+
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --install-completion          Install completion for the current shell.                                        │
 │ --show-completion             Show completion for the current shell, to copy it or customize the installation. │
 │ --help                        Show this message and exit.                                                      │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ run                                                                                                            │
-│ ui                                                                                                             │
+│ run   Extract a database schema form a corpus.                                                                 │
+│ ui    Launch the web-based UI.                                                                                 │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -44,17 +47,19 @@ $ architxt run --help
 
  Usage: architxt run [OPTIONS] CORPUS_PATH
 
+ Extract a database schema form a corpus.
+
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    corpus_path      PATH  [default: None] [required]                                                         │
+│ *    corpus_path      PATH  Path to the input corpus. [default: None] [required]                               │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --tau                            FLOAT    [default: 0.5]                                                       │
-│ --epoch                          INTEGER  [default: 100]                                                       │
-│ --min-support                    INTEGER  [default: 5]                                                         │
-│ --corenlp-url                    TEXT     [default: http://localhost:9000]                                     │
-│ --gen-instances                  INTEGER  [default: 0]                                                         │
-│ --language                       TEXT     [default: French]                                                    │
-│ --debug            --no-debug             [default: no-debug]                                                  │
+│ --tau                            FLOAT    The similarity threshold. [default: 0.7]                             │
+│ --epoch                          INTEGER  Number of iteration for tree rewriting. [default: 100]               │
+│ --min-support                    INTEGER  Minimum support for tree patterns. [default: 20]                     │
+│ --corenlp-url                    TEXT     URL of the CoreNLP server. [default: http://localhost:9000]          │
+│ --gen-instances                  INTEGER  Number of synthetic instances to generate. [default: 0]              │
+│ --language                       TEXT     Language of the input corpus. [default: French]                      │
+│ --debug            --no-debug             Enable debug mode for more verbose output. [default: no-debug]       │
 │ --help                                    Show this message and exit.                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -63,4 +68,14 @@ To deploy the CoreNLP server using the source repository, you can use Docker Com
 
 ```sh
 docker compose up -d
+```
+
+## Development
+
+### Meta-Grammar
+
+To regenerate the meta-grammar parser/lexer, use the following :
+
+```sh
+$ poetry run antlr4 -Dlanguage=Python3 metagrammar.g4 -o architxt/grammar
 ```

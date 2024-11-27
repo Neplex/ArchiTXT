@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "architxt"
 version = "0.1.0"
-description = ""
+description = "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting."
 authors = [
     "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>",
     "Mirian Halfeld-Ferrari <mirian@univ-orleans.fr>",
@@ -16,12 +16,16 @@ architxt = "architxt.cli:main"
 enable = true
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+requires = [
+    "poetry-core>=1.0.0",
+    "poetry-dynamic-versioning>=1.0.0,<2.0.0",
+]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry.dependencies]
 python = "^3.10"
 
+# Core dependencies
 tqdm = ">=4.60"
 nltk = "*"
 chatette = ">=1.6.2"
@@ -35,11 +39,18 @@ bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
 mlflow = "^2.6.0"
 typer = "^0.13.0"
 anyio = "^4.6.0"
-ray = {extras = ["default"], version = "^2.30.0"}
-streamlit = ">=1.39.0"
-streamlit-agraph = "*"
-streamlit-tags = "*"
+ray = { version = "^2.30.0", extras = ["default"] }
 pynvml = "*"
+rich = "^13.9.4"
+antlr4-python3-runtime = ">=4.13,<5"
+
+# Optional UI dependencies
+streamlit = { version = ">=1.39.0", optional = true }
+streamlit-agraph = { version = "*", optional = true }
+streamlit-tags = { version = "*", optional = true }
+
+[tool.poetry.extras]
+ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
 
 [tool.poetry.group.dev.dependencies]
 wheel = "^0.45.0"
@@ -51,9 +62,13 @@ pylint = "^3.3"
 mypy = ">=0.910,<1.14"
 ruff = "^0.8.0"
 
+# Typing stubs
 pandas-stubs = "*"
 types-tqdm = "*"
 types-requests = "*"
+
+# Tools for generating grammar parsers
+antlr4-tools = "^0.2.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3"
@@ -66,7 +81,7 @@ pytest-beartype = "^0.2.0"
 
 hypothesis = "^6.68.0"
 
-# Async libs for tests
+# Async testing libraries
 asyncio = "^3.4.0"
 trio = "^0.27.0"
 
@@ -74,10 +89,13 @@ trio = "^0.27.0"
 minversion = "7.0"
 junit_family = "legacy"
 testpaths = ["architxt", "test"]
-addopts = ["--doctest-modules", "--beartype-packages=architxt"]
+addopts = [
+    "--doctest-modules",
+    "--beartype-packages=architxt",
+]
 
 [tool.coverage.run]
-source = ["architxt/*"]
+source = ["architxt"]
 
 [tool.coverage.report]
 exclude_also = [
@@ -88,26 +106,26 @@ exclude_also = [
 target-version = "py310"
 line-length = 120
 src = ["architxt", "test"]
+exclude = ["architxt/grammar"]
 
-# Selective rules for auto-fixing and auto-formatting
 [tool.ruff.lint]
 select = [
     "E4", # Pycodestyle error codes that are safe to auto-fix
     "E7",
     "E9",
-    "F", # Flake8 rules (includes many core Python errors and issues)
+    "F", # Flake8 rules
     "I", # isort rules for import ordering
     "ICN", # Import conventions
     "UP", # pyupgrade (for safe code modernization)
     "C4", # Comprehension simplifications
     "SIM", # Code simplifications
     "LOG", # Logger usage
-    "PIE", # Miscs
+    "PIE", # Miscellaneous
     "RUF", # Ruff-specific auto-fixable rules
-    "PD" , # Pandas checks
+    "PD", # Pandas checks
     "NPY", # NumPy checks
     "PERF", # Performance anti-pattern checks
-    "FURB", # Check old Python code
+    "FURB", # Old Python code
 ]
 
 [tool.ruff.format]
