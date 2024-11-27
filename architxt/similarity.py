@@ -1,7 +1,6 @@
 import math
-import multiprocessing
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Collection
 from itertools import combinations
 
 import more_itertools
@@ -39,13 +38,7 @@ def jaccard(x: set[str], y: set[str]) -> float:
     >>> jaccard(set(), set())
     1.0
     """
-    if not x and not y:
-        return 1.0
-
-    x = set(x)
-    y = set(y)
-
-    return len(x & y) / len(x | y)
+    return len(x & y) / len(x | y) if x or y else 1.0
 
 
 def levenshtein(x: set[str], y: set[str]) -> float:
@@ -86,6 +79,9 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     """
     assert x is not None
     assert y is not None
+
+    if x is y:
+        return 1.0
 
     weight_sum = 0.0
     sim_sum = 0.0
@@ -134,7 +130,7 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
 
 @ray.remote
 def compute_distance(
-    batch: Iterable[tuple[int, ray.ObjectRef, TREE_POS, ray.ObjectRef, TREE_POS]], *, metric: METRIC_FUNC, pbar
+    batch: Collection[tuple[int, ray.ObjectRef, TREE_POS, ray.ObjectRef, TREE_POS]], *, metric: METRIC_FUNC, pbar
 ) -> list[tuple[int, np.uint16]]:
     """
     Compute the distance between two subtrees.
@@ -150,12 +146,12 @@ def compute_distance(
     """
     distances_idx = []
 
-    for sub_batch in more_itertools.chunked(batch, 100):
-        for idx, x_ref, x_pos, y_ref, y_pos in sub_batch:
-            x, y = ray.get([x_ref, y_ref])
-            distance = np.uint16((1 - similarity(x[x_pos], y[y_pos], metric=metric)) * 10000)
-            distances_idx.append((idx, distance))
-        pbar.update.remote(len(sub_batch))
+    for idx, x_ref, x_pos, y_ref, y_pos in batch:
+        x, y = ray.get([x_ref, y_ref])
+        distance = np.uint16((1 - similarity(x[x_pos], y[y_pos], metric=metric)) * 10000)
+        distances_idx.append((idx, distance))
+
+    pbar.update.remote(len(batch))
 
     return distances_idx
 
@@ -165,7 +161,7 @@ def compute_dist_matrix(
     *,
     metric: METRIC_FUNC,
     max_tasks: int | None = None,
-    batch_size: int = 1_000_000,
+    batch_size: int = 1000,
 ) -> npt.NDArray[np.uint16]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
@@ -182,7 +178,7 @@ def compute_dist_matrix(
     :return: A 1D numpy array containing the condensed distance matrix (only a triangle of the full matrix).
     """
     if not max_tasks:
-        max_tasks = int(ray.available_resources().get('CPU', multiprocessing.cpu_count())) - 1
+        max_tasks = int(ray.available_resources().get('CPU', 1))
 
     # Get the reference to the root trees
     trees = list({subtree.root() for subtree in subtrees})
@@ -215,13 +211,11 @@ def compute_dist_matrix(
             for task in ray.get(ready_refs):
                 for idx, distance in task:
                     dist_matrix[idx] = distance
-                # pbar.update(batch_size)
 
     # Process remaining tasks
     for task in ray.get(task_refs):
         for idx, distance in task:
             dist_matrix[idx] = distance
-        # pbar.update(batch_size)
 
     pbar.close.remote()
 
@@ -312,10 +306,12 @@ def get_equiv_of(
     :param equiv_subtrees: The set of equivalent subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
-    :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
+    :return: A tuple representing the cluster of subtrees that meet the similarity threshold.
     """
     for cluster in sorted(equiv_subtrees, key=len, reverse=True):
-        if any(sim(x, t, tau, metric) for x in cluster):
+        # Early exit: stop checking once we find a matching cluster
+        if t in cluster or any(sim(x, t, tau, metric) for x in cluster):
             return cluster
 
+    # Return empty tuple if no similar cluster is found
     return ()

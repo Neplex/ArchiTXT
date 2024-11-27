@@ -384,4 +384,6 @@ def get_enriched_forest(
 
         # Don't yield an empty tree
         if len(tree):
+            assert tree.root().label() == 'SENT'
+            assert all(child.label() != 'SENT' for child in tree)
             yield tree

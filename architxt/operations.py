@@ -237,15 +237,14 @@ def _find_subgroups_inner(
     insertion_index = min(ent_tree.parent_index() for ent_tree in sub_group)
     new_subtree.insert(insertion_index, group_tree)
 
-    # If the subtree was a Group, it is not valid anymore and should not keep is label
+    # If the subtree was a Group, it is not valid anymore and should not keep its label
     if has_type(subtree, NodeType.GROUP):
         new_subtree.set_label('')
 
-    # Compute the support of the new subtree's GROUP node
+    # We compute the support of the new subtree's. It is a valid subgroup if its support exceeds the given threshold.
     equiv = get_equiv_of(new_subtree[insertion_index], equiv_subtrees, tau=tau, metric=metric)
     support = len(equiv)
 
-    # Return the modified subtree and its support counts if support exceeds the threshold
     if support > min_support:
         new_subtree[insertion_index].set_label(equiv[0].label())
         return new_subtree, support
@@ -273,7 +272,7 @@ def find_subgroups(
     for subtree in sorted(
         tree.subtrees(
             lambda sub: not has_type(sub, {NodeType.ENT, NodeType.REL, NodeType.COLL})
-            and any(has_type(child, NodeType.ENT) for child in sub)
+            and all(has_type(child, NodeType.ENT) for child in sub)
         ),
         key=lambda sub: sub.height(),
     ):
@@ -288,7 +287,6 @@ def find_subgroups(
         # Recursively creating k-sized groups, decreasing k if necessary
         while k > 1:
             # Generate k-sized combinations of entity trees and keep the one with maximum support
-            # nb_combinations = math.comb(len(entity_trees), k)
             k_groups = combinations(entity_trees, k)
             k_groups_support = (
                 _find_subgroups_inner(
@@ -301,12 +299,6 @@ def find_subgroups(
                 )
                 for sub_group in k_groups
                 if all(count == 1 for count in Counter(ent.label() for ent in sub_group).values())
-                # tqdm(
-                #         k_groups,
-                #         leave=False,
-                #         total=nb_combinations,
-                #         desc=f'{subtree.label()} n={len(entity_trees)} k={k}',
-                #     )
             )
 
             # Get the subgroup with the maximum support
@@ -454,7 +446,6 @@ def merge_groups(
         # Recursively creating k-sized groups, decreasing k if necessary
         while k > 1:
             # Get k-subgroup with maximum support
-            # nb_combinations = math.comb(len(group_ent_trees), k)
             k_groups = combinations(group_ent_trees, k)
             k_groups_support = (
                 _merge_groups_inner(
@@ -466,12 +457,6 @@ def merge_groups(
                     metric=metric,
                 )
                 for combined_groups in k_groups
-                # tqdm(
-                #     k_groups,
-                #     leave=False,
-                #     total=nb_combinations,
-                #     desc=f'{subtree.label()} n={len(group_ent_trees)} k={k}',
-                # )
             )
 
             # Identify the best possible merge based on maximum support

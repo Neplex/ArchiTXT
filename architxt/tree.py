@@ -57,6 +57,23 @@ class Tree(ParentedTree):
     def __reduce__(self):
         return type(self), (self._label, tuple(self))
 
+    @cache
+    def height(self) -> int:
+        """
+        Return the height of the tree.
+
+        Example:
+        >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> t.height()
+        4
+        >>> t[0].height()
+        3
+        >>> t[0, 0].height()
+        2
+        """
+        return super().height()
+
+    @cache
     def depth(self) -> int:
         """
         Returns the depth of the tree.
@@ -227,6 +244,8 @@ class Tree(ParentedTree):
 
     def __reset_cache(self):
         """Reset cached properties"""
+        self.height.cache_clear()
+        self.depth.cache_clear()
         self.groups.cache_clear()
         self.group_instances.cache_clear()
         self.entities.cache_clear()
@@ -255,7 +274,10 @@ class Tree(ParentedTree):
 
     def set_label(self, label: NodeLabel | str) -> None:
         super().set_label(label)
-        self.__reset_cache()
+
+        # Do not need to reset our own cache as it does not change our structure
+        if parent := self.parent():
+            parent.__reset_cache()
 
     def append(self, child: 'Tree | str') -> None:
         super().append(child)
