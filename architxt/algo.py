@@ -2,11 +2,12 @@ import functools
 from collections import Counter
 from collections.abc import Sequence
 from copy import deepcopy
+from multiprocessing import cpu_count
 
 import mlflow
 from nltk import Production, TreePrettyPrinter
-from pqdm.processes import pqdm
 from tqdm import trange
+from tqdm.contrib.concurrent import process_map
 
 from architxt import operations
 from architxt.model import NodeType
@@ -17,7 +18,7 @@ DEFAULT_OPERATIONS = (
     operations.find_subgroups,
     operations.merge_groups,
     operations.find_collections,
-    operations.find_relationship,
+    operations.find_relations,
     operations.find_collections,
     operations.reduce_bottom,
     operations.reduce_top,
@@ -33,7 +34,7 @@ def rewrite(
     metric: METRIC_FUNC = DEFAULT_METRIC,
     edit_ops: Sequence[operations.OPERATION] = DEFAULT_OPERATIONS,
     debug: bool = False,
-    n_jobs: int = 6,
+    max_workers: int | None = None,
 ) -> Forest:
     min_support = min_support or max((len(forest) // 10), 2)
     mlflow.log_params(
@@ -58,7 +59,7 @@ def rewrite(
                     metric=metric,
                     edit_ops=edit_ops,
                     debug=debug,
-                    n_jobs=n_jobs,
+                    max_workers=max_workers or cpu_count(),
                 )
 
                 if iteration != 0 and not has_simplified:
@@ -76,7 +77,7 @@ def _rewrite_step(
     metric: METRIC_FUNC,
     edit_ops: Sequence[operations.OPERATION],
     debug: bool,
-    n_jobs: int,
+    max_workers: int,
 ):
     if debug:
         # Log the forest as SVG
@@ -108,11 +109,11 @@ def _rewrite_step(
         )
 
         with mlflow.start_span(edit_op.__name__):
-            result = pqdm(
-                forest,
+            result = process_map(
                 operation,
-                n_jobs=n_jobs,
-                exception_behaviour='immediate',
+                forest,
+                max_workers=max_workers,
+                chunksize=20,
                 leave=False,
                 desc=edit_op.__name__,
             )
@@ -122,7 +123,7 @@ def _rewrite_step(
             mlflow.log_metric('edit_op', op_id, step=iteration)
             break
 
-    _post_process(forest, tau, metric)
+    _post_process(forest, tau, metric, max_workers=max_workers)
 
     # _log_productions(rooted_forest)
     _log_metrics(iteration, forest, equiv_subtrees)
@@ -130,24 +131,51 @@ def _rewrite_step(
     return forest, has_simplified
 
 
-def _post_process(forest: Forest, tau: float, metric: METRIC_FUNC) -> None:
+def _post_process(
+    forest: Forest,
+    tau: float,
+    metric: METRIC_FUNC,
+    max_workers: int,
+) -> None:
     equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
 
-    forest, _ = zip(
-        *(
-            operations.find_relationship(
-                tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True
-            )
-            for tree in forest
-        )
+    fn = functools.partial(
+        operations.find_relations,
+        tau=tau,
+        min_support=0,
+        metric=metric,
+        equiv_subtrees=equiv_subtrees,
+        naming_only=True,
     )
 
     forest, _ = zip(
-        *(
-            operations.find_collections(
-                tree, tau=tau, min_support=0, metric=metric, equiv_subtrees=equiv_subtrees, naming_only=True
-            )
-            for tree in forest
+        *process_map(
+            fn,
+            forest,
+            max_workers=max_workers,
+            chunksize=100,
+            leave=False,
+            desc='[post-process] name_relations',
+        )
+    )
+
+    fn = functools.partial(
+        operations.find_collections,
+        tau=tau,
+        min_support=0,
+        metric=metric,
+        equiv_subtrees=equiv_subtrees,
+        naming_only=True,
+    )
+
+    forest, _ = zip(
+        *process_map(
+            fn,
+            forest,
+            max_workers=max_workers,
+            chunksize=100,
+            leave=False,
+            desc='[post-process] name_collections',
         )
     )
 

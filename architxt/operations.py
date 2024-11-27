@@ -12,11 +12,11 @@ from architxt.tree import Tree, has_type
 
 __all__ = [
     'OPERATION',
+    'find_collections',
     'find_groups',
+    'find_relations',
     'find_subgroups',
     'merge_groups',
-    'find_relationship',
-    'find_collections',
     'reduce_bottom',
     'reduce_top',
 ]
@@ -515,7 +515,7 @@ def merge_groups(
     return tree, simplified
 
 
-def find_relationship(
+def find_relations(
     tree: Tree,
     equiv_subtrees: TREE_CLUSTER,
     tau: float,

@@ -13,17 +13,17 @@ from nltk.tree import ParentedTree
 from architxt.model import TREE_POS, Entity, NodeLabel, NodeType, Relation, TreeEntity, TreeRel
 
 __all__ = [
-    'has_type',
-    'Tree',
     'Forest',
-    'reduce',
-    'reduce_all',
-    'fix_coord',
-    'fix_conj',
+    'Tree',
+    'enrich_tree',
     'fix_all_coord',
+    'fix_conj',
+    'fix_coord',
+    'has_type',
     'ins_ent',
     'ins_rel',
-    'enrich_tree',
+    'reduce',
+    'reduce_all',
     'unnest_ent',
 ]
 
@@ -55,7 +55,7 @@ class Tree(ParentedTree):
         return f'{type(self)}(len={len(self)})'
 
     def __reduce__(self):
-        return type(self), (str(self.label()), tuple(self))
+        return type(self), (self._label, tuple(self))
 
     def depth(self) -> int:
         """
