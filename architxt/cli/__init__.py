@@ -1,13 +1,16 @@
 import hashlib
 import subprocess
+from io import BytesIO
 from pathlib import Path
+from tarfile import TarFile
+from tempfile import TemporaryDirectory
+from typing import BinaryIO
 
 import mlflow
 import typer
 from ray import cloudpickle
 from rich.console import Console
 from rich.panel import Panel
-from rich.spinner import Spinner
 
 from architxt.algo import rewrite
 from architxt.db import Schema
@@ -19,39 +22,76 @@ console = Console()
 
 
 def load_or_cache_corpus(
-    corpus_path: Path,
+    archive_file: BytesIO | BinaryIO,
     *,
-    entities_filter: set[str],
-    relations_filter: set[str],
-    entities_mapping: dict[str, str],
+    entities_filter: set[str] | None = None,
+    relations_filter: set[str] | None = None,
+    entities_mapping: dict[str, str] | None = None,
+    relations_mapping: dict[str, str] | None = None,
     corenlp_url: str,
     language: str,
 ) -> list[Tree]:
-    """Load the corpus from disk or cache."""
-    key = hashlib.md5(
-        (corpus_path.name + 'E'.join(sorted(entities_filter)) + 'R'.join(sorted(relations_filter))).encode()
-    ).hexdigest()
-    corpus_cache_path = Path(f'{key}.pkl')
+    """
+    Load the corpus from disk or cache.
 
-    if corpus_cache_path.exists():
-        console.print(f'[green]Loading corpus from cache:[/] {corpus_cache_path.absolute()}')
-        with open(corpus_cache_path, 'rb') as cache_file:
-            return cloudpickle.load(cache_file)
+    :param archive_file: An in-memory file object representing the corpus archive.
+    :param entities_filter: A set of entity types to exclude from the output. If None, no filtering is applied.
+    :param relations_filter: A set of relation types to exclude from the output. If None, no filtering is applied.
+    :param entities_mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
+    :param relations_mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
+    :param corenlp_url: The URL of the CoreNLP server.
+    :param language: The language to use for parsing.
 
-    with Spinner(f'[yellow]Loading corpus from disk:[/] {corpus_path.absolute()}'):
-        sentences = get_sentence_from_disk(
-            corpus_path,
-            entities_filter=entities_filter,
-            relations_filter=relations_filter,
-            entities_mapping=entities_mapping,
-        )
-        forest = list(get_enriched_forest(sentences, corenlp_url=corenlp_url, language=language))
+    :returns: A list of parsed trees representing the enriched corpus.
+    """
+    try:
+        # Generate a cache key based on the archive file's content
+        params_hash = 'E'.join(sorted(entities_filter)) + 'R'.join(sorted(relations_filter))
+        file_hash = hashlib.file_digest(archive_file, hashlib.md5)
+        file_hash.update(params_hash.encode())
 
-    console.print(f'[blue]Saving cache file to:[/] {corpus_cache_path.absolute()}')
-    with open(corpus_cache_path, 'wb') as cache_file:
-        cloudpickle.dump(forest, cache_file)
+        key = file_hash.hexdigest()
+        corpus_cache_path = Path(f'{key}.pkl')
 
-    return forest
+        # Attempt to load from cache if available
+        if corpus_cache_path.exists():
+            console.print(f'[green]Loading corpus from cache:[/] {corpus_cache_path.absolute()}')
+            with corpus_cache_path.open('rb') as cache_file:
+                return cloudpickle.load(cache_file)
+
+        archive_file.seek(0)
+
+        # If the cache does not exist, process the archive
+        with (
+            console.status(f'[yellow]Loading corpus from disk:[/] {archive_file.name}'),
+            TarFile.open(fileobj=archive_file) as corpus,
+            TemporaryDirectory() as tmp_dir,
+        ):
+            # Extract archive contents to a temporary directory
+            corpus.extractall(tmp_dir)
+            tmp_path = Path(tmp_dir)
+
+            # Parse sentences and enrich the forest
+            sentences = get_sentence_from_disk(
+                tmp_path,
+                entities_filter=entities_filter,
+                relations_filter=relations_filter,
+                entities_mapping=entities_mapping,
+                relations_mapping=relations_mapping,
+            )
+            forest = list(get_enriched_forest(sentences, corenlp_url=corenlp_url, language=language))
+            console.print(f'[green]Dataset loaded! {len(forest)} sentences found.[/]')
+
+        # Save processed data to cache
+        console.print(f'[blue]Saving cache file to:[/] {corpus_cache_path.absolute()}')
+        with corpus_cache_path.open('wb') as cache_file:
+            cloudpickle.dump(forest, cache_file)
+
+        return forest
+
+    except Exception as e:
+        console.print(f'[red]Error while processing corpus:[/] {e}')
+        raise
 
 
 def cli_run(
@@ -68,36 +108,29 @@ def cli_run(
     """
     Automatically structure a corpus as a database instance and print the database schema as a CFG.
     """
-    mlflow.log_params(
-        {
-            'has_corpus': True,
-            'has_instance': bool(gen_instances),
-        }
-    )
-
     entities_filter = {'MOMENT', 'DUREE', 'DATE'}
     relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
     entities_mapping = {'FREQ': 'FREQUENCE'}
 
     # Load the corpus
     try:
-        forest = load_or_cache_corpus(
-            corpus_path,
-            entities_filter=entities_filter,
-            relations_filter=relations_filter,
-            entities_mapping=entities_mapping,
-            corenlp_url=corenlp_url,
-            language=language,
-        )
-        console.print(f'[green]Dataset loaded! {len(forest)} sentences found.[/]')
+        with corpus_path.open('rb') as corpus:
+            forest = load_or_cache_corpus(
+                corpus,
+                entities_filter=entities_filter,
+                relations_filter=relations_filter,
+                entities_mapping=entities_mapping,
+                corenlp_url=corenlp_url,
+                language=language,
+            )
 
-    except Exception as e:
-        console.print(f"[red]Error loading corpus:[/] {e}")
+    except Exception:
+        console.print_exception()
         raise typer.Exit(code=1)
 
     # Generate synthetic database instances
     if gen_instances:
-        with Spinner("[cyan]Generating synthetic instances..."):
+        with console.status("[cyan]Generating synthetic instances..."):
             gen_trees = gen_instance(
                 groups={
                     'SOSY': ('SOSY', 'ANATOMIE', 'SUBSTANCE'),
@@ -113,11 +146,18 @@ def cli_run(
             forest.extend(gen_trees)
 
     # Rewrite the trees
+    mlflow.log_params(
+        {
+            'has_corpus': True,
+            'has_instance': bool(gen_instances),
+        }
+    )
+
     console.print(f'[blue]Rewriting trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
     forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug)
 
     # Generate schema
-    schema = Schema.from_forest(forest)
+    schema = Schema.from_forest(forest, keep_invalid_nodes=False)
     schema_str = schema.as_cfg()
     mlflow.log_text(schema_str, 'schema.txt')
 

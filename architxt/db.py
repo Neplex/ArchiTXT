@@ -63,7 +63,7 @@ class Schema(CFG):
             parser.start()
             return True
 
-        except ValueError as e:
+        except Exception as e:
             print(f"Verification failed: {e}")
             return False
 

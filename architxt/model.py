@@ -16,7 +16,7 @@ class NodeLabel(str):
     type: NodeType
     name: str
 
-    __slots__ = ('type', 'name')
+    __slots__ = ('name', 'type')
 
     def __new__(cls, label_type: NodeType, label: str = ''):
         return super().__new__(cls, f'{label_type.value}::{label}' if label else label_type.value)

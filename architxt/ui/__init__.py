@@ -1,21 +1,16 @@
-import hashlib
 from copy import deepcopy
-from pathlib import Path
-from tarfile import TarFile
-from tempfile import TemporaryDirectory
 
 import mlflow
 import streamlit as st
-from ray import cloudpickle
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 from streamlit_agraph import Config, agraph
 from streamlit_agraph import Edge as _Edge
 from streamlit_agraph import Node as _Node
 from streamlit_tags import st_tags
 
 from architxt.algo import rewrite
+from architxt.cli import load_or_cache_corpus
+from architxt.db import Schema
 from architxt.model import NodeType
-from architxt.nlp import get_enriched_forest, get_sentence_from_disk
 from architxt.tree import Forest, Tree, has_type
 
 mlflow.set_experiment('ArchiTXT')
@@ -43,56 +38,24 @@ class Edge(_Edge):
         return f'Edge({self.source}, {self.to})'
 
 
-def get_forest(archive_file: UploadedFile, *, entities_filter: set[str], relations_filter: set[str]) -> Forest:
-    key = hashlib.md5(
-        (archive_file.name + 'E'.join(sorted(entities_filter)) + 'R'.join(sorted(relations_filter))).encode()
-    ).hexdigest()
-    corpus_cache_path = Path() / f'{key}.pkl'
-
-    if corpus_cache_path.exists():
-        print(f'Loading corpus from cache: {corpus_cache_path.absolute()}')
-        with open(corpus_cache_path, 'rb') as cache_file:
-            forest = cloudpickle.load(cache_file)
-
-    else:
-        print('Loading corpus...')
-        with TemporaryDirectory() as tmp_dir, TarFile.open(fileobj=archive_file) as corpus:
-            corpus.extractall(tmp_dir)
-            sentences = get_sentence_from_disk(
-                Path(tmp_dir),
-                entities_filter=entities_filter,
-                relations_filter=relations_filter,
-                entities_mapping={'FREQ': 'FREQUENCE'},
-            )
-
-            forest = tuple(get_enriched_forest(sentences, corenlp_url=corenlp_url, language=language))
-
-        print(f'Saving cache file to: {corpus_cache_path.absolute()}')
-        with open(corpus_cache_path, 'wb') as cache_file:
-            cloudpickle.dump(forest, cache_file)
-
-    print(f'Dataset loaded! {len(forest)} sentences found')
-    return forest
-
-
 @st.fragment()
 def graph(forest: Forest):
     """Function to render schema graph visualization"""
     nodes = set()
     edges = set()
 
-    for tree in forest:
-        for prod in tree.productions():
-            if prod.is_nonlexical() and has_type(prod.lhs().symbol(), {NodeType.GROUP, NodeType.REL}):
-                lhs_symbol = prod.lhs().symbol().name
-                nodes.add(Node(id=lhs_symbol, label=lhs_symbol))
+    schema = Schema.from_forest(forest, keep_invalid_nodes=False)
+    for prod in schema.productions():
+        if has_type(prod, {NodeType.GROUP, NodeType.REL}):
+            lhs_symbol = prod.lhs().symbol().name
+            nodes.add(Node(id=lhs_symbol, label=lhs_symbol))
 
-                for nt in prod.rhs():
-                    symbol = nt.symbol().name
-                    nodes.add(Node(id=symbol, label=symbol))
+            for nt in prod.rhs():
+                symbol = nt.symbol().name
+                nodes.add(Node(id=symbol, label=symbol))
 
-                    label = 'REL' if prod.lhs().symbol().type == NodeType.REL else ''
-                    edges.add(Edge(source=lhs_symbol, target=symbol, label=label))
+                label = 'REL' if prod.lhs().symbol().type == NodeType.REL else ''
+                edges.add(Edge(source=lhs_symbol, target=symbol, label=label))
 
     agraph(nodes=nodes, edges=edges, config=Config(directed=True))
 
@@ -129,10 +92,13 @@ with input_tab, st.form(key='corpora', enter_to_submit=False):
 
 if submitted and uploaded_file:
     try:
-        forest = get_forest(
+        forest = load_or_cache_corpus(
             uploaded_file,
             entities_filter=set(entities_filter),
             relations_filter=set(relations_filter),
+            entities_mapping={'FREQ': 'FREQUENCE'},
+            corenlp_url=corenlp_url,
+            language=language,
         )
 
         with st.spinner('Computing...'), mlflow.start_run(run_name='UI run', log_system_metrics=True) as mlflow_run:
