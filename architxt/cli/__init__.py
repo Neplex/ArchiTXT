@@ -105,6 +105,9 @@ def cli_run(
     gen_instances: int = typer.Option(0, help="Number of synthetic instances to generate."),
     language: str = typer.Option('French', help="Language of the input corpus."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
+    workers: int | None = typer.Option(
+        None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores."
+    ),
 ) -> None:
     """
     Automatically structure a corpus as a database instance and print the database schema as a CFG.
@@ -155,7 +158,7 @@ def cli_run(
     )
 
     console.print(f'[blue]Rewriting trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
-    forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug)
+    forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
     # Generate schema
     schema = Schema.from_forest(forest, keep_invalid_nodes=False)

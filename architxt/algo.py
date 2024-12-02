@@ -113,7 +113,7 @@ def _rewrite_step(
                 operation,
                 forest,
                 max_workers=max_workers,
-                chunksize=20,
+                chunksize=int(len(forest) // max_workers // 6),
                 leave=False,
                 desc=edit_op.__name__,
             )
