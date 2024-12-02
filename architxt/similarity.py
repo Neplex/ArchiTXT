@@ -11,6 +11,7 @@ from Levenshtein import jaro_winkler
 from Levenshtein import ratio as levenshtein_ratio
 from ray.experimental import tqdm_ray
 from scipy.cluster import hierarchy
+from scipy.spatial.distance import squareform
 from tqdm import tqdm
 
 from architxt.model import TREE_POS, NodeType
@@ -58,7 +59,6 @@ def jaro(x: set[str], y: set[str]) -> float:
 DEFAULT_METRIC: METRIC_FUNC = jaro  # jaccard, levenshtein, jaro
 
 
-# @cached(cache=SIM_CACHE, lock=SIM_CACHE_LOCK, key=lambda x, y, *, metric: (x.treeposition(), y.treeposition()))
 def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
     """
     Computes the similarity between two tree objects based on their entity labels and context.
@@ -279,19 +279,32 @@ def equiv_cluster(trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_ME
     # Compute distance matrix for all subtrees
     dist_matrix = compute_dist_matrix_local(subtrees, metric=metric)
 
-    # Hierarchical clustering with average linkage
+    # Perform hierarchical clustering based on the distance threshold tau
     linkage_matrix = hierarchy.linkage(dist_matrix, method='single')
-
-    # Cluster based on the distance threshold tau
     clusters = hierarchy.fcluster(linkage_matrix, 1 - tau, criterion='distance')
 
-    # Group subtrees into clusters
-    subtree_clusters = defaultdict(set)
-    for subtree, cluster_id in zip(subtrees, clusters, strict=False):
-        subtree_clusters[cluster_id].add(subtree)
+    # Group subtrees by cluster ID
+    subtree_clusters = defaultdict(list)
+    for idx, cluster_id in enumerate(clusters):
+        subtree_clusters[cluster_id].append(idx)
 
-    # Return clusters as a set of tuples (immutable and hashable)
-    return {tuple(cluster) for cluster in subtree_clusters.values()}
+    # Sort clusters based on the center element (the closest subtree to all others)
+    # We determine the center by computing the sum of distances for each subtree to all others in the cluster.
+    # The index of the subtree with the smallest sum of distances is the center.
+    square_dist_matrix = squareform(dist_matrix)
+    sorted_clusters = set()
+
+    for cluster_indices in subtree_clusters.values():
+        sum_distances = np.sum(square_dist_matrix[np.ix_(cluster_indices, cluster_indices)], axis=1)
+        center_index = cluster_indices[np.argmin(sum_distances)]
+
+        # Sort the cluster based on distance to the center
+        sorted_cluster = sorted(cluster_indices, key=lambda idx: square_dist_matrix[center_index][idx])
+
+        # Add the sorted cluster as a tuple to the set (immutable and hashable)
+        sorted_clusters.add(tuple(subtrees[i] for i in sorted_cluster))
+
+    return sorted_clusters
 
 
 def get_equiv_of(
@@ -308,7 +321,10 @@ def get_equiv_of(
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A tuple representing the cluster of subtrees that meet the similarity threshold.
     """
-    for cluster in sorted(equiv_subtrees, key=len, reverse=True):
+    # Sort equiv subtrees by similarity to the center element (the first one as the cluster are sorted)
+    equiv_subtrees = sorted(equiv_subtrees, key=lambda cluster: similarity(t, cluster[0], metric=metric), reverse=True)
+
+    for cluster in equiv_subtrees:
         # Early exit: stop checking once we find a matching cluster
         if t in cluster or any(sim(x, t, tau, metric) for x in cluster):
             return cluster
