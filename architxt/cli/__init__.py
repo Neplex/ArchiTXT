@@ -11,6 +11,7 @@ import typer
 from ray import cloudpickle
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 
 from architxt.algo import rewrite
 from architxt.db import Schema
@@ -186,6 +187,115 @@ def cli_ui() -> None:
         raise typer.Exit(code=1)
 
 
+def cli_stats(
+    corpus_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
+    language: str = typer.Option('French', help="Language of the input corpus."),
+) -> None:
+    """
+    Display overall corpus statistics.
+    """
+    entities_filter = {'MOMENT', 'DUREE', 'DATE'}
+    relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
+    entities_mapping = {'FREQ': 'FREQUENCE'}
+
+    # Load the corpus
+    try:
+        with corpus_path.open('rb') as corpus:
+            forest = load_or_cache_corpus(
+                corpus,
+                entities_filter=entities_filter,
+                relations_filter=relations_filter,
+                entities_mapping=entities_mapping,
+                corenlp_url=corenlp_url,
+                language=language,
+            )
+
+    except Exception:
+        console.print_exception()
+        raise typer.Exit(code=1)
+
+    forest = list(filter(lambda x: len(x.leaves()) < 50, forest))
+
+    # Compute statistics
+    total_trees = len(forest)
+    total_entities = sum(len(tree.entities()) for tree in forest)
+    tree_heights = [tree.height() for tree in forest]
+    tree_sizes = [len(tree.leaves()) for tree in forest]
+    avg_height = sum(tree_heights) / len(tree_heights) if tree_heights else 0
+    max_height = max(tree_heights, default=0)
+    avg_size = sum(tree_sizes) / len(tree_sizes) if tree_sizes else 0
+    max_size = max(tree_sizes, default=0)
+
+    # Create a statistics table
+    table = Table()
+    table.add_column("Metric", style="cyan", no_wrap=True)
+    table.add_column("Value", style="magenta")
+
+    table.add_row("Total Trees", str(total_trees))
+    table.add_row("Total Entities", str(total_entities))
+    table.add_row("Average Tree Height", f"{avg_height:.2f}")
+    table.add_row("Maximum Tree Height", str(max_height))
+    table.add_row("Average Tree size", f"{avg_size:.2f}")
+    table.add_row("Maximum Tree size", str(max_size))
+
+    console.print(table)
+
+
+def cli_largest_tree(
+    corpus_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
+    language: str = typer.Option('French', help="Language of the input corpus."),
+) -> None:
+    """
+    Display the largest tree in the corpus along with its sentence and structure.
+    """
+    entities_filter = {'MOMENT', 'DUREE', 'DATE'}
+    relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
+    entities_mapping = {'FREQ': 'FREQUENCE'}
+
+    # Load the corpus
+    try:
+        with corpus_path.open('rb') as corpus:
+            forest = load_or_cache_corpus(
+                corpus,
+                entities_filter=entities_filter,
+                relations_filter=relations_filter,
+                entities_mapping=entities_mapping,
+                corenlp_url=corenlp_url,
+                language=language,
+            )
+
+    except Exception:
+        console.print_exception()
+        raise typer.Exit(code=1)
+
+    forest = list(filter(lambda x: len(x.leaves()) < 50, forest))
+
+    # Find the largest tree
+    largest_tree = max(forest, key=lambda t: len(t.leaves()), default=None)
+
+    if largest_tree:
+        sentence = " ".join(largest_tree.leaves())
+        largest_tree_display = largest_tree.pformat(margin=255)
+
+        console.print(
+            Panel(
+                sentence,
+                title="Sentence",
+            )
+        )
+        console.print(
+            Panel(
+                largest_tree_display,
+                title="Tree",
+            )
+        )
+
+    else:
+        console.print("[yellow]No trees found in the corpus.[/]")
+
+
 def main() -> None:
     """
     Main entry point for the CLI.
@@ -198,4 +308,7 @@ def main() -> None:
     )
     app.command('run', help="Extract a database schema form a corpus.")(cli_run)
     app.command('ui', help="Launch the web-based UI.")(cli_ui)
+    app.command('stats', help="Display overall statistics for the corpus.")(cli_stats)
+    app.command('largest-tree', help="Display details about the largest tree in the corpus.")(cli_largest_tree)
+
     app()
