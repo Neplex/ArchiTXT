@@ -1,18 +1,20 @@
+import ctypes
 import functools
 from collections import Counter
 from collections.abc import Sequence
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
-from multiprocessing import cpu_count
+from multiprocessing import Barrier, Manager, Value, cpu_count
+from typing import cast
 
 import mlflow
+import more_itertools
 from nltk import TreePrettyPrinter
-from tqdm import trange
-from tqdm.contrib.concurrent import process_map
+from tqdm import tqdm, trange
 
 from architxt import operations
 from architxt.db import Schema
 from architxt.model import NodeType
-from architxt.operations import OPERATION
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, Tree, has_type, reduce_all
 
@@ -135,28 +137,25 @@ def _rewrite_step(
             metric=metric,
         )
 
-    has_simplified = False
-    for op_id, edit_op in enumerate(edit_ops):
-        forest, simplified = _apply_operation(
-            edit_op,
-            forest,
-            equiv_subtrees=equiv_subtrees,
-            tau=tau,
-            min_support=min_support,
-            metric=metric,
-            max_workers=max_workers,
-        )
+    forest, op_id = _apply_operations(
+        edit_ops,
+        forest,
+        equiv_subtrees=equiv_subtrees,
+        tau=tau,
+        min_support=min_support,
+        metric=metric,
+        max_workers=max_workers,
+    )
 
-        if has_simplified := any(simplified):
-            mlflow.log_metric('edit_op', op_id, step=iteration)
-            break
+    if op_id is not None:
+        mlflow.log_metric('edit_op', op_id, step=iteration)
 
     forest = _post_process(forest, tau, metric, max_workers=max_workers)
 
     _log_schema(iteration, forest)
     _log_metrics(iteration, forest, equiv_subtrees)
 
-    return forest, has_simplified
+    return forest, op_id is not None
 
 
 def _post_process(
@@ -177,34 +176,25 @@ def _post_process(
     """
     equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
 
-    forest, _ = _apply_operation(
-        operations.find_relations,
+    forest, _ = _apply_operations(
+        [
+            ('[post-process] name_relations', functools.partial(operations.find_relations, naming_only=True)),
+            ('[post-process] name_collections', functools.partial(operations.find_collections, naming_only=True)),
+        ],
         forest,
         equiv_subtrees=equiv_subtrees,
         tau=tau,
         min_support=0,
         metric=metric,
-        naming_only=True,
         max_workers=max_workers,
-        desc='[post-process] name_relations',
-    )
-    forest, _ = _apply_operation(
-        operations.find_collections,
-        forest,
-        equiv_subtrees=equiv_subtrees,
-        tau=tau,
-        min_support=0,
-        metric=metric,
-        naming_only=True,
-        max_workers=max_workers,
-        desc='[post-process] name_collections',
+        early_exit=False,
     )
 
     return forest
 
 
-def _apply_operation(
-    operation: OPERATION,
+def _apply_operations(
+    edit_ops: Sequence[operations.OPERATION] | Sequence[tuple[str, operations.OPERATION]],
     forest: Forest,
     *,
     equiv_subtrees: TREE_CLUSTER,
@@ -212,45 +202,104 @@ def _apply_operation(
     min_support: int,
     metric: METRIC_FUNC,
     max_workers: int,
-    desc: str = '',
-    **kwargs,
-) -> tuple[Forest, tuple[bool]]:
+    early_exit: bool = True,
+) -> tuple[Forest, int | None]:
+    """
+    Apply the given operations to the forest.
+    The operations are applied in order, and we stop if one operation simplify at least one tree in the forest.
+
+    :param edit_ops: The list of operations (or tuple name-operation) to perform on the forest.
+    :param forest: The forest to perform on.
+    :param tau: Threshold for subtree similarity when clustering.
+    :param min_support: Minimum support of groups.
+    :param metric: The metric function used to compute similarity between subtrees.
+    :param max_workers: Number of parallel worker processes to use.
+
+    :return: The updated forest and the id of the operation that succeed.
+    """
+    max_workers = min(len(forest) // 100, max_workers)  # Cannot have less than 100 trees
+
+    if not edit_ops:
+        return forest, None
+
+    if not isinstance(edit_ops[0], tuple):
+        edit_ops = [(op.__name__, op) for op in edit_ops]
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor, Manager() as manager:
+        shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees)
+        simplification_operation = manager.Value(ctypes.c_int, -1)
+        barrier = manager.Barrier(max_workers)
+
+        futures = [
+            executor.submit(
+                _apply_operations_worker,
+                idx,
+                edit_ops,
+                tuple(chunk),
+                shared_equiv,
+                tau,
+                min_support,
+                metric,
+                early_exit,
+                simplification_operation,
+                barrier,
+            )
+            for idx, chunk in enumerate(more_itertools.divide(max_workers, forest))
+            if chunk
+        ]
+
+        # Flatten the results and extract the simplification operation ID if any
+        forest = [tree for chunk in as_completed(futures) for tree in chunk.result()]
+        op_id = None if simplification_operation.value == -1 else cast(int, simplification_operation.value)
+
+    return forest, op_id
+
+
+def _apply_operations_worker(
+    idx: int,
+    edit_ops: Sequence[tuple[str, operations.OPERATION]],
+    forest: Forest,
+    equiv_subtrees: Value,
+    tau: float,
+    min_support: int,
+    metric: METRIC_FUNC,
+    early_exit: bool,
+    simplification_operation: Value,
+    barrier: Barrier,
+) -> Forest:
     """
     Apply the given operation to the forest.
 
-    :param operation: The rewriting operation to apply.
+    :param edit_ops: The list of operations to perform on the forest.
     :param forest: The forest to perform on.
     :param equiv_subtrees: The set of equivalent subtrees.
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
-    :param max_workers: Number of parallel worker processes to use.
-    :param desc: The description for tqdm progress bar, default to operation name.
     :return: The rewritten forest and the tuple of flags for each tree indicating if simplifications occurred.
     """
-    desc = desc or operation.__name__
-    chunk_size = max(10, len(forest) // (max_workers * 6))
-
-    operation_fn = functools.partial(
-        operation,
-        equiv_subtrees=equiv_subtrees,
-        tau=tau,
-        min_support=min_support,
-        metric=metric,
-        **kwargs,
-    )
-
-    with mlflow.start_span(desc):
-        result = process_map(
-            operation_fn,
-            forest,
-            max_workers=max_workers,
-            chunksize=chunk_size,
-            leave=False,
-            desc=desc,
+    for op_id, (op_name, op_fn) in enumerate(edit_ops):
+        operation_fn = functools.partial(
+            op_fn,
+            equiv_subtrees=equiv_subtrees.value,
+            tau=tau,
+            min_support=min_support,
+            metric=metric,
         )
 
-    return zip(*result)
+        with mlflow.start_span(op_name):
+            forest, simplified = zip(*map(operation_fn, tqdm(forest, desc=op_name, leave=False, position=idx + 1)))
+
+            if any(simplified):
+                simplification_operation.value = op_id
+
+            barrier.wait()  # Wait for all workers to finish this operation
+
+            # If simplification has occurred in any worker, stop processing further operations.
+            if early_exit and simplification_operation.value != -1:
+                break
+
+    return forest
 
 
 def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()):
