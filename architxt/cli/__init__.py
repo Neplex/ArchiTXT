@@ -6,9 +6,9 @@ from tarfile import TarFile
 from tempfile import TemporaryDirectory
 from typing import BinaryIO
 
+import cloudpickle
 import mlflow
 import typer
-from ray import cloudpickle
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table

@@ -1,20 +1,17 @@
 import math
 from collections import defaultdict
-from collections.abc import Callable, Collection
+from collections.abc import Callable
 from itertools import combinations
 
-import more_itertools
 import numpy as np
 import numpy.typing as npt
-import ray
 from Levenshtein import jaro_winkler
 from Levenshtein import ratio as levenshtein_ratio
-from ray.experimental import tqdm_ray
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 from tqdm import tqdm
 
-from architxt.model import TREE_POS, NodeType
+from architxt.model import NodeType
 from architxt.tree import Forest, Tree, has_type
 
 METRIC_FUNC = Callable[[set[str], set[str]], float]
@@ -128,101 +125,7 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
     return similarity(x, y, metric=metric) >= tau
 
 
-@ray.remote
-def compute_distance(
-    batch: Collection[tuple[int, ray.ObjectRef, TREE_POS, ray.ObjectRef, TREE_POS]], *, metric: METRIC_FUNC, pbar
-) -> list[tuple[int, np.uint16]]:
-    """
-    Compute the distance between two subtrees.
-
-    The distance is based on a similarity measure (bounded between [0, 1]).
-    Since exact float values are not required for hierarchical clustering,
-    we transform the similarity score into an integer and invert it to create a
-    distance metric, which is stored as an unsigned short (np.ushort) to minimize memory usage.
-
-    :param batch: A, iterable of index and tree position pair to compute.
-    :param metric: A callable similarity metric to compute the similarity between the two trees.
-    :return: The computed distance as an unsigned short integer, representing the scaled and inverted similarity score.
-    """
-    distances_idx = []
-
-    for idx, x_ref, x_pos, y_ref, y_pos in batch:
-        x, y = ray.get([x_ref, y_ref])
-        distance = np.uint16((1 - similarity(x[x_pos], y[y_pos], metric=metric)) * 10000)
-        distances_idx.append((idx, distance))
-
-    pbar.update.remote(len(batch))
-
-    return distances_idx
-
-
-def compute_dist_matrix(
-    subtrees: list[Tree],
-    *,
-    metric: METRIC_FUNC,
-    max_tasks: int | None = None,
-    batch_size: int = 1000,
-) -> npt.NDArray[np.uint16]:
-    """
-    Compute the condensed distance matrix for a collection of subtrees.
-
-    This function computes pairwise distances between all subtrees and stores the results
-    in a condensed distance matrix format (1D array), which is suitable for hierarchical clustering.
-
-    The computation is done in parallel using RAY.
-
-    :param subtrees: A list of subtrees for which pairwise distances will be calculated.
-    :param metric: A callable similarity metric to compute the similarity between the two trees.
-    :param max_tasks: The maximum number of parallel Ray tasks to process at a time.
-    :param batch_size: Number of pairs to compute in each batch.
-    :return: A 1D numpy array containing the condensed distance matrix (only a triangle of the full matrix).
-    """
-    if not max_tasks:
-        max_tasks = int(ray.available_resources().get('CPU', 1))
-
-    # Get the reference to the root trees
-    trees = list({subtree.root() for subtree in subtrees})
-    trees_refs = [ray.put(tree) for tree in trees]
-
-    # Prepare the pair combinations, we skip trees that are not close enough
-    pair_combinations = (
-        (idx, trees_refs[trees.index(x.root())], x.treeposition(), trees_refs[trees.index(y.root())], y.treeposition())
-        for idx, (x, y) in enumerate(combinations(subtrees, 2))
-        if abs(x.height() - y.height()) < 5
-    )
-
-    # Condensed distance matrix (1D array of the triangular part)
-    nb_combinations = math.comb(len(subtrees), 2)
-    dist_matrix = np.full(nb_combinations, np.nan, dtype=np.uint16)
-
-    task_refs: list[ray.ObjectRef] = []
-
-    # Iterate over combinations and launch tasks
-    remote_tqdm = ray.remote(tqdm_ray.tqdm)
-    pbar = remote_tqdm.remote(total=nb_combinations, desc='similarity')
-
-    for pair_batch in more_itertools.chunked(pair_combinations, batch_size):
-        distance_ref = compute_distance.remote(pair_batch, metric=metric, pbar=pbar)
-        task_refs.append(distance_ref)
-
-        # Wait for tasks to complete when max_tasks is reached
-        if len(task_refs) >= max_tasks:
-            ready_refs, task_refs = ray.wait(task_refs, num_returns=1)
-            for task in ray.get(ready_refs):
-                for idx, distance in task:
-                    dist_matrix[idx] = distance
-
-    # Process remaining tasks
-    for task in ray.get(task_refs):
-        for idx, distance in task:
-            dist_matrix[idx] = distance
-
-    pbar.close.remote()
-
-    return dist_matrix
-
-
-def compute_dist_matrix_local(subtrees: list[Tree], *, metric: METRIC_FUNC) -> npt.NDArray[np.uint16]:
+def compute_dist_matrix(subtrees: list[Tree], *, metric: METRIC_FUNC) -> npt.NDArray[np.uint16]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
 
@@ -277,7 +180,7 @@ def equiv_cluster(trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_ME
         return set()
 
     # Compute distance matrix for all subtrees
-    dist_matrix = compute_dist_matrix_local(subtrees, metric=metric)
+    dist_matrix = compute_dist_matrix(subtrees, metric=metric)
 
     # Perform hierarchical clustering based on the distance threshold tau
     linkage_matrix = hierarchy.linkage(dist_matrix, method='single')
