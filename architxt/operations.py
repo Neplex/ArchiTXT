@@ -1,9 +1,9 @@
-from collections import Counter
 from collections.abc import Callable
 from copy import deepcopy
 from itertools import combinations, groupby
 
 import mlflow
+import more_itertools
 from mlflow.entities import SpanEvent
 
 from architxt.model import NodeLabel, NodeType
@@ -298,7 +298,7 @@ def find_subgroups(
                     metric=metric,
                 )
                 for sub_group in k_groups
-                if all(count == 1 for count in Counter(ent.label() for ent in sub_group).values())
+                if more_itertools.all_unique(ent.label() for ent in sub_group)
             )
 
             # Get the subgroup with the maximum support
@@ -385,7 +385,7 @@ def _merge_groups_inner(
                 sub_group.extend(group_entity.entities())
 
     # Skip if invalid conditions are met: duplicates entities, empty groups, or no valid subgroups
-    if not sub_group or group_count == 0 or max(Counter(ent.label() for ent in sub_group).values()) > 1:
+    if not sub_group or group_count == 0 or not more_itertools.all_unique(ent.label() for ent in sub_group):
         return None
 
     # Copy the tree

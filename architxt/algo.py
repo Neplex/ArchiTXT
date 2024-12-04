@@ -1,14 +1,12 @@
 import ctypes
 import functools
 from collections import Counter
-from collections.abc import Sequence
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from collections.abc import Collection, Sequence
+from concurrent.futures import Executor, ProcessPoolExecutor, as_completed
 from copy import deepcopy
 from multiprocessing import Barrier, Manager, Value, cpu_count
-from typing import cast
 
 import mlflow
-import more_itertools
 from nltk import TreePrettyPrinter
 from tqdm import tqdm, trange
 
@@ -55,7 +53,7 @@ def rewrite(
     :return: The rewritten forest.
     """
     min_support = min_support or max((len(forest) // 10), 2)
-    max_workers = max_workers or cpu_count()
+    max_workers = min(len(forest) // 100, max_workers or cpu_count())  # Cannot have less than 100 trees
 
     mlflow.log_params(
         {
@@ -68,7 +66,7 @@ def rewrite(
         }
     )
 
-    with mlflow.start_span('rewriting'):
+    with mlflow.start_span('rewriting'), ProcessPoolExecutor(max_workers=max_workers) as executor:
         for iteration in trange(epoch, desc='rewrite trees'):
             with mlflow.start_span('iteration', attributes={'step': iteration}):
                 forest, has_simplified = _rewrite_step(
@@ -79,7 +77,7 @@ def rewrite(
                     metric=metric,
                     edit_ops=edit_ops,
                     debug=debug,
-                    max_workers=max_workers,
+                    executor=executor,
                 )
 
                 # Stop if no further simplifications are made
@@ -98,7 +96,7 @@ def _rewrite_step(
     metric: METRIC_FUNC,
     edit_ops: Sequence[operations.OPERATION],
     debug: bool,
-    max_workers: int,
+    executor: Executor,
 ) -> tuple[Forest, bool]:
     """
     Perform a single rewrite step on the forest.
@@ -107,10 +105,10 @@ def _rewrite_step(
     :param forest: The forest to perform on.
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
-    :param metric:  The metric function used to compute similarity between subtrees.
+    :param metric: The metric function used to compute similarity between subtrees.
     :param edit_ops: The list of operations to perform on the forest.
     :param debug: Whether to enable debug logging.
-    :param max_workers: Number of parallel worker processes to use.
+    :param executor: A pool executor to parallelize the processing of the forest.
 
     :return: The updated forest and a flag indicating if simplifications occurred.
     """
@@ -144,13 +142,13 @@ def _rewrite_step(
         tau=tau,
         min_support=min_support,
         metric=metric,
-        max_workers=max_workers,
+        executor=executor,
     )
 
     if op_id is not None:
         mlflow.log_metric('edit_op', op_id, step=iteration)
 
-    forest = _post_process(forest, tau, metric, max_workers=max_workers)
+    forest = _post_process(forest, tau=tau, metric=metric, executor=executor)
 
     _log_schema(iteration, forest)
     _log_metrics(iteration, forest, equiv_subtrees)
@@ -160,9 +158,10 @@ def _rewrite_step(
 
 def _post_process(
     forest: Forest,
+    *,
     tau: float,
     metric: METRIC_FUNC,
-    max_workers: int,
+    executor: Executor,
 ) -> Forest:
     """
     Post-process the forest to find and name relations and collections.
@@ -170,7 +169,7 @@ def _post_process(
     :param forest: The forest to perform on.
     :param tau: Threshold for subtree similarity when clustering.
     :param metric: The metric function used to compute similarity between subtrees.
-    :param max_workers: Number of parallel worker processes to use.
+    :param executor: A pool executor to parallelize the processing of the forest.
 
     :returns: The processed forest with named relations and collections.
     """
@@ -186,8 +185,8 @@ def _post_process(
         tau=tau,
         min_support=0,
         metric=metric,
-        max_workers=max_workers,
         early_exit=False,
+        executor=executor,
     )
 
     return forest
@@ -201,34 +200,44 @@ def _apply_operations(
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
-    max_workers: int,
     early_exit: bool = True,
+    executor: Executor,
 ) -> tuple[Forest, int | None]:
     """
-    Apply the given operations to the forest.
-    The operations are applied in order, and we stop if one operation simplify at least one tree in the forest.
+    Apply a sequence of edit operations to a forest, potentially simplifying its structure.
 
-    :param edit_ops: The list of operations (or tuple name-operation) to perform on the forest.
-    :param forest: The forest to perform on.
+    Each operation in `edit_ops` is applied to the forest in the provided order.
+    If `early_exit` is enabled, the function stops as soon as an operation successfully simplifies at least one tree.
+    Otherwise, all operations are applied.
+
+    :param edit_ops: A sequence of operations to apply to the forest.
+                     Each operation can either be a callable or a tuple `(name, callable)`
+                     where `name` is a string identifier for the operation.
+    :param forest: The input forest (a collection of trees) on which operations are applied.
+    :param equiv_subtrees: The set of equivalent subtrees.
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
-    :param max_workers: Number of parallel worker processes to use.
+    :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
+                       If `False`, all operations are applied.
+    :param executor: A pool executor to parallelize the processing of the forest.
 
-    :return: The updated forest and the id of the operation that succeed.
+    :return: A tuple composed of:
+        - The updated forest after applying the operations.
+        - The index of the operation that successfully simplified a tree, or `None` if no operation succeeded.
     """
-    max_workers = min(len(forest) // 100, max_workers)  # Cannot have less than 100 trees
-
     if not edit_ops:
         return forest, None
 
     if not isinstance(edit_ops[0], tuple):
         edit_ops = [(op.__name__, op) for op in edit_ops]
 
-    with ProcessPoolExecutor(max_workers=max_workers) as executor, Manager() as manager:
+    chunks = _distribute_evenly(forest, executor._max_workers)
+
+    with Manager() as manager:
         shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees)
         simplification_operation = manager.Value(ctypes.c_int, -1)
-        barrier = manager.Barrier(max_workers)
+        barrier = manager.Barrier(len(chunks))
 
         futures = [
             executor.submit(
@@ -244,15 +253,47 @@ def _apply_operations(
                 simplification_operation,
                 barrier,
             )
-            for idx, chunk in enumerate(more_itertools.divide(max_workers, forest))
-            if chunk
+            for idx, chunk in enumerate(chunks)
         ]
 
         # Flatten the results and extract the simplification operation ID if any
         forest = [tree for chunk in as_completed(futures) for tree in chunk.result()]
-        op_id = None if simplification_operation.value == -1 else cast(int, simplification_operation.value)
+        op_id = simplification_operation.value
 
-    return forest, op_id
+    return forest, op_id if op_id >= 0 else None
+
+
+def _distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
+    """
+    Distribute a collection of trees into `n` sub-collections with approximately equal total complexity.
+    Complexity is determined by the number of leaves in each tree.
+
+    The function attempts to create `n` chunks, but if there are fewer elements than `n`,
+    it will create one chunk per element.
+
+    :param trees: A collection of trees.
+    :param n: The number of sub-collections to create.
+    :return: A list of `n` sub-collections, with trees distributed to balance complexity.
+    :raises ValueError: If `n` is less than 1.
+    """
+    if n < 1:
+        raise ValueError("The number of sub-collections 'n' must be at least 1.")
+
+    n = min(n, len(trees))
+
+    # Sort trees in descending order of their leaf count for a greedy allocation.
+    sorted_trees = sorted(trees, key=lambda tree: len(tree.leaves()), reverse=True)
+
+    chunks = [[] for _ in range(n)]
+    chunk_complexities = [0] * n
+
+    # Greedy distribution: Assign each tree to the chunk with the smallest current complexity.
+    for tree in sorted_trees:
+        least_complex_chunk_index = chunk_complexities.index(min(chunk_complexities))
+        chunks[least_complex_chunk_index].append(tree)
+        chunk_complexities[least_complex_chunk_index] += len(tree.leaves())
+
+    return chunks
 
 
 def _apply_operations_worker(
@@ -317,7 +358,7 @@ def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = 
     :return: None
     """
     # Count labels for all nodes in the forest
-    label_counts = Counter(subtree.label() for tree in forest for subtree in tree.subtrees())
+    label_counts = Counter(str(subtree.label()) for tree in forest for subtree in tree.subtrees())
 
     # Calculate the number of unlabeled nodes
     num_unlabeled = sum(not has_type(label) for label in label_counts)

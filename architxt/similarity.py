@@ -321,10 +321,17 @@ def get_equiv_of(
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A tuple representing the cluster of subtrees that meet the similarity threshold.
     """
-    # Sort equiv subtrees by similarity to the center element (the first one as the cluster are sorted)
-    equiv_subtrees = sorted(equiv_subtrees, key=lambda cluster: similarity(t, cluster[0], metric=metric), reverse=True)
-
+    distance_to_center = []
     for cluster in equiv_subtrees:
+        if t in cluster or (cluster_sim := similarity(t, cluster[0], metric=metric)) >= tau:
+            return cluster
+
+        distance_to_center.append(cluster_sim)
+
+    # Sort equiv subtrees by similarity to the center element (the first one as the cluster are sorted)
+    equiv_subtrees = sorted(zip(equiv_subtrees, distance_to_center), key=lambda x: x[1], reverse=True)
+
+    for cluster, _ in equiv_subtrees:
         # Early exit: stop checking once we find a matching cluster
         if t in cluster or any(sim(x, t, tau, metric) for x in cluster):
             return cluster
