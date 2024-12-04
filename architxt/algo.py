@@ -288,7 +288,9 @@ def _apply_operations_worker(
         )
 
         with mlflow.start_span(op_name):
-            forest, simplified = zip(*map(operation_fn, tqdm(forest, desc=op_name, leave=False, position=idx + 1)))
+            forest, simplified = zip(
+                *map(operation_fn, tqdm(forest, desc=op_name, leave=False, position=idx + 1)), strict=False
+            )
 
             if any(simplified):
                 simplification_operation.value = op_id
@@ -302,7 +304,7 @@ def _apply_operations_worker(
     return forest
 
 
-def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()):
+def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()) -> None:
     """
     Logs various metrics related to a forest of trees and equivalent subtrees.
 
@@ -363,7 +365,7 @@ def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = 
     )
 
 
-def _log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER):
+def _log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER) -> None:
     """
     Logs information about the clusters of equivalent subtrees.
 
@@ -392,7 +394,7 @@ def _log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER):
     )
 
 
-def _log_schema(iteration: int, forest: Forest):
+def _log_schema(iteration: int, forest: Forest) -> None:
     """
     Log the schema to MLFlow.
     :param iteration: The current iteration number for logging.

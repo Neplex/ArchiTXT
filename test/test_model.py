@@ -3,7 +3,7 @@ from architxt.model import NodeLabel, NodeType
 
 
 @pytest.mark.parametrize(
-    "labels,count",
+    ('labels', 'count'),
     [
         ((NodeLabel(NodeType.ENT), NodeLabel(NodeType.GROUP)), 2),
         ((NodeLabel(NodeType.ENT, 'label'), NodeLabel(NodeType.GROUP, 'label')), 2),

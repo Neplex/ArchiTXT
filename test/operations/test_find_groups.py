@@ -68,7 +68,6 @@ def test_find_group_largest():
 
     tree, has_simplified = find_groups(tree, equiv_subtrees, tau=0.7, min_support=0, metric=jaccard)
 
-    print(tree.pformat(margin=1024))
     assert has_simplified
     assert tree == Tree.fromstring('(GROUP::0 (ENT::X xxx) (ENT::Y yyy) (ENT::Z zzz))')
 

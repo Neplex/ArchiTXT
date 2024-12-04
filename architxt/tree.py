@@ -33,7 +33,7 @@ class Tree(ParentedTree):
     _parent: 'Tree | None'
     _label: NodeLabel | str
 
-    def __init__(self, node: NodeLabel | str, children: Iterable['Tree | str'] | None = None):
+    def __init__(self, node: NodeLabel | str, children: Iterable['Tree | str'] | None = None) -> None:
         super().__init__(node, children)
 
         if isinstance(node, NodeLabel):
@@ -242,7 +242,7 @@ class Tree(ParentedTree):
         """
         return type(self)('S', [*self, *tree])
 
-    def __reset_cache(self):
+    def __reset_cache(self) -> None:
         """Reset cached properties"""
         self.height.cache_clear()
         self.depth.cache_clear()
@@ -259,12 +259,12 @@ class Tree(ParentedTree):
             parent.__reset_cache()
 
     @overload
-    def __setitem__(self, pos: TREE_POS, subtree: 'Tree | str'): ...
+    def __setitem__(self, pos: TREE_POS, subtree: 'Tree | str') -> None: ...
 
     @overload
-    def __setitem__(self, pos: slice, subtree: 'list[Tree | str]'): ...
+    def __setitem__(self, pos: slice, subtree: 'list[Tree | str]') -> None: ...
 
-    def __setitem__(self, pos: TREE_POS | slice, subtree: 'list[Tree | str] | Tree | str'):
+    def __setitem__(self, pos: TREE_POS | slice, subtree: 'list[Tree | str] | Tree | str') -> None:
         super().__setitem__(pos, subtree)
         self.__reset_cache()
 
@@ -287,7 +287,7 @@ class Tree(ParentedTree):
         super().extend(children)
         self.__reset_cache()
 
-    def remove(self, child: 'Tree | str', recursive: bool = True) -> None:
+    def remove(self, child: 'Tree | str', *, recursive: bool = True) -> None:
         super().remove(child)
         self.__reset_cache()
 
@@ -298,7 +298,7 @@ class Tree(ParentedTree):
         super().insert(pos, child)
         self.__reset_cache()
 
-    def pop(self, pos: int = -1, recursive: bool = True) -> 'Tree | str':
+    def pop(self, pos: int = -1, *, recursive: bool = True) -> 'Tree | str':
         """
         Deletes an element from the treeat the specified position `pos`.
         If the parent tree becomes empty after the deletion, recursively deletes the parent node.

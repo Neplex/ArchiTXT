@@ -11,7 +11,7 @@ from architxt.tree import Forest, has_type
 
 class Schema(CFG):
     @classmethod
-    def from_forest(cls, forest: Forest, keep_invalid_nodes: bool = True) -> 'Schema':
+    def from_forest(cls, forest: Forest, *, keep_invalid_nodes: bool = True) -> 'Schema':
         """
         Creates a Schema from a given forest of trees.
 

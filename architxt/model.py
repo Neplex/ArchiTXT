@@ -21,7 +21,7 @@ class NodeLabel(str):
     def __new__(cls, label_type: NodeType, label: str = ''):
         return super().__new__(cls, f'{label_type.value}::{label}' if label else label_type.value)
 
-    def __init__(self, label_type: NodeType, label: str = ''):
+    def __init__(self, label_type: NodeType, label: str = '') -> None:
         self.name = label
         self.type = label_type
 
@@ -38,7 +38,7 @@ class Entity:
     end: int
     id: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.start < 0:
             msg = "Start cannot be negative."
             raise ValueError(msg)
@@ -47,10 +47,10 @@ class Entity:
             msg = "Start cannot be larger than end."
             raise ValueError(msg)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.end - self.start
 
-    def __lt__(self, other):
+    def __lt__(self, other: 'Entity') -> bool:
         return self.start < other.start
 
 
@@ -67,12 +67,12 @@ class TreeEntity:
         prefix = commonprefix(self.positions)
         return prefix if prefix != self.positions[0] else tuple(prefix[:-1])
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.positions:
             msg = "Cannot have empty list of positions."
             raise ValueError(msg)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.positions)
 
 

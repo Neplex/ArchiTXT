@@ -47,9 +47,12 @@ def load_or_cache_corpus(
     """
     try:
         # Generate a cache key based on the archive file's content
-        params_hash = 'E'.join(sorted(entities_filter)) + 'R'.join(sorted(relations_filter))
         file_hash = hashlib.file_digest(archive_file, hashlib.md5)
-        file_hash.update(params_hash.encode())
+
+        if entities_filter:
+            file_hash.update('E'.join(sorted(entities_filter)).encode())
+        if relations_filter:
+            file_hash.update('R'.join(sorted(relations_filter)).encode())
 
         key = file_hash.hexdigest()
         corpus_cache_path = Path(f'{key}.pkl')
@@ -128,9 +131,9 @@ def cli_run(
                 language=language,
             )
 
-    except Exception:
+    except Exception as error:
         console.print_exception()
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from error
 
     # Generate synthetic database instances
     if gen_instances:
@@ -179,15 +182,15 @@ def cli_ui() -> None:
     Launch the web-based UI using Streamlit.
     """
     try:
-        from .. import ui
+        from architxt import ui
 
         subprocess.run(['streamlit', 'run', ui.__file__], check=True)
 
-    except FileNotFoundError:
+    except FileNotFoundError as error:
         console.print(
             "[red]Streamlit is not installed or not found. Please install it with `pip install architxt[ui]` to use the UI.[/]"
         )
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from error
 
 
 def cli_stats(
@@ -214,9 +217,9 @@ def cli_stats(
                 language=language,
             )
 
-    except Exception:
+    except Exception as error:
         console.print_exception()
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from error
 
     forest = list(filter(lambda x: len(x.leaves()) < 50, forest))
 
@@ -269,9 +272,9 @@ def cli_largest_tree(
                 language=language,
             )
 
-    except Exception:
+    except Exception as error:
         console.print_exception()
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from error
 
     forest = list(filter(lambda x: len(x.leaves()) < 50, forest))
 

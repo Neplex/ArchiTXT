@@ -113,9 +113,11 @@ select = [
     "E4", # Pycodestyle error codes that are safe to auto-fix
     "E7",
     "E9",
+    "C4", # Comprehensions
     "F", # Flake8 rules
     "I", # isort rules for import ordering
     "ICN", # Import conventions
+    "TID", # Tidy imports
     "UP", # pyupgrade (for safe code modernization)
     "C4", # Comprehension simplifications
     "SIM", # Code simplifications
@@ -126,6 +128,9 @@ select = [
     "NPY", # NumPy checks
     "PERF", # Performance anti-pattern checks
     "FURB", # Old Python code
+    "PT", # Pytesst checks
+    "RET", # Returns
+    "PTH", # Prefer Pathlib
 ]
 
 [tool.ruff.format]

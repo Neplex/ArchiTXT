@@ -17,29 +17,29 @@ mlflow.set_experiment('ArchiTXT')
 
 
 class Node(_Node):
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__) and self.id == other.id
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Node({self.id})'
 
 
 class Edge(_Edge):
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__) and self.source == other.source and self.to == other.to
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.source, self.to))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Edge({self.source}, {self.to})'
 
 
 @st.fragment()
-def graph(forest: Forest):
+def graph(forest: Forest) -> None:
     """Function to render schema graph visualization"""
     nodes = set()
     edges = set()
@@ -61,7 +61,7 @@ def graph(forest: Forest):
 
 
 @st.fragment()
-def dataframe(forest: Forest):
+def dataframe(forest: Forest) -> None:
     """Function to render instance DataFrames"""
     final_tree = Tree('ROOT', deepcopy(forest))
     table = st.selectbox('Group', sorted(final_tree.groups()))
@@ -77,7 +77,7 @@ with st.sidebar:
 input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 Statistics', '📐 Schema', '🗄️ Instance'])
 
 with input_tab, st.form(key='corpora', enter_to_submit=False):
-    uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], False)
+    uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=False)
 
     entities_filter = st_tags(label='Excluded entities', value=['MOMENT', 'DUREE', 'DATE'])
     relations_filter = st_tags(label='Excluded relations', value=['TEMPORALITE', 'CAUSE-CONSEQUENCE'])
