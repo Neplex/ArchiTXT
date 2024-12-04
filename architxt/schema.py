@@ -180,12 +180,12 @@ class Schema(CFG):
         a lower balance metric suggests that some groups may be too large (wide) or too small (fragmented).
 
         .. math::
-            B = 1 - \\frac{\\sigma(A)}{\\mu(A)}
+            B = 1 - \frac{\sigma(A)}{\mu(A)}
 
         Where:
             - :math:`A`: The set of attribute counts for all groups.
-            - :math:`\\mu(A)`: The mean number of attributes per group.
-            - :math:`\\sigma(A)`: The standard deviation of attribute counts across groups.
+            - :math:`\mu(A)`: The mean number of attributes per group.
+            - :math:`\sigma(A)`: The standard deviation of attribute counts across groups.
 
         returns: Balance metric (B), a measure of attribute dispersion.
            - :math:`B \approx 1`: Attributes are evenly distributed.

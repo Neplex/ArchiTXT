@@ -319,6 +319,7 @@ def apply_operations_worker(
     :param barrier: A barrier to synchronize the workers before starting the next operation.
     :param _run_id: The Mlflow run_id to link to.
     :return: The rewritten forest and the execution trace.
+    :meta private:
     """
     equiv_subtrees = shared_equiv_subtrees.get()
 

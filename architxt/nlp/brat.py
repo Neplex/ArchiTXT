@@ -28,7 +28,6 @@ def convert_brat_entities(
     :param mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
     :return: A generator yielding `Entity` objects.
 
-    Example:
     >>> ents = [
     ...     BratEntity(spans=[(0, 5)], tag="person", mention="E1"),
     ...     BratEntity(spans=[(10, 15)], tag="FREQ", mention="E2"),
@@ -77,7 +76,6 @@ def convert_brat_relations(
     :param mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
     :return: A generator yielding `Relation` objects.
 
-    Example:
     >>> rels = [
     ...     BratRelation(arg1=BratEntity(spans=[(0, 5)], tag='X', mention='E1'), arg2=BratEntity(spans=[(10, 15)], tag='Y', mention='E2'), relation="part-of"),
     ...     BratRelation(arg1=BratEntity(spans=[(20, 25)], tag='X', mention='E3'), arg2=BratEntity(spans=[(30, 35)], tag='Z', mention='E3'), relation="TEMPORALITY")

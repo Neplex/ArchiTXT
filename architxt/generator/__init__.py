@@ -19,7 +19,6 @@ def gen_group(schema: Schema, name: NodeLabel) -> Tree:
     :param name: The name of the group.
     :return: The generated group tree.
 
-    Example:
     >>> schema = Schema.from_description(groups={'Fruits': {'Apple', 'Banana', 'Cherry'}})
     >>> group_tree = gen_group(schema, NodeLabel(NodeType.GROUP, 'Fruits'))
     >>> print(group_tree.pformat(margin=255))
@@ -37,7 +36,6 @@ def gen_relation(schema: Schema, name: NodeLabel) -> Tree:
     :param name: The name of the relationship.
     :return: The generated relation tree.
 
-    Example:
     >>> schema = Schema.from_description(
     ...     groups={'Fruits': {'Apple', 'Banana'}, 'Colors': {'Red', 'Blue'}},
     ...     rels={'Preference': ('Fruits', 'Colors')}
@@ -61,7 +59,6 @@ def gen_collection(name: str, elements: Iterable[Tree]) -> Tree:
     :param elements: The list of trees that make up the collection.
     :return: A tree representing the collection.
 
-    Example:
     >>> from architxt.tree import Tree
     >>> elems = [Tree('Element1', []), Tree('Element2', [])]
     >>> collection_tree = gen_collection('Collection', elems)

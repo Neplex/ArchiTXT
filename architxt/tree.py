@@ -84,7 +84,6 @@ class Tree(ParentedTree):
         """
         Get the height of the tree.
 
-        Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> t.height()
         4
@@ -101,7 +100,6 @@ class Tree(ParentedTree):
         """
         Get the depth of the tree.
 
-        Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> t.depth()
         1
@@ -120,7 +118,6 @@ class Tree(ParentedTree):
 
         :return: A set of unique group names within the tree.
 
-        Example:
         >>> t = Tree.fromstring('(S (GROUP::A x) (GROUP::B y) (X (GROUP::C z)))')
         >>> sorted(t.groups())
         ['A', 'B', 'C']
@@ -147,7 +144,6 @@ class Tree(ParentedTree):
         :param group_name: The name of the group to search for.
         :return: A pandas DataFrame containing instances of the specified group.
 
-        Example:
         >>> t = Tree.fromstring('(S (GROUP::A (ENT::person Alice) (ENT::fruit apple)) '
         ...                     '(GROUP::A (ENT::person Bob) (ENT::fruit banana)) '
         ...                     '(GROUP::B (ENT::person Charlie) (ENT::animal dog)))')
@@ -155,7 +151,6 @@ class Tree(ParentedTree):
           person   fruit
         0  Alice   apple
         1    Bob  banana
-
         >>> t.group_instances("B")
             person animal
         0  Charlie    dog
@@ -184,7 +179,6 @@ class Tree(ParentedTree):
         """
         Get a tuple of subtrees that are entities.
 
-        Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> list(t.entities()) == [t[0, 0], t[0, 1], t[1, 0], t[1, 1]]
         True
@@ -208,7 +202,6 @@ class Tree(ParentedTree):
         """
         Get the set of entity labels present in the tree.
 
-        Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> sorted(t.entity_labels())
         ['animal', 'fruit', 'person']
@@ -226,7 +219,6 @@ class Tree(ParentedTree):
         """
         Return a Counter object that counts the labels of entity subtrees.
 
-        Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> t.entity_label_count()
         Counter({'person': 2, 'fruit': 1, 'animal': 1})
@@ -239,7 +231,6 @@ class Tree(ParentedTree):
         """
         Check if there are duplicate entity labels.
 
-        Example:
         >>> from architxt.tree import Tree
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> t.has_duplicate_entity()
@@ -255,7 +246,6 @@ class Tree(ParentedTree):
         """
         Check if there is at least one entity as direct children.
 
-        Example:
         >>> from architxt.tree import Tree
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> t.has_entity_child()
@@ -343,7 +333,6 @@ class Tree(ParentedTree):
         :param recursive: If an empty tree should be removed from the parent.
         :return: The element at the position. The function modifies the tree in place.
 
-        Example:
         >>> t = Tree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
         >>> print(t[(1, 1)].pformat(margin=255))
         (NP (NNS apples))
@@ -378,7 +367,6 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
     :param types: The types to check for (can be a set of strings, a string, or None).
     :return: True if the object has the specified type(s), False otherwise.
 
-    Example:
     >>> tree = Tree.fromstring('(S (ENT Alice) (REL Bob))')
     >>> has_type(tree, NodeType.ENT)  # Check if the tree is of type 'S'
     False
@@ -430,7 +418,6 @@ def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bo
     :param types: A set of `NodeType` or string labels that should be kept, or `None` to reduce based on length.
     :return: `True` if the subtree was reduced, `False` otherwise.
 
-    Example:
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
     >>> reduce(t[1], 1)
     True
@@ -469,7 +456,6 @@ def reduce_all(tree: Tree, skip_types: set[str | NodeType] | None = None) -> Non
     :param skip_types: A set of `NodeType` or string labels that should be kept, or `None` to reduce based on length.
     :return: None. The tree is modified in place.
 
-    Example:
     >>> t = Tree.fromstring("(S (X (Y (Z (NP Alice)))) (VP (VB likes) (NP (NNS apples))))")
     >>> reduce_all(t)
     >>> print(t.pformat(margin=255))

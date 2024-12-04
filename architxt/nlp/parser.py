@@ -209,7 +209,6 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
     :param entities: A list of `Entity` objects to be inserted into the tree.
     :param relations: A list of `Relation` objects representing the relationships between entities (currently not used).
 
-    Example:
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB likes) (NP (NNS apples) (CCONJ and) (NNS oranges))))")
     >>> e1 = Entity(name="person", start=0, end=5, id="E1")
     >>> e2 = Entity(name="fruit", start=12, end=18, id="E2")
@@ -280,7 +279,6 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     :param pos: The index of the subtree within the parent tree that contains the coordination to fix.
     :return: `True` if the coordination was successfully fixed, `False` otherwise.
 
-    Example:
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB eats) (NP (NNS apples) (COORD (CCONJ and) (NP (NNS oranges))))))")
     >>> fix_coord(t[1], 1)
     True
@@ -342,7 +340,6 @@ def fix_conj(tree: Tree, pos: int) -> bool:
 
     :return: `True` if the conjunction structure was modified, `False` otherwise.
 
-    Example:
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)))))")
     >>> fix_conj(t[1], 1)
     False
@@ -390,7 +387,6 @@ def fix_all_coord(tree: Tree) -> None:
 
     :param tree: The tree in which coordination structures will be fixed.
 
-    Example:
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB eats) (NP (NNS apples) (COORD (CCONJ and) (NP (NNS oranges))))))")
     >>> fix_all_coord(t)
     >>> print(t.pformat(margin=255))
@@ -442,7 +438,6 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     :param tree_ent: A `TreeEntity` containing the entity name and its positions in the tree.
     :return: The updated subtree where the entity was inserted.
 
-    Example:
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
     >>> tree_ent1 = TreeEntity(name="person", positions=[(0, 0)])
     >>> tree_ent2 = TreeEntity(name="fruit", positions=[(1, 1, 0, 0)])
@@ -563,7 +558,6 @@ def unnest_ent(tree: Tree, pos: int) -> None:
     :param tree: The tree in which the entity will be un-nested.
     :param pos: The index of the 'ENT' node to be processed.
 
-    Example:
     >>> t = Tree.fromstring('(S (ENT::person Alice (ENT::person Bob) (ENT::person Charlie)))')
     >>> unnest_ent(t[0], 0)
     >>> print(t.pformat(margin=255))

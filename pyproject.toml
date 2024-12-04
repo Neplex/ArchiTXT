@@ -9,6 +9,7 @@ authors = [
 ]
 readme = "README.md"
 repository = "https://github.com/neplex/architxt"
+documentation = "https://neplex.github.io/architxt"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -82,9 +83,16 @@ py-spy = "~0.4.0"
 pre-commit = "^4.0.1"
 datasets = "*"
 
+# Linters
 pylint = "^3.3"
 mypy = ">=0.910,<1.16"
 ruff = "^0.9.1"
+
+# Documentation
+sphinx = "^8.1.3"
+sphinx-book-theme = "*"
+sphinx-toolbox = "*"
+sphinx-design = "*"
 
 # Typing stubs
 pandas-stubs = "*"
