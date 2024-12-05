@@ -69,7 +69,7 @@ def test_find_group_largest():
     tree, has_simplified = find_groups(tree, equiv_subtrees, tau=0.7, min_support=0, metric=jaccard)
 
     assert has_simplified
-    assert tree == Tree.fromstring('(GROUP::0 (ENT::X xxx) (ENT::Y yyy) (ENT::Z zzz))')
+    assert tree == Tree.fromstring('(1 (GROUP::1 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
 
 def test_find_group_frequent():

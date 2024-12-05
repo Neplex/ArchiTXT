@@ -174,28 +174,28 @@ def find_groups(
         # Create a group for each subtree in the cluster
         for subtree in subtree_cluster:
             if (
-                any(has_type(node, NodeType.GROUP) for node in subtree)
+                len(subtree) < 2
+                or has_type(subtree)
                 or (subtree.parent() and has_type(subtree.parent(), NodeType.GROUP))
-                or len(subtree) < 2
+                or not all(has_type(node, NodeType.ENT) for node in subtree)
+                or subtree.has_duplicate_entity()
             ):
                 continue
 
             _create_group(subtree, group_index)
             group_created = True
 
-        # if group_created:
-        group_labels = tuple(sorted({label for subtree in subtree_cluster for label in subtree.entity_labels()}))
-        if span := mlflow.get_current_active_span():
-            span.add_event(
-                SpanEvent(
-                    'create_group',
-                    attributes={
-                        'group': group_index,
-                        'num_instance': len(subtree_cluster),
-                        'labels': group_labels,
-                    },
+            group_labels = tuple(sorted({label for subtree in subtree_cluster for label in subtree.entity_labels()}))
+            if span := mlflow.get_current_active_span():
+                span.add_event(
+                    SpanEvent(
+                        'create_group',
+                        attributes={
+                            'group': group_index,
+                            'labels': group_labels,
+                        },
+                    )
                 )
-            )
 
     return tree, group_created
 
@@ -635,9 +635,8 @@ def find_collections(
     ):
         # Naming-only mode: apply labels without modifying tree structure
         if naming_only:
-            if all(
-                has_type(x, {NodeType.GROUP, NodeType.REL}) and x.label().name == subtree[0].label().name
-                for x in subtree
+            if has_type(subtree[0], {NodeType.GROUP, NodeType.REL}) and more_itertools.all_equal(
+                subtree, key=lambda x: x.label()
             ):
                 subtree.set_label(NodeLabel(NodeType.COLL, subtree[0].label().name))
             continue
