@@ -5,18 +5,32 @@ from nltk import CFG, Nonterminal, Production
 
 from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
-from architxt.model import NodeType
+from architxt.model import NodeLabel, NodeType
 from architxt.tree import Forest, has_type
+
+NODE_TYPE_RANK = {
+    NodeType.COLL: 1,
+    NodeType.REL: 2,
+    NodeType.GROUP: 3,
+    NodeType.ENT: 4,
+}
+
+
+def get_rank(nt: Nonterminal) -> int:
+    if isinstance(nt.symbol(), NodeLabel) and nt.symbol().type in NODE_TYPE_RANK:
+        return NODE_TYPE_RANK[nt.symbol().type]
+
+    return 0
 
 
 class Schema(CFG):
     @classmethod
-    def from_forest(cls, forest: Forest, *, keep_invalid_nodes: bool = True) -> 'Schema':
+    def from_forest(cls, forest: Forest, *, keep_unlabelled: bool = True) -> 'Schema':
         """
         Creates a Schema from a given forest of trees.
 
         :param forest: The input forest from which to derive the schema.
-        :param keep_invalid_nodes: Whether to keep uncategorized nodes in the schema.
+        :param keep_unlabelled: Whether to keep uncategorized nodes in the schema.
         :return: A CFG-based schema representation.
         """
         schema: dict[Nonterminal, set[Nonterminal]] = {}
@@ -24,7 +38,7 @@ class Schema(CFG):
         for tree in forest:
             for prod in tree.productions():
                 # Skip instance and uncategorized nodes
-                if prod.is_lexical() or (not keep_invalid_nodes and not has_type(prod)):
+                if prod.is_lexical() or (not keep_unlabelled and not has_type(prod)):
                     continue
 
                 if has_type(prod, NodeType.COLL):
@@ -34,10 +48,10 @@ class Schema(CFG):
                     schema[prod.lhs()] = schema.get(prod.lhs(), set()) | set(prod.rhs())
 
         # Create productions for the schema
-        productions = [Production(Nonterminal('ROOT'), sorted(schema.keys()))]
-        productions.extend(Production(lhs, sorted(rhs)) for lhs, rhs in schema.items())
+        productions = [Production(lhs, sorted(rhs)) for lhs, rhs in schema.items()]
+        productions = sorted(productions, key=lambda p: get_rank(p.lhs()))
 
-        return cls(Nonterminal('ROOT'), productions)
+        return cls(Nonterminal('ROOT'), [Production(Nonterminal('ROOT'), sorted(schema.keys())), *productions])
 
     @cached_property
     def groups(self) -> set[str]:

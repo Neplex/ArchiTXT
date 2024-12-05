@@ -44,7 +44,7 @@ def graph(forest: Forest) -> None:
     nodes = set()
     edges = set()
 
-    schema = Schema.from_forest(forest, keep_invalid_nodes=False)
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
     for prod in schema.productions():
         if has_type(prod, {NodeType.GROUP, NodeType.REL}):
             lhs_symbol = prod.lhs().symbol().name

@@ -165,7 +165,7 @@ def cli_run(
     forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
     # Generate schema
-    schema = Schema.from_forest(forest, keep_invalid_nodes=False)
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
     schema_str = schema.as_cfg()
     mlflow.log_text(schema_str, 'schema.txt')
 
