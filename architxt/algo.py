@@ -148,10 +148,9 @@ def _rewrite_step(
     if op_id is not None:
         mlflow.log_metric('edit_op', op_id, step=iteration)
 
-    forest = _post_process(forest, tau=tau, metric=metric, executor=executor)
-
-    _log_schema(iteration, forest)
-    _log_metrics(iteration, forest, equiv_subtrees)
+    renamed_forest, equiv_subtrees = _post_process(forest, tau=tau, metric=metric, executor=executor)
+    _log_schema(iteration, renamed_forest)
+    _log_metrics(iteration, renamed_forest, equiv_subtrees)
 
     return forest, op_id is not None
 
@@ -162,7 +161,7 @@ def _post_process(
     tau: float,
     metric: METRIC_FUNC,
     executor: Executor,
-) -> Forest:
+) -> tuple[Forest, TREE_CLUSTER]:
     """
     Post-process the forest to find and name relations and collections.
 
@@ -189,7 +188,7 @@ def _post_process(
         executor=executor,
     )
 
-    return forest
+    return forest, equiv_subtrees
 
 
 def _apply_operations(
