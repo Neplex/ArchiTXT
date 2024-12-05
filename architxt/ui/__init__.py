@@ -51,10 +51,10 @@ def graph(forest: Forest) -> None:
             nodes.add(Node(id=lhs_symbol, label=lhs_symbol))
 
             for nt in prod.rhs():
-                symbol = nt.symbol().name
+                symbol = nt.symbol().name if isinstance(nt.symbol(), NodeType) else nt.symbol()
                 nodes.add(Node(id=symbol, label=symbol))
 
-                label = 'REL' if prod.lhs().symbol().type == NodeType.REL else ''
+                label = 'REL' if has_type(prod, NodeType.REL) else ''
                 edges.add(Edge(source=lhs_symbol, target=symbol, label=label))
 
     agraph(nodes=nodes, edges=edges, config=Config(directed=True))

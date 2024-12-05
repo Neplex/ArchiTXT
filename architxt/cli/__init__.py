@@ -153,6 +153,7 @@ def cli_run(
             forest.extend(gen_trees)
 
     # Rewrite the trees
+    mlflow.enable_system_metrics_logging()
     mlflow.log_params(
         {
             'has_corpus': True,
