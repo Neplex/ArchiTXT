@@ -38,7 +38,7 @@ more-itertools = "*"
 bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
 mlflow = "^2.6.0"
 psutil = "^6.1.0"
-typer = "^0.14.0"
+typer = "^0.15.1"
 anyio = "^4.6.0"
 rich = "^13.9.4"
 antlr4-python3-runtime = ">=4.13,<5"
