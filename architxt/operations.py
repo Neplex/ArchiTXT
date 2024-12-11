@@ -225,31 +225,32 @@ def _find_subgroups_inner(
     :return: A tuple containing the modified subtree and its support count if the modified subtree
              meets the minimum support threshold; otherwise, `None`.
     """
-    # Create a copy of the tree we worked on
-    new_tree = deepcopy(subtree.root())
-    new_subtree = new_tree[subtree.treeposition()]
+    new_subtree = deepcopy(subtree)
 
-    # Create the new GROUP node
-    group_tree = Tree(NodeLabel(NodeType.GROUP), children=[deepcopy(ent_tree) for ent_tree in sub_group])
+    # Create a new GROUP node with the given entities from the sub_group.
+    group_tree = Tree(NodeLabel(NodeType.GROUP), children=[deepcopy(ent) for ent in sub_group])
 
-    # Removed used entity trees from the subtree
-    for ent_tree in sorted(sub_group, key=lambda x: x.parent_index(), reverse=True):
-        new_subtree.pop(ent_tree.parent_index())
+    # Remove the used entities from the original subtree
+    # and insert the new GROUP node at the earliest index of the sub_group.
+    indices = sorted((ent.parent_index() for ent in sub_group), reverse=True)
+    for idx in indices:
+        new_subtree.pop(idx)
 
     # Insert the GROUP node at the position of the earliest entity in sub_group
-    insertion_index = min(ent_tree.parent_index() for ent_tree in sub_group)
+    insertion_index = min(indices)
     new_subtree.insert(insertion_index, group_tree)
 
-    # If the subtree was a Group, it is not valid anymore and should not keep its label
+    # Reset label if subtree becomes invalid as a group
     if has_type(subtree, NodeType.GROUP):
         new_subtree.set_label('')
 
-    # We compute the support of the new subtree's. It is a valid subgroup if its support exceeds the given threshold.
-    equiv = get_equiv_of(new_subtree[insertion_index], equiv_subtrees, tau=tau, metric=metric)
+    # Compute support for the new subtree. It is a valid subgroup if its support exceeds the given threshold.
+    new_group = new_subtree[insertion_index]
+    equiv = get_equiv_of(new_group, equiv_subtrees, tau=tau, metric=metric)
     support = len(equiv)
 
     if support > min_support:
-        new_subtree[insertion_index].set_label(equiv[0].label())
+        new_group.set_label(equiv[0].label())
         return new_subtree, support
 
     return None
@@ -272,26 +273,64 @@ def find_subgroups(
     """
     simplified = False
 
-    for subtree in sorted(
+    # Generate candidate subtrees that do not include ENT, REL, or COLL nodes as their children.
+    candidate_subtrees = sorted(
         tree.subtrees(
             lambda sub: not has_type(sub, {NodeType.ENT, NodeType.REL, NodeType.COLL})
             and all(has_type(child, NodeType.ENT) for child in sub)
         ),
         key=lambda sub: sub.height(),
-    ):
-        # Calculate initial support for the subtree
-        group_support = len(get_equiv_of(subtree, equiv_subtrees, tau=tau, metric=metric))
-        entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
+    )
+
+    for subtree in candidate_subtrees:
         parent = subtree.parent()
         parent_idx = subtree.parent_index()
 
-        k = min(len(entity_trees), len(subtree) - 1)
+        # Compute initial support for the subtree
+        group_support = len(get_equiv_of(subtree, equiv_subtrees, tau=tau, metric=metric))
+        entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
+        entity_labels = {ent.label() for ent in entity_trees}
 
-        # Recursively creating k-sized groups, decreasing k if necessary
+        # To narrow down the search space, we focus on reducing the entity trees to consider.
+        # We retain only those groups that appear in clusters with higher support than the actual subtree,
+        # and where the entity set intersects with the current subtrees.
+        # This allows us to reduce the set of entity labels to consider only those present in these selected groups.
+        entity_groups = {
+            tuple(sorted(x.label() for x in subtree))
+            for cluster in equiv_subtrees
+            if len(cluster) > group_support
+            for subtree in cluster
+            if entity_labels.intersection(x.label() for x in subtree)
+        }
+
+        if not entity_groups:
+            continue
+
+        available_labels = {label for group in entity_groups for label in group}
+
+        # In addition to limiting the search to a subset of entity labels,
+        # we can also restrict the size of subgroups to consider.
+        # This helps prevent combinatorial explosion by avoiding the evaluation of excessively large groups.
+        #
+        # In one hane, we know that subgroups should be smaller than the actual subtree.
+        # On another hand, similarity is unlikely when groups differ significantly in size.
+        # We can limit subgroup size to the largest group in the selected clusters
+        # that contain a subset of the available entity labels within the subtree.
+        # Larger groups could then be constructed by the merge_group operation.
+        entity_trees = [entity for entity in entity_trees if entity.label() in available_labels]
+        entity_labels = {ent.label() for ent in entity_trees}
+
+        k = max(
+            len(entity_trees),
+            len(subtree) - 1,
+            *(len(ent_group) for ent_group in entity_groups if entity_labels.issuperset(ent_group)),
+        )
+
+        # Recursively explore k-sized combinations of entity trees and select the one with the maximum support,
+        # decreasing k if necessary
         while k > 1:
-            # Generate k-sized combinations of entity trees and keep the one with maximum support
-            k_groups = combinations(entity_trees, k)
-            k_groups_support = (
+            # Evaluate all k-groups
+            evaluated_groups = (
                 _find_subgroups_inner(
                     subtree,
                     sub_group,
@@ -300,20 +339,16 @@ def find_subgroups(
                     min_support=max(group_support, min_support - 1),
                     metric=metric,
                 )
-                for sub_group in k_groups
+                for sub_group in combinations(entity_trees, k)
                 if more_itertools.all_unique(ent.label() for ent in sub_group)
             )
 
-            # Get the subgroup with the maximum support
-            max_subtree: Tree | None
-            max_subtree, max_support = max(
-                filter(lambda result: result is not None, k_groups_support),
-                key=lambda result: result[1],
-                default=(None, None),
-            )
+            # Select the subgroup with maximum support
+            valid_subgroups = filter(None, evaluated_groups)
+            max_subtree, max_support = max(valid_subgroups, key=lambda x: x[1], default=(None, None))
 
-            # No suitable k-group found; decrease k and try again
-            if not max_subtree:
+            # If no suitable k-group found; decrease k and try again
+            if max_subtree is None:
                 k -= 1
                 continue
 
@@ -332,13 +367,12 @@ def find_subgroups(
 
             # Replace subtree with the newly constructed one
             if parent:
-                subtree = parent[parent_idx] = deepcopy(max_subtree)
-
+                subtree = parent[parent_idx] = max_subtree
             else:
                 subtree.clear()
                 subtree.extend(deepcopy(max_subtree[:]))
 
-            # Update entity trees and reset k for remaining entities
+            # Reset entity trees and k
             entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
             k = min(len(entity_trees), k)
 
