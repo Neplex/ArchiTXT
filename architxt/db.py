@@ -25,6 +25,47 @@ def get_rank(nt: Nonterminal) -> int:
 
 class Schema(CFG):
     @classmethod
+    def from_description(
+        cls,
+        *,
+        groups: dict[str, set[str]] | None = None,
+        rels: dict[str, tuple[str, str]] | None = None,
+        collections: bool = True,
+    ) -> 'Schema':
+        """
+        Creates a Schema from a description of groups, relations, and collections.
+
+        :param groups: A dictionary mapping groups names to sets of entities.
+        :param rels: A dictionary mapping relation names to tuples of group names.
+        :param collections: Whether to generate collection productions.
+        :return: A Schema object.
+        """
+        productions = set()
+
+        if groups:
+            for group_name, entities in groups.items():
+                group_label = NodeLabel(NodeType.GROUP, group_name)
+                entity_labels = [Nonterminal(NodeLabel(NodeType.ENT, entity)) for entity in entities]
+                productions.add(Production(Nonterminal(group_label), sorted(entity_labels)))
+
+        if rels:
+            for relation_name, groups in rels.items():
+                relation_label = NodeLabel(NodeType.REL, relation_name)
+                group_labels = [Nonterminal(NodeLabel(NodeType.GROUP, group)) for group in groups]
+                productions.add(Production(Nonterminal(relation_label), sorted(group_labels)))
+
+        if collections:
+            coll_productions = {
+                Production(Nonterminal(NodeLabel(NodeType.COLL, prod.lhs().symbol().name)), [prod.lhs()])
+                for prod in productions
+            }
+            productions.update(coll_productions)
+
+        root_prod = Production(Nonterminal('ROOT'), sorted(prod.lhs() for prod in productions))
+
+        return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: get_rank(p.lhs()))])
+
+    @classmethod
     def from_forest(cls, forest: Forest, *, keep_unlabelled: bool = True) -> 'Schema':
         """
         Creates a Schema from a given forest of trees.
@@ -54,12 +95,32 @@ class Schema(CFG):
         return cls(Nonterminal('ROOT'), [Production(Nonterminal('ROOT'), sorted(schema.keys())), *productions])
 
     @cached_property
-    def groups(self) -> set[str]:
+    def entities(self) -> set[NodeLabel]:
+        """The set of entities in the schema."""
+        return {
+            entity.symbol()
+            for production in self.productions()
+            if has_type(production, NodeType.GROUP)
+            for entity in production.rhs()
+            if has_type(entity, NodeType.ENT)
+        }
+
+    @cached_property
+    def groups(self) -> dict[NodeLabel, set[NodeLabel]]:
         """The set of groups in the schema."""
         return {
-            str(production.lhs())
+            production.lhs().symbol(): {entity.symbol() for entity in production.rhs()}
             for production in self.productions()
-            if has_type(production, {NodeType.GROUP, NodeType.REL})
+            if has_type(production, NodeType.GROUP)
+        }
+
+    @cached_property
+    def relations(self) -> dict[NodeLabel, tuple[NodeLabel, NodeLabel]]:
+        """The set of relations in the schema."""
+        return {
+            production.lhs().symbol(): (production.rhs()[0].symbol(), production.rhs()[1].symbol())
+            for production in self.productions()
+            if has_type(production, NodeType.REL)
         }
 
     def verify(self) -> bool:
