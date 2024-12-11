@@ -8,7 +8,7 @@ def test_find_relations_simple():
 
     tree, has_simplified = find_relations(tree, set(), 0.0, 0, jaccard)
 
-    assert not has_simplified
+    assert has_simplified
     assert tree == Tree.fromstring('(REL::A<->B (GROUP::A x) (GROUP::B y))')
 
 
@@ -23,12 +23,21 @@ def test_find_relations_collection():
     )
 
 
+def test_find_relations_collection_same_group():
+    tree = Tree.fromstring('(SENT (GROUP::A x) (COLL::A (GROUP::A 1) (GROUP::A 2)))')
+
+    tree, has_simplified = find_relations(tree, set(), 0.0, 0, jaccard)
+
+    assert not has_simplified
+    assert tree == Tree.fromstring('(SENT (GROUP::A x) (COLL::A (GROUP::A 1) (GROUP::A 2)))')
+
+
 def test_find_relations_naming_only():
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::B y))')
 
     tree, has_simplified = find_relations(tree, set(), 0.0, 0, jaccard, naming_only=True)
 
-    assert not has_simplified
+    assert has_simplified
     assert tree == Tree.fromstring('(REL::A<->B (GROUP::A x) (GROUP::B y))')
 
     # =======

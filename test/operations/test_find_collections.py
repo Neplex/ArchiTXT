@@ -8,7 +8,7 @@ def test_find_collections_simple():
 
     tree, has_simplified = find_collections(tree, set(), 0.0, 0, jaccard)
 
-    assert not has_simplified
+    assert has_simplified
     assert tree == Tree.fromstring('(COLL::A (GROUP::A x) (GROUP::A y))')
 
 
@@ -43,7 +43,7 @@ def test_find_collections_naming_only():
 
     tree, has_simplified = find_collections(tree, set(), 0.0, 0, jaccard, naming_only=True)
 
-    assert not has_simplified
+    assert has_simplified
     assert tree == Tree.fromstring('(COLL::A (GROUP::A x) (GROUP::A y))')
 
     # =======

@@ -45,7 +45,7 @@ def reduce_bottom(
     reduced = False
 
     # Iterate through subtrees in reverse order to ensure bottom-up processing
-    for subtree in tree.subtrees(lambda x: not has_type(x) and x.parent() and x.has_entity_child()):
+    for subtree in list(tree.subtrees(lambda x: x.parent() and x.has_entity_child() and not has_type(x))):
         parent = subtree.parent()
         position = subtree.treeposition()
         label = subtree.label()
@@ -56,7 +56,7 @@ def reduce_bottom(
 
         # Put children in the parent at the original subtree position
         parent_pos = subtree.parent_index()
-        parent[parent_pos:parent_pos] = reversed(new_children)
+        parent[parent_pos : parent_pos + 1] = new_children
 
         new_labels = tuple(child.label() for child in parent)
         if span := mlflow.get_current_active_span():
@@ -97,7 +97,10 @@ def reduce_top(
     """
     reduced = False
 
-    for subtree in tree.subtrees(lambda x: not has_type(x) and x.parent()):
+    for subtree in list(tree):
+        if has_type(subtree):
+            continue
+
         parent = subtree.parent()
         position = subtree.treeposition()
         label = subtree.label()
@@ -108,7 +111,7 @@ def reduce_top(
 
         # Put children in the parent at the original subtree position
         parent_pos = subtree.parent_index()
-        parent[parent_pos:parent_pos] = reversed(new_children)
+        parent[parent_pos : parent_pos + 1] = new_children
 
         new_labels = tuple(child.label() for child in parent)
         if span := mlflow.get_current_active_span():
@@ -532,7 +535,7 @@ def find_relations(
     # Traverse subtrees, starting with the deepest, containing exactly 2 children
     for subtree in sorted(
         tree.subtrees(
-            lambda x: len(x) == 2 and not has_type(x) and any(has_type(y, {NodeType.GROUP, NodeType.COLL}) for y in x)
+            lambda x: len(x) == 2 and not has_type(x) and all(has_type(y, {NodeType.GROUP, NodeType.COLL}) for y in x)
         ),
         key=lambda x: x.depth(),
         reverse=True,
@@ -541,16 +544,16 @@ def find_relations(
         collection = None
 
         # Group <-> Group
-        if (
-            has_type(subtree[0], NodeType.GROUP)
-            and has_type(subtree[1], NodeType.GROUP)
-            and subtree[0].label().name != subtree[1].label().name
-        ):
+        if has_type(subtree[0], NodeType.GROUP) and has_type(subtree[1], NodeType.GROUP):
+            if subtree[0].label().name == subtree[1].label().name:
+                continue
+
             # Create and set relationship label
             label = sorted([subtree[0].label().name, subtree[1].label().name])
             subtree.set_label(NodeLabel(NodeType.REL, f'{label[0]}<->{label[1]}'))
 
             # Log relation creation in MLFlow, if active
+            simplified = True
             if span := mlflow.get_current_active_span():
                 span.add_event(
                     SpanEvent(
@@ -574,8 +577,9 @@ def find_relations(
             collection, group = subtree[0], subtree[1]
 
         # If a valid Group-Collection pair is found, create relationships for each
-        if group and collection:
-            simplified = True
+        if group and collection and has_type(collection[0], NodeType.GROUP):
+            if collection[0].label() == group.label():
+                continue
 
             # Create relationship nodes for each element in the collection
             for coll_group in collection:
@@ -585,6 +589,7 @@ def find_relations(
                 subtree.append(rel_tree)  # Add new relationship to subtree
 
                 # Log relation creation in MLFlow, if active
+                simplified = True
                 if span := mlflow.get_current_active_span():
                     span.add_event(
                         SpanEvent(
@@ -639,6 +644,7 @@ def find_collections(
                 subtree, key=lambda x: x.label()
             ):
                 subtree.set_label(NodeLabel(NodeType.COLL, subtree[0].label().name))
+                simplified = True
             continue
 
         # Group nodes by shared label and organize them into collection sets for structural modification
@@ -659,7 +665,6 @@ def find_collections(
             coll_elements = []
             for coll_tree in coll_tree_set:
                 if has_type(coll_tree, NodeType.COLL):
-                    simplified = True  # Mark the tree as modified
                     coll_elements.extend(coll_tree)  # Merge collection elements
                 else:
                     coll_elements.append(coll_tree)
@@ -680,6 +685,8 @@ def find_collections(
                     )
                 )
 
+            simplified = True
+
             # If the entire subtree is a single collection, update its label and structure directly
             if len(subtree) == len(coll_tree_set):
                 subtree.set_label(label)
@@ -687,7 +694,6 @@ def find_collections(
                 subtree.extend(children)
 
             else:
-                simplified = True
                 index = coll_tree_set[0].parent_index()
 
                 # Remove nodes of the current collection set from the subtree
