@@ -52,6 +52,9 @@ def rewrite(
 
     :return: The rewritten forest.
     """
+    if not forest:
+        return forest
+
     min_support = min_support or max((len(forest) // 10), 2)
     max_workers = min(len(forest) // 100, max_workers or cpu_count())  # Cannot have less than 100 trees
 

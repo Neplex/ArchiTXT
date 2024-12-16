@@ -1,5 +1,7 @@
 import hashlib
+import random
 import subprocess
+from collections import Counter
 from io import BytesIO
 from pathlib import Path
 from tarfile import TarFile
@@ -8,7 +10,9 @@ from typing import BinaryIO
 
 import cloudpickle
 import mlflow
+import more_itertools
 import typer
+from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -20,6 +24,31 @@ from architxt.nlp import get_enriched_forest, get_sentence_from_disk
 from architxt.tree import Tree
 
 console = Console()
+
+ENTITIES_FILTER = {'TIME', 'MOMENT', 'DUREE', 'DURATION', 'DATE', 'OTHER_ENTITY', 'OTHER_EVENT', 'COREFERENCE'}
+RELATIONS_FILTER = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
+ENTITIES_MAPPING = {
+    'FREQ': 'FREQUENCY',
+    'FREQUENCE': 'FREQUENCY',
+    'SIGN_SYMPTOM': 'SOSY',
+    'VALEUR': 'VALUE',
+    'HEIGHT': 'VALUE',
+    'WEIGHT': 'VALUE',
+    'MASS': 'VALUE',
+    'QUANTITATIVE_CONCEPT': 'VALUE',
+    'QUALITATIVE_CONCEPT': 'VALUE',
+    'DISTANCE': 'VALUE',
+    'VOLUME': 'VALUE',
+    'AREA': 'VALUE',
+    'LAB_VALUE': 'VALUE',
+    'TRAITEMENT': 'THERAPEUTIC_PROCEDURE',
+    'MEDICATION': 'THERAPEUTIC_PROCEDURE',
+    'DOSE': 'DOSAGE',
+    'OUTCOME': 'SOSY',
+    'EXAMEN': 'DIAGNOSTIC_PROCEDURE',
+    'PATHOLOGIE': 'DISEASE_DISORDER',
+    'MODE': 'ADMINISTRATION',
+}
 
 
 def load_or_cache_corpus(
@@ -47,12 +76,17 @@ def load_or_cache_corpus(
     """
     try:
         # Generate a cache key based on the archive file's content
+        archive_file.seek(0)
         file_hash = hashlib.file_digest(archive_file, hashlib.md5)
 
         if entities_filter:
-            file_hash.update('E'.join(sorted(entities_filter)).encode())
+            file_hash.update('$E'.join(sorted(entities_filter)).encode())
         if relations_filter:
-            file_hash.update('R'.join(sorted(relations_filter)).encode())
+            file_hash.update('$R'.join(sorted(relations_filter)).encode())
+        if entities_mapping:
+            file_hash.update('$EM'.join(sorted(f'{key}={value}' for key, value in entities_mapping.items())).encode())
+        if relations_mapping:
+            file_hash.update('$RM'.join(sorted(f'{key}={value}' for key, value in relations_mapping.items())).encode())
 
         key = file_hash.hexdigest()
         corpus_cache_path = Path(f'{key}.pkl')
@@ -98,42 +132,64 @@ def load_or_cache_corpus(
         raise
 
 
-def cli_run(
-    corpus_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+def load_corpus_paths(
+    corpus_path: list[Path],
+    language: list[str],
     *,
-    tau: float = typer.Option(0.7, help="The similarity threshold."),
-    epoch: int = typer.Option(100, help="Number of iteration for tree rewriting."),
-    min_support: int = typer.Option(20, help="Minimum support for tree patterns."),
-    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
-    gen_instances: int = typer.Option(0, help="Number of synthetic instances to generate."),
-    language: str = typer.Option('French', help="Language of the input corpus."),
-    debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
-    workers: int | None = typer.Option(
-        None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores."
-    ),
-) -> None:
-    """
-    Automatically structure a corpus as a database instance and print the database schema as a CFG.
-    """
-    entities_filter = {'MOMENT', 'DUREE', 'DATE'}
-    relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
-    entities_mapping = {'FREQ': 'FREQUENCE'}
-
-    # Load the corpus
+    entities_filter: set[str] | None = None,
+    relations_filter: set[str] | None = None,
+    entities_mapping: dict[str, str] | None = None,
+    relations_mapping: dict[str, str] | None = None,
+    corenlp_url: str,
+) -> list[Tree]:
     try:
-        with corpus_path.open('rb') as corpus:
-            forest = load_or_cache_corpus(
-                corpus,
-                entities_filter=entities_filter,
-                relations_filter=relations_filter,
-                entities_mapping=entities_mapping,
-                corenlp_url=corenlp_url,
-                language=language,
-            )
+        forest = []
+        for path, lang in zip(corpus_path, language, strict=True):
+            with path.open('rb') as corpus:
+                forest += load_or_cache_corpus(
+                    corpus,
+                    entities_filter=entities_filter,
+                    relations_filter=relations_filter,
+                    entities_mapping=entities_mapping,
+                    relations_mapping=relations_mapping,
+                    corenlp_url=corenlp_url,
+                    language=lang,
+                )
+
+        return forest
 
     except Exception as error:
         console.print_exception()
         raise typer.Exit(code=1) from error
+
+
+def cli_run(
+    corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+    *,
+    language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
+    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
+    tau: float = typer.Option(0.7, help="The similarity threshold."),
+    epoch: int = typer.Option(100, help="Number of iteration for tree rewriting."),
+    min_support: int = typer.Option(20, help="Minimum support for tree patterns."),
+    gen_instances: int = typer.Option(0, help="Number of synthetic instances to generate."),
+    sample: int = typer.Option(0, help="Number of sentences to sample from the corpus."),
+    shuffle: bool = typer.Option(False, help="Shuffle the corpus data before processing to introduce randomness."),
+    workers: int | None = typer.Option(
+        None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores."
+    ),
+    debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
+) -> None:
+    """
+    Automatically structure a corpus as a database instance and print the database schema as a CFG.
+    """
+    forest = load_corpus_paths(
+        corpus_path,
+        language,
+        corenlp_url=corenlp_url,
+        entities_filter=ENTITIES_FILTER,
+        relations_filter=RELATIONS_FILTER,
+        entities_mapping=ENTITIES_MAPPING,
+    )
 
     # Generate synthetic database instances
     if gen_instances:
@@ -160,6 +216,13 @@ def cli_run(
             'has_instance': bool(gen_instances),
         }
     )
+
+    forest = list(filter(lambda t: len(t.leaves()) < 30, forest))
+
+    if sample:
+        forest = random.sample(forest, sample)
+    elif shuffle:
+        random.shuffle(forest)
 
     console.print(f'[blue]Rewriting trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
     forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
@@ -195,34 +258,35 @@ def cli_ui() -> None:
 
 
 def cli_stats(
-    corpus_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+    corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+    language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
     corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
-    language: str = typer.Option('French', help="Language of the input corpus."),
 ) -> None:
     """
     Display overall corpus statistics.
     """
-    entities_filter = {'MOMENT', 'DUREE', 'DATE'}
-    relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
-    entities_mapping = {'FREQ': 'FREQUENCE'}
+    forest = load_corpus_paths(
+        corpus_path,
+        language,
+        corenlp_url=corenlp_url,
+        entities_filter=ENTITIES_FILTER,
+        relations_filter=RELATIONS_FILTER,
+        entities_mapping=ENTITIES_MAPPING,
+    )
 
-    # Load the corpus
-    try:
-        with corpus_path.open('rb') as corpus:
-            forest = load_or_cache_corpus(
-                corpus,
-                entities_filter=entities_filter,
-                relations_filter=relations_filter,
-                entities_mapping=entities_mapping,
-                corenlp_url=corenlp_url,
-                language=language,
-            )
+    # Entity Count
+    entity_count = Counter([ent.label().name for tree in forest for ent in tree.entities()])
 
-    except Exception as error:
-        console.print_exception()
-        raise typer.Exit(code=1) from error
+    tables = []
+    for chunk in more_itertools.chunked_even(entity_count.most_common(), 10):
+        entity_table = Table()
+        entity_table.add_column("Entity", style="cyan", no_wrap=True)
+        entity_table.add_column("Count", style="magenta")
 
-    forest = list(filter(lambda x: len(x.leaves()) < 50, forest))
+        for entity, count in chunk:
+            entity_table.add_row(entity, str(count))
+
+        tables.append(entity_table)
 
     # Compute statistics
     total_trees = len(forest)
@@ -234,50 +298,36 @@ def cli_stats(
     avg_size = sum(tree_sizes) / len(tree_sizes) if tree_sizes else 0
     max_size = max(tree_sizes, default=0)
 
-    # Create a statistics table
-    table = Table()
-    table.add_column("Metric", style="cyan", no_wrap=True)
-    table.add_column("Value", style="magenta")
+    stats_table = Table()
+    stats_table.add_column("Metric", style="cyan", no_wrap=True)
+    stats_table.add_column("Value", style="magenta")
 
-    table.add_row("Total Trees", str(total_trees))
-    table.add_row("Total Entities", str(total_entities))
-    table.add_row("Average Tree Height", f"{avg_height:.2f}")
-    table.add_row("Maximum Tree Height", str(max_height))
-    table.add_row("Average Tree size", f"{avg_size:.2f}")
-    table.add_row("Maximum Tree size", str(max_size))
+    stats_table.add_row("Total Trees", str(total_trees))
+    stats_table.add_row("Total Entities", str(total_entities))
+    stats_table.add_row("Average Tree Height", f"{avg_height:.2f}")
+    stats_table.add_row("Maximum Tree Height", str(max_height))
+    stats_table.add_row("Average Tree size", f"{avg_size:.2f}")
+    stats_table.add_row("Maximum Tree size", str(max_size))
 
-    console.print(table)
+    console.print(Columns([*tables, stats_table], equal=True))
 
 
 def cli_largest_tree(
-    corpus_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
+    corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
     corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
-    language: str = typer.Option('French', help="Language of the input corpus."),
+    language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
 ) -> None:
     """
     Display the largest tree in the corpus along with its sentence and structure.
     """
-    entities_filter = {'MOMENT', 'DUREE', 'DATE'}
-    relations_filter = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
-    entities_mapping = {'FREQ': 'FREQUENCE'}
-
-    # Load the corpus
-    try:
-        with corpus_path.open('rb') as corpus:
-            forest = load_or_cache_corpus(
-                corpus,
-                entities_filter=entities_filter,
-                relations_filter=relations_filter,
-                entities_mapping=entities_mapping,
-                corenlp_url=corenlp_url,
-                language=language,
-            )
-
-    except Exception as error:
-        console.print_exception()
-        raise typer.Exit(code=1) from error
-
-    forest = list(filter(lambda x: len(x.leaves()) < 50, forest))
+    forest = load_corpus_paths(
+        corpus_path,
+        language,
+        corenlp_url=corenlp_url,
+        entities_filter=ENTITIES_FILTER,
+        relations_filter=RELATIONS_FILTER,
+        entities_mapping=ENTITIES_MAPPING,
+    )
 
     # Find the largest tree
     largest_tree = max(forest, key=lambda t: len(t.leaves()), default=None)
@@ -286,18 +336,8 @@ def cli_largest_tree(
         sentence = " ".join(largest_tree.leaves())
         largest_tree_display = largest_tree.pformat(margin=255)
 
-        console.print(
-            Panel(
-                sentence,
-                title="Sentence",
-            )
-        )
-        console.print(
-            Panel(
-                largest_tree_display,
-                title="Tree",
-            )
-        )
+        console.print(Panel(sentence, title="Sentence"))
+        console.print(Panel(largest_tree_display, title="Tree"))
 
     else:
         console.print("[yellow]No trees found in the corpus.[/]")

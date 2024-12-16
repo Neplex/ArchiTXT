@@ -77,7 +77,7 @@ with st.sidebar:
 input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 Statistics', '📐 Schema', '🗄️ Instance'])
 
 with input_tab, st.form(key='corpora', enter_to_submit=False):
-    uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=False)
+    uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=True)
 
     entities_filter = st_tags(label='Excluded entities', value=['MOMENT', 'DUREE', 'DATE'])
     relations_filter = st_tags(label='Excluded relations', value=['TEMPORALITE', 'CAUSE-CONSEQUENCE'])
@@ -92,14 +92,16 @@ with input_tab, st.form(key='corpora', enter_to_submit=False):
 
 if submitted and uploaded_file:
     try:
-        forest = load_or_cache_corpus(
-            uploaded_file,
-            entities_filter=set(entities_filter),
-            relations_filter=set(relations_filter),
-            entities_mapping={'FREQ': 'FREQUENCE'},
-            corenlp_url=corenlp_url,
-            language=language,
-        )
+        forest = []
+        for file in uploaded_file:
+            forest += load_or_cache_corpus(
+                file,
+                entities_filter=set(entities_filter),
+                relations_filter=set(relations_filter),
+                entities_mapping={'FREQ': 'FREQUENCE'},
+                corenlp_url=corenlp_url,
+                language=language,
+            )
 
         with st.spinner('Computing...'), mlflow.start_run(run_name='UI run', log_system_metrics=True) as mlflow_run:
             database = rewrite(
