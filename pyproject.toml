@@ -56,6 +56,7 @@ wheel = "^0.45.0"
 devtools = "^0.12.0"
 py-spy = "~0.4.0"
 pre-commit = "^4.0.1"
+datasets = "*"
 
 pylint = "^3.3"
 mypy = ">=0.910,<1.14"
