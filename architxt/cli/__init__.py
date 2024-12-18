@@ -224,7 +224,7 @@ def cli_run(
     elif shuffle:
         random.shuffle(forest)
 
-    console.print(f'[blue]Rewriting trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
+    console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
     forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
     # Generate schema

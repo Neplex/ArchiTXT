@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Generator, Iterable, Sequence
 from pathlib import Path
 
@@ -171,10 +172,13 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
             # Calculate entity start and end positions relative to the current sentence
             ent_start = max(entity.start - start, 0)
             ent_end = min(entity.end - start, len(sentences[sent_i]))
+            ent_i += 1
 
             # Add the entity to the list of entities for this sentence
-            sent_entities.append(Entity(start=ent_start, end=ent_end, name=entity.name, id=entity.id))
-            ent_i += 1
+            try:
+                sent_entities.append(Entity(start=ent_start, end=ent_end, name=entity.name, id=entity.id))
+            except ValueError as error:
+                warnings.warn(str(error))
 
         # Update the start position for the next sentence
         start += len(sentences[sent_i]) + 1  # +1 accounts for the space or punctuation between sentences
@@ -377,13 +381,18 @@ def get_enriched_forest(
         fix_all_coord(tree)
 
         # Enrich the tree with named entities and relations from the sentence
-        enrich_tree(tree, sentence.txt, sentence.entities, sentence.rels)
+        try:
+            enrich_tree(tree, sentence.txt, sentence.entities, sentence.rels)
+        except ValueError as error:
+            # Alignment issue, skip the tree
+            warnings.warn(f'Alignment issue: {error}')
+            continue
 
         # Reduce the tree structure removing unneeded nodes
         reduce_all(tree, set(NodeType))
 
         # Don't yield an empty tree
-        if len(tree):
+        if len(tree) and not any(isinstance(child, str) for child in tree):
             assert tree.root().label() == 'SENT'
             assert all(child.label() != 'SENT' for child in tree)
             yield tree

@@ -1,4 +1,5 @@
 import contextlib
+import warnings
 from collections import Counter
 from collections.abc import Collection, Iterable
 from copy import deepcopy
@@ -240,7 +241,7 @@ class Tree(ParentedTree):
         Merge two trees into one.
         The root of both trees becomes one while maintaining the level of each subtree.
         """
-        return type(self)('S', [*self, *tree])
+        return type(self)('SENT', deepcopy([*self, *tree]))
 
     def __reset_cache(self) -> None:
         """Reset cached properties"""
@@ -674,11 +675,16 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     children = []
     for child_position in reversed(tree_ent.positions):
         children.append(tree[child_position])
-        tree[child_position[:-1]].pop(child_position[-1])
+        tree[child_position[:-1]].pop(child_position[-1], recursive=False)
 
     # Create a new tree node for the entity and insert it into the tree
     new_tree = Tree(NodeLabel(NodeType.ENT, tree_ent.name), children=reversed(children))
     tree[anchor_pos].insert(entity_index, new_tree)
+
+    # Remove empty subtree left in place
+    for subtree in list(tree.subtrees(lambda st: len(st) == 0)):
+        if subtree.parent():
+            subtree.parent().remove(subtree)
 
     # Return the modified subtree where the entity was inserted
     return tree[anchor_pos][entity_index]
@@ -696,6 +702,9 @@ def unnest_ent(tree: Tree, pos: int) -> None:
 
     Example:
     >>> t = Tree.fromstring('(S (ENT::person Alice (ENT::person Bob) (ENT::person Charlie)))')
+    >>> unnest_ent(t[0], 0)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::person Alice (ENT::person Bob) (ENT::person Charlie)))
     >>> unnest_ent(t, 0)
     >>> print(t.pformat(margin=255))
     (S (REL (ENT::person Alice Bob Charlie) (nested (ENT::person Bob) (ENT::person Charlie))))
@@ -724,6 +733,30 @@ def ins_rel(tree: Tree, tree_rel: TreeRel) -> None:
     assert tree is not None
 
 
+def is_conflicting_entity(
+    entity: Entity, entity_span: tuple[int, ...], computed_spans: set[tuple[int, ...]], tree: Tree
+) -> bool:
+    """
+    Checks for conflicts with other entities (overlapping or duplicate spans).
+    """
+    if entity_span in computed_spans:
+        warnings.warn(
+            f"Entity {entity.name} with tokens {entity_span} ('{' '.join(tree.leaves()[i] for i in entity_span)}') "
+            f"conflicts with a previously inserted entity."
+        )
+        return True
+
+    for span in computed_spans:
+        if any(token in span for token in entity_span) and not all(token in span for token in entity_span):
+            warnings.warn(
+                f"Entity {entity.name} with tokens {entity_span} ('{' '.join(tree.leaves()[i] for i in entity_span)}') "
+                f"partially overlaps with a previously inserted entity."
+            )
+            return True
+
+    return False
+
+
 def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:
     """
     Enriches a syntactic tree (tree) by inserting entities and relationships, and removing unused subtrees.
@@ -744,35 +777,51 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
     >>> enrich_tree(t, "Alice likes apples and oranges", [e1, e2, e3], [])
     >>> print(t.pformat(margin=255))
     (S (ENT::person Alice) (VP (NP (ENT::fruit apples) (ENT::fruit oranges))))
+    >>> t = Tree.fromstring("(S (NP XXX) (NP YYY))")
+    >>> e1 = Entity(name="nested1", start=0, end=3, id="E1")
+    >>> e2 = Entity(name="nested2", start=4, end=7, id="E2")
+    >>> e3 = Entity(name="overlap", start=0, end=7, id="E3")
+    >>> enrich_tree(t, "XXX YYY", [e1, e2, e3], [])
+    >>> print(t.pformat(margin=255))
+    (S (REL (ENT::overlap XXX YYY) (nested (ENT::nested1 XXX) (ENT::nested2 YYY))))
     """
     assert tree is not None
     assert sentence
 
     tokens = align_tokens(tree.leaves(), sentence)
+    entity_tokens = {
+        entity.id: tuple(i for i, token in enumerate(tokens) if entity.start <= token[1] and token[0] < entity.end)
+        for entity in entities
+    }
 
     # Insert entities into the tree by length (descending) to handle larger entities first
-    computed_spans: set[TREE_POS] = set()
-    entities_tree: list[Tree] = []
-    for entity in sorted(entities, key=len, reverse=True):
-        entity_tokens = tuple(i for i, token in enumerate(tokens) if entity.start <= token[1] and token[0] < entity.end)
+    computed_spans: set[tuple[int, ...]] = set()
+    entity_trees: list[Tree] = []
+    for entity in sorted(entities, key=lambda entity: len(entity_tokens[entity.id]), reverse=True):
+        entity_span = entity_tokens[entity.id]
 
-        # We do not support two entities at the same place
-        if entity_tokens in computed_spans:
+        # Check for conflicts and skip problematic entities
+        if is_conflicting_entity(entity, entity_span, computed_spans, tree):
             continue
 
-        tree_entity = TreeEntity(entity.name, [tree.leaf_treeposition(i) for i in entity_tokens])
+        tree_entity = TreeEntity(entity.name, [tree.leaf_treeposition(i) for i in entity_span])
         entity_tree = ins_ent(tree, tree_entity)
-        entities_tree.append(entity_tree)
-        computed_spans.add(entity_tokens)
+        entity_trees.append(entity_tree)
+        computed_spans.add(entity_span)
+
+        for et in entity_trees:
+            assert et.parent() is not None, str(et)
 
     # Unnest any nested entities in reverse order (to avoid modifying parent indices during the process)
-    for entity_tree in reversed(entities_tree):
+    for entity_tree in sorted(entity_trees, key=lambda x: x.height()):
         unnest_ent(entity_tree.parent(), entity_tree.parent_index())
 
     # Currently, the relation part is commented out, but can be enabled when relations are processed.
-    for relation in relations:
-        tree_rel = TreeRel((), (), relation.name)
-        ins_rel(tree, tree_rel)
+    # for relation in relations:
+    #     tree_rel = TreeRel((), (), relation.name)
+    #     ins_rel(tree, tree_rel)
+    if relations:
+        warnings.warn("Relations are not yet supported and will be skipped.")
 
     # Remove subtrees that have no specific entity or relation (i.e., generic subtrees)
     for subtree in list(tree.subtrees(lambda x: x.height() == 2 and not has_type(x))):
