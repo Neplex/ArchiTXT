@@ -98,10 +98,10 @@ def load_or_cache_corpus(
                 return cloudpickle.load(cache_file)
 
         archive_file.seek(0)
+        console.print(f'[yellow]Loading corpus from disk:[/] {archive_file.name}')
 
         # If the cache does not exist, process the archive
         with (
-            console.status(f'[yellow]Loading corpus from disk:[/] {archive_file.name}'),
             TarFile.open(fileobj=archive_file) as corpus,
             TemporaryDirectory() as tmp_dir,
         ):
