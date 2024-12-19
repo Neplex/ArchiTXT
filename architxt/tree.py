@@ -681,13 +681,15 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     new_tree = Tree(NodeLabel(NodeType.ENT, tree_ent.name), children=reversed(children))
     tree[anchor_pos].insert(entity_index, new_tree)
 
+    # Return the modified subtree where the entity was inserted
+    entity_tree = tree[anchor_pos][entity_index]
+
     # Remove empty subtree left in place
     for subtree in list(tree.subtrees(lambda st: len(st) == 0)):
         if subtree.parent():
             subtree.parent().remove(subtree)
 
-    # Return the modified subtree where the entity was inserted
-    return tree[anchor_pos][entity_index]
+    return entity_tree
 
 
 def unnest_ent(tree: Tree, pos: int) -> None:
@@ -750,7 +752,7 @@ def is_conflicting_entity(
         if any(token in span for token in entity_span) and not all(token in span for token in entity_span):
             warnings.warn(
                 f"Entity {entity.name} with tokens {entity_span} ('{' '.join(tree.leaves()[i] for i in entity_span)}') "
-                f"partially overlaps with a previously inserted entity."
+                f"partially overlaps with a previously inserted entity with tokens {span} ('{' '.join(tree.leaves()[i] for i in span)}')."
             )
             return True
 
