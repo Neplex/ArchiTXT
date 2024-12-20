@@ -95,6 +95,10 @@ zodb = "^6.0"
 relstorage = "^4.1.1"
 yfiles-jupyter-graphs-for-neo4j = "^1.7.0"
 anyio = "^4.9.0"
+langchain = "^0.3.25"
+langchain-community = "^0.3.25"
+langchain-huggingface = "^0.3.0"
+json-repair = "^0.50.1"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
