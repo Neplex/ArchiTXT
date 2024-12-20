@@ -1,5 +1,5 @@
 import pytest
-from architxt.db import Schema
+from architxt.schema import Schema
 from architxt.tree import Tree
 
 

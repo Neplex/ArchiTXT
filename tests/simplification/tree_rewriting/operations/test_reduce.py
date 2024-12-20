@@ -1,5 +1,5 @@
-from architxt.operations import reduce_bottom, reduce_top
 from architxt.similarity import jaccard
+from architxt.simplification.tree_rewriting.operations import reduce_bottom, reduce_top
 from architxt.tree import Tree
 
 

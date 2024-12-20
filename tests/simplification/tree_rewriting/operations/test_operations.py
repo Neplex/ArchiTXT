@@ -1,21 +1,15 @@
 from copy import deepcopy
 
 import pytest
-from architxt import operations
-from architxt.db import Schema
-from architxt.operations import OPERATION
+from architxt.schema import Schema
 from architxt.similarity import METRIC_FUNC, equiv_cluster, jaccard, jaro, levenshtein
+from architxt.simplification.tree_rewriting import operations
+from architxt.simplification.tree_rewriting.operations import OPERATION
 from architxt.tree import Tree
 from hypothesis import given, note, settings
 from hypothesis import strategies as st
 
-from test.test_strategies import tree_st
-
-# Reusable strategies for cleaner test definitions
-tree_strategy = tree_st(has_parent=False)
-tau_strategy = st.floats(min_value=0.1, max_value=1)
-min_support_strategy = st.integers(min_value=1, max_value=20)
-metric_strategy = st.sampled_from([jaccard, levenshtein, jaro])
+from tests.test_strategies import tree_st
 
 
 @pytest.mark.parametrize(
@@ -31,10 +25,10 @@ metric_strategy = st.sampled_from([jaccard, levenshtein, jaro])
 )
 @settings(deadline=None)
 @given(
-    tree=tree_strategy,
-    tau=tau_strategy,
-    min_support=min_support_strategy,
-    metric=metric_strategy,
+    tree=tree_st(has_parent=False),
+    tau=st.floats(min_value=0.1, max_value=1),
+    min_support=st.integers(min_value=1, max_value=20),
+    metric=st.sampled_from([jaccard, levenshtein, jaro]),
 )
 def test_operation_behavior(tree: Tree, tau: float, min_support: int, metric: METRIC_FUNC, operation: OPERATION):
     """

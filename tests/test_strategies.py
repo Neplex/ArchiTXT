@@ -3,8 +3,8 @@
 import string
 from itertools import combinations
 
-from architxt.db import Schema
 from architxt.model import NodeLabel, NodeType
+from architxt.schema import Schema
 from architxt.tree import Tree, has_type
 from hypothesis import given, note
 from hypothesis import strategies as st

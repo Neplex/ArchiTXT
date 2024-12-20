@@ -1,5 +1,5 @@
-from architxt.operations import find_subgroups
 from architxt.similarity import TREE_CLUSTER, jaccard
+from architxt.simplification.tree_rewriting.operations import find_subgroups
 from architxt.tree import Tree
 
 

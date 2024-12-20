@@ -10,13 +10,16 @@ import mlflow
 from nltk import TreePrettyPrinter
 from tqdm import tqdm, trange
 
-from architxt import operations
-from architxt.db import Schema
 from architxt.model import NodeType
+from architxt.schema import Schema
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, Tree, has_type, reduce_all
 
-DEFAULT_OPERATIONS = (
+from . import operations
+
+__all__ = ['rewrite']
+
+DEFAULT_OPERATIONS: Sequence[operations.OPERATION] = (
     operations.find_subgroups,
     operations.merge_groups,
     operations.find_collections,

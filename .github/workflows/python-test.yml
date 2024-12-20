@@ -23,6 +23,6 @@ jobs:
       - uses: rcmdnk/python-action@v1
         with:
           pre-commit: true
-          pytest-tests-path: "test"
+          pytest-tests-path: "tests"
           pytest-cov-path: "architxt"
           python-version: "${{ matrix.python-version }}"

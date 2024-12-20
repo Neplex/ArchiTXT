@@ -1,5 +1,5 @@
-from architxt.operations import find_collections
 from architxt.similarity import jaccard
+from architxt.simplification.tree_rewriting.operations import find_collections
 from architxt.tree import Tree
 
 

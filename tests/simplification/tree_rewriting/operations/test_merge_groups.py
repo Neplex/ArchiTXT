@@ -1,5 +1,5 @@
-from architxt.operations import merge_groups
 from architxt.similarity import jaccard
+from architxt.simplification.tree_rewriting.operations import merge_groups
 from architxt.tree import Tree
 
 

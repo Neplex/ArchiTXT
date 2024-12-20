@@ -17,7 +17,7 @@
     </option>
   </component>
   <component name="Black">
-    <option name="sdkName" value="Poetry (text2graph)" />
+    <option name="sdkName" value="Poetry (ArchiTXT)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (ArchiTXT)" project-jdk-type="Python SDK" />
 </project>

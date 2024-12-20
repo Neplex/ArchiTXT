@@ -17,10 +17,10 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from architxt.algo import rewrite
-from architxt.db import Schema
 from architxt.generator import gen_instance
 from architxt.nlp import get_enriched_forest, get_sentence_from_disk
+from architxt.schema import Schema
+from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Tree
 
 console = Console()

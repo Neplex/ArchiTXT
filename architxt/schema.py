@@ -8,6 +8,8 @@ from architxt.grammar.metagrammarParser import metagrammarParser
 from architxt.model import NodeLabel, NodeType
 from architxt.tree import Forest, has_type
 
+__all__ = ['Schema']
+
 NODE_TYPE_RANK = {
     NodeType.COLL: 1,
     NodeType.REL: 2,

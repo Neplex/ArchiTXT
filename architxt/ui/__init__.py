@@ -7,10 +7,10 @@ from streamlit_agraph import Edge as _Edge
 from streamlit_agraph import Node as _Node
 from streamlit_tags import st_tags
 
-from architxt.algo import rewrite
 from architxt.cli import load_or_cache_corpus
-from architxt.db import Schema
 from architxt.model import NodeType
+from architxt.schema import Schema
+from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Forest, Tree, has_type
 
 mlflow.set_experiment('ArchiTXT')
