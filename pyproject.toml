@@ -59,7 +59,7 @@ pre-commit = "^4.0.1"
 datasets = "*"
 
 pylint = "^3.3"
-mypy = ">=0.910,<1.14"
+mypy = ">=0.910,<1.15"
 ruff = "^0.8.0"
 
 # Typing stubs
