@@ -1,32 +1,40 @@
 import ctypes
 import functools
-from collections import Counter
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from concurrent.futures import Executor, ProcessPoolExecutor, as_completed
 from copy import deepcopy
 from multiprocessing import Barrier, Manager, Value, cpu_count
 
 import mlflow
+from mlflow.entities import SpanEvent
 from nltk import TreePrettyPrinter
 from tqdm import tqdm, trange
 
-from architxt.model import NodeType
-from architxt.schema import Schema
+from architxt.model import NodeLabel, NodeType
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, Tree, has_type, reduce_all
 
-from . import operations
+from .operations import (
+    FindCollectionsOperation,
+    FindRelationsOperation,
+    FindSubGroupsOperation,
+    MergeGroupsOperation,
+    Operation,
+    ReduceBottomOperation,
+    ReduceTopOperation,
+)
+from .utils import distribute_evenly, log_clusters, log_metrics, log_schema
 
-__all__ = ['rewrite']
+__all__ = ['create_group', 'find_groups', 'rewrite']
 
-DEFAULT_OPERATIONS: Sequence[operations.OPERATION] = (
-    operations.find_subgroups,
-    operations.merge_groups,
-    operations.find_collections,
-    operations.find_relations,
-    operations.find_collections,
-    operations.reduce_bottom,
-    operations.reduce_top,
+DEFAULT_OPERATIONS: Sequence[type[Operation]] = (
+    FindSubGroupsOperation,
+    MergeGroupsOperation,
+    FindCollectionsOperation,
+    FindRelationsOperation,
+    FindCollectionsOperation,
+    ReduceBottomOperation,
+    ReduceTopOperation,
 )
 
 
@@ -37,7 +45,7 @@ def rewrite(
     epoch: int = 100,
     min_support: int | None = None,
     metric: METRIC_FUNC = DEFAULT_METRIC,
-    edit_ops: Sequence[operations.OPERATION] = DEFAULT_OPERATIONS,
+    edit_ops: Sequence[type[Operation]] = DEFAULT_OPERATIONS,
     debug: bool = False,
     max_workers: int | None = None,
 ) -> Forest:
@@ -68,7 +76,7 @@ def rewrite(
             'epoch': epoch,
             'min_support': min_support,
             'metric': metric.__name__,
-            'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)),
+            'edit_ops': ', '.join(f"{op_id}: {edit_op.name}" for op_id, edit_op in enumerate(edit_ops)),
         }
     )
 
@@ -100,7 +108,7 @@ def _rewrite_step(
     tau: float,
     min_support: int,
     metric: METRIC_FUNC,
-    edit_ops: Sequence[operations.OPERATION],
+    edit_ops: Sequence[type[Operation]],
     debug: bool,
     executor: Executor,
 ) -> tuple[Forest, bool]:
@@ -130,24 +138,15 @@ def _rewrite_step(
     with mlflow.start_span('equiv_cluster'):
         equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
         if debug:
-            _log_clusters(iteration, equiv_subtrees)
+            log_clusters(iteration, equiv_subtrees)
 
     with mlflow.start_span('find_groups'):
-        operations.find_groups(
-            Tree('', []),
-            equiv_subtrees=equiv_subtrees,
-            tau=tau,
-            min_support=min_support,
-            metric=metric,
-        )
+        find_groups(equiv_subtrees, min_support)
 
-    forest, op_id = _apply_operations(
-        edit_ops,
+    forest, op_id = apply_operations(
+        [operation(tau=tau, min_support=min_support, metric=metric) for operation in edit_ops],
         forest,
         equiv_subtrees=equiv_subtrees,
-        tau=tau,
-        min_support=min_support,
-        metric=metric,
         executor=executor,
     )
 
@@ -155,8 +154,8 @@ def _rewrite_step(
         mlflow.log_metric('edit_op', op_id, step=iteration)
 
     renamed_forest, equiv_subtrees = _post_process(forest, tau=tau, metric=metric, executor=executor)
-    _log_schema(iteration, renamed_forest)
-    _log_metrics(iteration, renamed_forest, equiv_subtrees)
+    log_schema(iteration, renamed_forest)
+    log_metrics(iteration, renamed_forest, equiv_subtrees)
 
     return forest, op_id is not None
 
@@ -180,16 +179,19 @@ def _post_process(
     """
     equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
 
-    forest, _ = _apply_operations(
+    forest, _ = apply_operations(
         [
-            ('[post-process] name_relations', functools.partial(operations.find_relations, naming_only=True)),
-            ('[post-process] name_collections', functools.partial(operations.find_collections, naming_only=True)),
+            (
+                '[post-process] name_relations',
+                FindRelationsOperation(tau=tau, min_support=0, metric=metric, naming_only=True),
+            ),
+            (
+                '[post-process] name_collections',
+                FindCollectionsOperation(tau=tau, min_support=0, metric=metric, naming_only=True),
+            ),
         ],
         forest,
         equiv_subtrees=equiv_subtrees,
-        tau=tau,
-        min_support=0,
-        metric=metric,
         early_exit=False,
         executor=executor,
     )
@@ -197,14 +199,11 @@ def _post_process(
     return forest, equiv_subtrees
 
 
-def _apply_operations(
-    edit_ops: Sequence[operations.OPERATION] | Sequence[tuple[str, operations.OPERATION]],
+def apply_operations(
+    edit_ops: Sequence[Operation] | Sequence[tuple[str, Operation]],
     forest: Forest,
     *,
     equiv_subtrees: TREE_CLUSTER,
-    tau: float,
-    min_support: int,
-    metric: METRIC_FUNC,
     early_exit: bool = True,
     executor: Executor,
 ) -> tuple[Forest, int | None]:
@@ -220,9 +219,6 @@ def _apply_operations(
                      where `name` is a string identifier for the operation.
     :param forest: The input forest (a collection of trees) on which operations are applied.
     :param equiv_subtrees: The set of equivalent subtrees.
-    :param tau: Threshold for subtree similarity when clustering.
-    :param min_support: Minimum support of groups.
-    :param metric: The metric function used to compute similarity between subtrees.
     :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
                        If `False`, all operations are applied.
     :param executor: A pool executor to parallelize the processing of the forest.
@@ -235,9 +231,9 @@ def _apply_operations(
         return forest, None
 
     if not isinstance(edit_ops[0], tuple):
-        edit_ops = [(op.__name__, op) for op in edit_ops]
+        edit_ops = [(op.name, op) for op in edit_ops]
 
-    chunks = _distribute_evenly(forest, executor._max_workers)
+    chunks = distribute_evenly(forest, executor._max_workers)
 
     with Manager() as manager:
         shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees)
@@ -246,14 +242,11 @@ def _apply_operations(
 
         futures = [
             executor.submit(
-                _apply_operations_worker,
+                apply_operations_worker,
                 idx,
                 edit_ops,
                 tuple(chunk),
                 shared_equiv,
-                tau,
-                min_support,
-                metric,
                 early_exit,
                 simplification_operation,
                 barrier,
@@ -268,47 +261,11 @@ def _apply_operations(
     return forest, op_id if op_id >= 0 else None
 
 
-def _distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
-    """
-    Distribute a collection of trees into `n` sub-collections with approximately equal total complexity.
-    Complexity is determined by the number of leaves in each tree.
-
-    The function attempts to create `n` chunks, but if there are fewer elements than `n`,
-    it will create one chunk per element.
-
-    :param trees: A collection of trees.
-    :param n: The number of sub-collections to create.
-    :return: A list of `n` sub-collections, with trees distributed to balance complexity.
-    :raises ValueError: If `n` is less than 1.
-    """
-    if n < 1:
-        raise ValueError("The number of sub-collections 'n' must be at least 1.")
-
-    n = min(n, len(trees))
-
-    # Sort trees in descending order of their leaf count for a greedy allocation.
-    sorted_trees = sorted(trees, key=lambda tree: len(tree.leaves()), reverse=True)
-
-    chunks = [[] for _ in range(n)]
-    chunk_complexities = [0] * n
-
-    # Greedy distribution: Assign each tree to the chunk with the smallest current complexity.
-    for tree in sorted_trees:
-        least_complex_chunk_index = chunk_complexities.index(min(chunk_complexities))
-        chunks[least_complex_chunk_index].append(tree)
-        chunk_complexities[least_complex_chunk_index] += len(tree.leaves())
-
-    return chunks
-
-
-def _apply_operations_worker(
+def apply_operations_worker(
     idx: int,
-    edit_ops: Sequence[tuple[str, operations.OPERATION]],
+    edit_ops: Sequence[tuple[str, Operation]],
     forest: Forest,
     equiv_subtrees: Value,
-    tau: float,
-    min_support: int,
-    metric: METRIC_FUNC,
     early_exit: bool,
     simplification_operation: Value,
     barrier: Barrier,
@@ -319,24 +276,13 @@ def _apply_operations_worker(
     :param edit_ops: The list of operations to perform on the forest.
     :param forest: The forest to perform on.
     :param equiv_subtrees: The set of equivalent subtrees.
-    :param tau: Threshold for subtree similarity when clustering.
-    :param min_support: Minimum support of groups.
-    :param metric: The metric function used to compute similarity between subtrees.
     :return: The rewritten forest and the tuple of flags for each tree indicating if simplifications occurred.
     """
-    for op_id, (op_name, op_fn) in enumerate(edit_ops):
-        operation_fn = functools.partial(
-            op_fn,
-            equiv_subtrees=equiv_subtrees.value,
-            tau=tau,
-            min_support=min_support,
-            metric=metric,
-        )
+    for op_id, (name, operation) in enumerate(edit_ops):
+        op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees.value)
 
-        with mlflow.start_span(op_name):
-            forest, simplified = zip(
-                *map(operation_fn, tqdm(forest, desc=op_name, leave=False, position=idx + 1)), strict=False
-            )
+        with mlflow.start_span(name):
+            forest, simplified = zip(*map(op_fn, tqdm(forest, desc=name, leave=False, position=idx + 1)), strict=False)
 
             if any(simplified):
                 simplification_operation.value = op_id
@@ -350,103 +296,70 @@ def _apply_operations_worker(
     return forest
 
 
-def _log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()) -> None:
+def create_group(subtree: Tree, group_index: int) -> None:
     """
-    Logs various metrics related to a forest of trees and equivalent subtrees.
+    Creates a group node from a subtree and inserts it into its parent node.
 
-    This function calculates and logs the metrics that provide insights into the forest's structure, including counts of
-    production rules, labeled and unlabeled nodes, and entity/group/collection/relation statistics.
-
-    :param iteration: The current iteration number for logging.
-    :param forest: A forest of tree objects to analyze.
-    :param equiv_subtrees: A set of clusters representing equivalent subtrees.
-    :return: None
+    :param subtree: The subtree to convert into a group.
+    :param group_index: The index to use for naming the group.
     """
-    # Count labels for all nodes in the forest
-    label_counts = Counter(str(subtree.label()) for tree in forest for subtree in tree.subtrees())
+    label = NodeLabel(NodeType.GROUP, str(group_index))
+    subtree.set_label(label)
 
-    # Calculate the number of unlabeled nodes
-    num_unlabeled = sum(not has_type(label) for label in label_counts)
+    new_children = [deepcopy(entity) for entity in subtree.entities()]
+    subtree.clear()
+    subtree.extend(new_children)
 
-    # Entity statistics
-    num_entities = sum(has_type(label, NodeType.ENT) for label in label_counts)
-    num_entity_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.ENT))
-    entity_ratio = num_entity_instances / num_entities if num_entities else 0
 
-    # Group statistics
-    num_groups = sum(has_type(label, NodeType.GROUP) for label in label_counts)
-    num_group_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.GROUP))
-    group_ratio = num_group_instances / num_groups if num_groups else 0
+def find_groups(
+    equiv_subtrees: TREE_CLUSTER,
+    min_support: int,
+) -> bool:
+    """
+    Finds and creates groups based on the given set of equivalent subtrees.
 
-    # Relation statistics
-    num_relations = sum(has_type(label, NodeType.REL) for label in label_counts)
-    num_relation_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.REL))
-    relation_ratio = num_relation_instances / num_relations if num_relations else 0
+    :param equiv_subtrees: The set of equivalent subtrees.
+    :param min_support: Minimum support of groups.
 
-    # Collection statistics
-    num_collections = sum(has_type(label, NodeType.COLL) for label in label_counts)
-    num_collection_instances = sum(label_counts[label] for label in label_counts if has_type(label, NodeType.COLL))
-    collection_ratio = num_collection_instances / num_collections if num_collections else 0
-
-    # Log the calculated metrics
-    mlflow.log_metrics(
-        {
-            'num_non_terminal_nodes': len(label_counts),
-            'num_unlabeled_nodes': num_unlabeled,
-            'num_equiv_subtrees': len(equiv_subtrees),
-            'num_entities': num_entities,
-            'num_entity_instances': num_entity_instances,
-            'entity_ratio': entity_ratio,
-            'num_groups': num_groups,
-            'num_group_instances': num_group_instances,
-            'group_ratio': group_ratio,
-            'num_relations': num_relations,
-            'num_relation_instances': num_relation_instances,
-            'relation_ratio': relation_ratio,
-            'num_collections': num_collections,
-            'num_collection_instances': num_collection_instances,
-            'collection_ratio': collection_ratio,
-        },
-        step=iteration,
+    :return: A boolean indicating if groups were created.
+    """
+    frequent_clusters = filter(lambda cluster: len(cluster) > min_support, equiv_subtrees)
+    frequent_clusters = sorted(
+        frequent_clusters,
+        key=lambda cluster: (
+            len(cluster),
+            sum(len(st.entities()) for st in cluster) / len(cluster),
+            sum(st.depth() for st in cluster) / len(cluster),
+        ),
+        reverse=True,
     )
 
+    group_created = False
+    for group_index, subtree_cluster in enumerate(frequent_clusters):
+        # Create a group for each subtree in the cluster
+        for subtree in subtree_cluster:
+            if (
+                len(subtree) < 2
+                or has_type(subtree)
+                or (subtree.parent() and has_type(subtree.parent(), NodeType.GROUP))
+                or not all(has_type(node, NodeType.ENT) for node in subtree)
+                or subtree.has_duplicate_entity()
+            ):
+                continue
 
-def _log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER) -> None:
-    """
-    Logs information about the clusters of equivalent subtrees.
+            create_group(subtree, group_index)
+            group_created = True
 
-    This function processes each cluster of subtrees, extracting the entity labels, count, and maximum label length,
-    and then logs this information using MLFlow.
+            group_labels = tuple(sorted({label for subtree in subtree_cluster for label in subtree.entity_labels()}))
+            if span := mlflow.get_current_active_span():
+                span.add_event(
+                    SpanEvent(
+                        'create_group',
+                        attributes={
+                            'group': group_index,
+                            'labels': group_labels,
+                        },
+                    )
+                )
 
-    :param iteration: The current iteration number.
-    :param equiv_subtrees: The set of equivalent subtrees to process.
-    """
-    elems = []
-    count = []
-    max_len = []
-
-    for equiv_class in equiv_subtrees:
-        elems.append({str(equiv_tree.label()) for equiv_tree in equiv_class})
-        count.append(len(equiv_class))
-        max_len.append(len(max(equiv_class, key=len)))
-
-    mlflow.log_table(
-        {
-            'elems': elems,
-            'count': count,
-            'max_len': max_len,
-        },
-        f'debug/{iteration}/tree.json',
-    )
-
-
-def _log_schema(iteration: int, forest: Forest) -> None:
-    """
-    Log the schema to MLFlow.
-    :param iteration: The current iteration number for logging.
-    :param forest: A forest of tree objects to analyze.
-    """
-    schema = Schema.from_forest(forest)
-
-    mlflow.log_metric('num_productions', len(schema.productions()))
-    mlflow.log_text(schema.as_cfg(), f'debug/{iteration}/schema.txt')
+    return group_created
