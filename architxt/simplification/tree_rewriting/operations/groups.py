@@ -71,10 +71,7 @@ class FindSubGroupsOperation(Operation):
 
         # Generate candidate subtrees that do not include ENT, REL, or COLL nodes as their children.
         candidate_subtrees = sorted(
-            tree.subtrees(
-                lambda sub: not has_type(sub, {NodeType.ENT, NodeType.REL, NodeType.COLL})
-                and all(has_type(child, NodeType.ENT) for child in sub)
-            ),
+            tree.subtrees(lambda sub: all(has_type(child, NodeType.ENT) for child in sub)),
             key=lambda sub: sub.height(),
         )
 
@@ -116,10 +113,13 @@ class FindSubGroupsOperation(Operation):
             entity_trees = [entity for entity in entity_trees if entity.label() in available_labels]
             entity_labels = {ent.label() for ent in entity_trees}
 
-            k = max(
+            k = min(
                 len(entity_trees),
                 len(subtree) - 1,
-                *(len(ent_group) for ent_group in entity_groups if entity_labels.issuperset(ent_group)),
+                max(
+                    (len(ent_group) for ent_group in entity_groups if entity_labels.issuperset(ent_group)),
+                    default=float('inf'),
+                ),
             )
 
             # Recursively explore k-sized combinations of entity trees and select the one with the maximum support,
