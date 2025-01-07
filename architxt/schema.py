@@ -1,6 +1,9 @@
+import warnings
 from functools import cached_property
 
 from antlr4 import CommonTokenStream, InputStream
+from antlr4.error.Errors import CancellationException
+from antlr4.error.ErrorStrategy import BailErrorStrategy
 from nltk import CFG, Nonterminal, Production
 
 from architxt.grammar.metagrammarLexer import metagrammarLexer
@@ -135,14 +138,19 @@ class Schema(CFG):
         lexer = metagrammarLexer(InputStream(input_text))
         stream = CommonTokenStream(lexer)
         parser = metagrammarParser(stream)
+        parser._errHandler = BailErrorStrategy()
 
         try:
             parser.start()
-            return True
+            return parser.getNumberOfSyntaxErrors() == 0
 
-        except Exception as e:
-            print(f"Verification failed: {e}")
-            return False
+        except CancellationException:
+            warnings.warn("Invalid syntax")
+
+        except Exception as error:
+            warnings.warn(f"Verification failed: {error!s}")
+
+        return False
 
     def as_cfg(self) -> str:
         """
