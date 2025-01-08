@@ -17,11 +17,17 @@ To install **ArchiTXT**, make sure you have Python 3.10+ and pip installed. Then
 pip install architxt
 ```
 
+For the development version, you can install it directly through GIT using
+
+```sh
+pip install git+https://github.com/Neplex/ArchiTXT.git
+```
+
 ## Usage
 
-**ArchiTXT** is built to work seamlessly with BRAT-annotated corpora that include pre-labeled named entities. It also
-requires access to a CoreNLP server, which you can easily set up using the Docker configuration available in the source
-repository.
+**ArchiTXT** is built to work seamlessly with BRAT-annotated corpora that includes pre-labeled named entities.
+It also requires access to a CoreNLP server, which you can set up using the Docker configuration available in
+the source repository.
 
 ```sh
 $ architxt --help
@@ -72,9 +78,38 @@ docker compose up -d
 
 ## Development
 
+### Setting Up the Development Environment with Poetry
+
+To set up the development environment using Poetry, ensure that you have Poetry installed.
+You can install it by following the [official installation instructions](https://python-poetry.org/docs/#installation).
+Once installed, you can set up the development environment by running the following command:
+
+```sh
+poetry install
+```
+
+### Enabling Pre-Commit Hook
+
+This project uses `pre-commit` for managing Git hooks.
+It should already be installed by poetry as a dev dependency.
+To enable the pre-commit hooks locally, run the following command:
+
+```sh
+poetry run pre-commit install
+```
+
+Once set up, the pre-commit hooks will automatically run every time you make a commit, ensuring code standards are
+followed.
+
 ### Meta-Grammar
 
-To regenerate the meta-grammar parser/lexer, use the following :
+In **ArchiTXT**, ANTLR (Another Tool for Language Recognition) is used to generate a parser/lexer
+for the meta-grammar that verify the database schema's validity.
+It ensures that the database schema conforms to the expected structure and semantics.
+
+You can view the meta-grammar definition in the [`metagrammar.g4`](metagrammar.g4) file.
+
+To regenerate the parser/lexer for the meta-grammar, run the following command:
 
 ```sh
 $ poetry run antlr4 -Dlanguage=Python3 metagrammar.g4 -o architxt/grammar
