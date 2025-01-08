@@ -193,19 +193,20 @@ def cli_run(
 
     # Generate synthetic database instances
     if gen_instances:
+        schema = Schema.from_description(
+            groups={
+                'SOSY': {'SOSY', 'ANATOMIE', 'SUBSTANCE'},
+                'TREATMENT': {'SUBSTANCE', 'DOSAGE', 'ADMINISTRATION', 'FREQUENCY'},
+                'EXAM': {'DIAGNOSTIC_PROCEDURE', 'ANATOMIE'},
+            },
+            rels={
+                'PRESCRIPTION': ('SOSY', 'TREATMENT'),
+                'EXAM': ('EXAM', 'SOSY'),
+            },
+        )
+        console.print(Panel(schema.as_cfg(), title="Synthetic Database Schema"))
         with console.status("[cyan]Generating synthetic instances..."):
-            gen_trees = gen_instance(
-                groups={
-                    'SOSY': ('SOSY', 'ANATOMIE', 'SUBSTANCE'),
-                    'TREATMENT': ('SUBSTANCE', 'DOSE', 'MODE', 'FREQUENCE'),
-                    'EXAM': ('EXAMEN', 'ANATOMIE'),
-                },
-                rels={
-                    'PRESCRIPTION': ('SOSY', 'TREATMENT'),
-                    'EXAM': ('EXAM', 'SOSY'),
-                },
-                size=gen_instances,
-            )
+            gen_trees = gen_instance(schema, size=gen_instances)
             forest.extend(gen_trees)
 
     # Rewrite the trees

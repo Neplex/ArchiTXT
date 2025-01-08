@@ -5,48 +5,51 @@ Generator of instances
 from collections.abc import Generator, Iterable
 
 from architxt.model import NodeLabel, NodeType
+from architxt.schema import Schema
 from architxt.tree import Tree
+
+__all__ = ['gen_instance']
 
 GROUP_SCHEMA = dict[str, tuple[str, ...]]
 REL_SCHEMA = dict[str, tuple[str, str]]
 
 
-def gen_group(name: str, elements: tuple[str, ...]) -> Tree:
+def gen_group(schema: Schema, name: NodeLabel) -> Tree:
     """
     Generates a group tree structure with the given name and elements.
+    :param schema: A schema to guide the tree structure.
     :param name: The name of the group.
-    :param elements: The elements to include in the group.
     :return: The generated group tree.
 
     Example:
-    >>> group_tree = gen_group('Fruits', ('Apple', 'Banana', 'Cherry'))
+    >>> schema = Schema.from_description(groups={'Fruits': {'Apple', 'Banana', 'Cherry'}})
+    >>> group_tree = gen_group(schema, NodeLabel(NodeType.GROUP, 'Fruits'))
     >>> print(group_tree.pformat(margin=255))
-    (GROUP::Fruits (ENT::Apple ) (ENT::Banana ) (ENT::Cherry ))
+    (GROUP::Fruits (ENT::Apple data) (ENT::Banana data) (ENT::Cherry data))
     """
-    label = NodeLabel(NodeType.GROUP, name)
-    element_trees = [Tree(NodeLabel(NodeType.ENT, element), []) for element in elements]
-    return Tree(label, element_trees)
+    return Tree(name, [Tree(element, ['data']) for element in sorted(schema.groups[name])])
 
 
-def gen_relation(name: str, sub: str, obj: str, groups: GROUP_SCHEMA) -> Tree:
+def gen_relation(schema: Schema, name: NodeLabel) -> Tree:
     """
     Generates a relation tree structure based on the given parameters.
+    :param schema: A schema to guide the tree structure.
     :param name: The name of the relationship.
-    :param sub: The subject of the relationship.
-    :param obj: The object of the relationship.
-    :param groups: A dictionary containing group schemas.
     :return: The generated relation tree.
 
     Example:
-    >>> groups = {'Fruits': ('Apple', 'Banana'), 'Colors': ('Red', 'Blue')}
-    >>> relation_tree = gen_relation('Preference', 'Fruits', 'Colors', groups)
+    >>> schema = Schema.from_description(
+    ...     groups={'Fruits': {'Apple', 'Banana'}, 'Colors': {'Red', 'Blue'}},
+    ...     rels={'Preference': ('Fruits', 'Colors')}
+    ... )
+    >>> relation_tree = gen_relation(schema, NodeLabel(NodeType.REL, 'Preference'))
     >>> print(relation_tree.pformat(margin=255))
-    (REL::Preference (GROUP::Fruits (ENT::Apple ) (ENT::Banana )) (GROUP::Colors (ENT::Red ) (ENT::Blue )))
+    (REL::Preference (GROUP::Colors (ENT::Blue data) (ENT::Red data)) (GROUP::Fruits (ENT::Apple data) (ENT::Banana data)))
     """
-    label = NodeLabel(NodeType.REL, name)
-    subject_tree = gen_group(sub, groups[sub])
-    object_tree = gen_group(obj, groups[obj])
-    return Tree(label, [subject_tree, object_tree])
+    sub, obj = schema.relations[name]
+    subject_tree = gen_group(schema, sub)
+    object_tree = gen_group(schema, obj)
+    return Tree(name, [subject_tree, object_tree])
 
 
 def gen_collection(name: str, elements: Iterable[Tree]) -> Tree:
@@ -67,33 +70,30 @@ def gen_collection(name: str, elements: Iterable[Tree]) -> Tree:
     return Tree(label, elements)
 
 
-def gen_instance(
-    groups: GROUP_SCHEMA, rels: REL_SCHEMA, *, size: int = 200, generate_collections: bool = True
-) -> Generator[Tree, None, None]:
+def gen_instance(schema: Schema, *, size: int = 200, generate_collections: bool = True) -> Generator[Tree, None, None]:
     """
     Generate a database instances as a tree based on the given groups and relations schema.
-    :param groups: A dictionary containing group names as keys and elements as values.
-    :param rels: A dictionary containing relation names as keys and tuples of sub and obj as values.
+    :param schema: A schema to guide the tree structure.
     :param size: An integer specifying the size of the generated trees.
     :param generate_collections: A boolean indicating whether to generate collections or not.
     :return: A tree representing the generated instance.
     """
     # Generate tree instances for each group
-    for group_name, elements in groups.items():
-        generated = (gen_group(group_name, elements) for _ in range(size))
+    for group in schema.groups:
+        generated = (gen_group(schema, group) for _ in range(size))
 
         if generate_collections:
-            yield gen_collection(group_name, generated)
+            yield gen_collection(group, generated)
 
         else:
             yield from generated
 
     # Generate tree instances for each relation
-    for rel_name, (sub, obj) in rels.items():
-        generated = (gen_relation(rel_name, sub, obj, groups) for _ in range(size))
+    for relation in schema.relations:
+        generated = (gen_relation(schema, relation) for _ in range(size))
 
         if generate_collections:
-            yield gen_collection(rel_name, generated)
+            yield gen_collection(relation, generated)
 
         else:
             yield from generated
