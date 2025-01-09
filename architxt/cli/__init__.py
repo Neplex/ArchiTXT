@@ -178,6 +178,7 @@ def cli_run(
         None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores."
     ),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
+    output: Path | None = typer.Option(None, exists=False, writable=True, help="Path to save the result."),
 ) -> None:
     """
     Automatically structure a corpus as a database instance and print the database schema as a CFG.
@@ -226,10 +227,14 @@ def cli_run(
         random.shuffle(forest)
 
     console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
-    forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+    new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+
+    if output:
+        with console.status(f"[cyan]Saving instance to {output}..."), output.open('wb') as output_file:
+            cloudpickle.dump(new_forest, output_file)
 
     # Generate schema
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
+    schema = Schema.from_forest(new_forest, keep_unlabelled=False)
     schema_str = schema.as_cfg()
     mlflow.log_text(schema_str, 'schema.txt')
 
