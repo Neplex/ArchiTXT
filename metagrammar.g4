@@ -1,9 +1,9 @@
 grammar metagrammar;
 
-REL: 'REL::' [a-zA-Z0-9]+ ('<->' [a-zA-Z0-9]+)?;
-GROUP: 'GROUP::' [a-zA-Z0-9]+;
-ENT: 'ENT::' [a-zA-Z0-9]+;
-COLL: 'COLL::' [a-zA-Z0-9]+ ('<->' [a-zA-Z0-9]+)?;
+REL: 'REL::' [_a-zA-Z0-9]+ ('<->' [_a-zA-Z0-9]+)?;
+GROUP: 'GROUP::' [_a-zA-Z0-9]+;
+ENT: 'ENT::' [_a-zA-Z0-9]+;
+COLL: 'COLL::' [_a-zA-Z0-9]+ ('<->' [_a-zA-Z0-9]+)?;
 ROOT: 'ROOT';
 PROD_SYMBOL: '->';
 PROD_SEPARATOR: ';';
