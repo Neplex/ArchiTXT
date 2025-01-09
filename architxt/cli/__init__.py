@@ -191,6 +191,19 @@ def cli_run(
         relations_filter=RELATIONS_FILTER,
         entities_mapping=ENTITIES_MAPPING,
     )
+    forest = list(filter(lambda t: len(t.leaves()) < 30, forest))
+
+    # Rewrite the trees
+    mlflow.enable_system_metrics_logging()
+    mlflow.log_params(
+        {
+            'has_corpus': True,
+            'has_instance': bool(gen_instances),
+        }
+    )
+
+    if sample:
+        forest = random.sample(forest, sample)
 
     # Generate synthetic database instances
     if gen_instances:
@@ -202,28 +215,15 @@ def cli_run(
             },
             rels={
                 'PRESCRIPTION': ('SOSY', 'TREATMENT'),
-                'EXAM': ('EXAM', 'SOSY'),
+                'EXAM_RESULT': ('EXAM', 'SOSY'),
             },
         )
         console.print(Panel(schema.as_cfg(), title="Synthetic Database Schema"))
         with console.status("[cyan]Generating synthetic instances..."):
-            gen_trees = gen_instance(schema, size=gen_instances)
-            forest.extend(gen_trees)
+            forest.extend(gen_instance(schema, size=gen_instances))
+        console.print(f'[green]Generated {gen_instances} synthetic instances.[/]')
 
-    # Rewrite the trees
-    mlflow.enable_system_metrics_logging()
-    mlflow.log_params(
-        {
-            'has_corpus': True,
-            'has_instance': bool(gen_instances),
-        }
-    )
-
-    forest = list(filter(lambda t: len(t.leaves()) < 30, forest))
-
-    if sample:
-        forest = random.sample(forest, sample)
-    elif shuffle:
+    if shuffle:
         random.shuffle(forest)
 
     console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')

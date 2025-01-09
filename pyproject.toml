@@ -42,11 +42,12 @@ typer = "^0.15.1"
 anyio = "^4.6.0"
 rich = "^13.9.4"
 antlr4-python3-runtime = ">=4.13,<5"
+apted = "^1.0.3"
 
 # Optional UI dependencies
-streamlit = { version = ">=1.39.0", optional = true }
-streamlit-agraph = { version = "*", optional = true }
-streamlit-tags = { version = "*", optional = true }
+streamlit = { version = ">=1.39.0", optional = false }
+streamlit-agraph = { version = "*", optional = false }
+streamlit-tags = { version = "*", optional = false }
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]

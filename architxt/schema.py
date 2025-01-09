@@ -1,4 +1,5 @@
 import warnings
+from collections import defaultdict
 from functools import cached_property
 
 from antlr4 import CommonTokenStream, InputStream
@@ -79,7 +80,7 @@ class Schema(CFG):
         :param keep_unlabelled: Whether to keep uncategorized nodes in the schema.
         :return: A CFG-based schema representation.
         """
-        schema: dict[Nonterminal, set[Nonterminal]] = {}
+        schema: dict[Nonterminal, set[Nonterminal]] = defaultdict(set)
 
         for tree in forest:
             for prod in tree.productions():
@@ -91,7 +92,7 @@ class Schema(CFG):
                     schema[prod.lhs()] = {prod.rhs()[0]}
 
                 else:
-                    schema[prod.lhs()] = schema.get(prod.lhs(), set()) | set(prod.rhs())
+                    schema[prod.lhs()] |= set(prod.rhs())
 
         # Create productions for the schema
         productions = [Production(lhs, sorted(rhs)) for lhs, rhs in schema.items()]

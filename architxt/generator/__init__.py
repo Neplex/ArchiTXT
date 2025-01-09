@@ -83,7 +83,7 @@ def gen_instance(schema: Schema, *, size: int = 200, generate_collections: bool 
         generated = (gen_group(schema, group) for _ in range(size))
 
         if generate_collections:
-            yield gen_collection(group, generated)
+            yield gen_collection(group.name, generated)
 
         else:
             yield from generated
@@ -93,7 +93,7 @@ def gen_instance(schema: Schema, *, size: int = 200, generate_collections: bool 
         generated = (gen_relation(schema, relation) for _ in range(size))
 
         if generate_collections:
-            yield gen_collection(relation, generated)
+            yield gen_collection(relation.name, generated)
 
         else:
             yield from generated
