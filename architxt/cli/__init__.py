@@ -12,6 +12,8 @@ import cloudpickle
 import mlflow
 import more_itertools
 import typer
+from mlflow.data import Dataset
+from mlflow.data.code_dataset_source import CodeDatasetSource
 from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
@@ -60,6 +62,7 @@ def load_or_cache_corpus(
     relations_mapping: dict[str, str] | None = None,
     corenlp_url: str,
     language: str,
+    name: str | None = None,
 ) -> list[Tree]:
     """
     Load the corpus from disk or cache.
@@ -71,6 +74,7 @@ def load_or_cache_corpus(
     :param relations_mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
     :param corenlp_url: The URL of the CoreNLP server.
     :param language: The language to use for parsing.
+    :param name: The corpus name.
 
     :returns: A list of parsed trees representing the enriched corpus.
     """
@@ -90,6 +94,22 @@ def load_or_cache_corpus(
 
         key = file_hash.hexdigest()
         corpus_cache_path = Path(f'{key}.pkl')
+
+        mlflow.log_input(
+            Dataset(
+                CodeDatasetSource(
+                    {
+                        'entities_filter': sorted(entities_filter),
+                        'relations_filter': sorted(relations_filter),
+                        'entities_mapping': entities_mapping,
+                        'relations_mapping': relations_mapping,
+                        'cache_file': str(corpus_cache_path.absolute()),
+                    }
+                ),
+                name=name,
+                digest=key,
+            )
+        )
 
         # Attempt to load from cache if available
         if corpus_cache_path.exists():
@@ -154,6 +174,7 @@ def load_corpus_paths(
                     relations_mapping=relations_mapping,
                     corenlp_url=corenlp_url,
                     language=lang,
+                    name=path.name,
                 )
 
         return forest

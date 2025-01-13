@@ -76,7 +76,7 @@ def rewrite(
             'epoch': epoch,
             'min_support': min_support,
             'metric': metric.__name__,
-            'edit_ops': ', '.join(f"{op_id}: {edit_op.name}" for op_id, edit_op in enumerate(edit_ops)),
+            'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)),
         }
     )
 
@@ -236,8 +236,8 @@ def apply_operations(
     chunks = distribute_evenly(forest, executor._max_workers)
 
     with Manager() as manager:
-        shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees)
-        simplification_operation = manager.Value(ctypes.c_int, -1)
+        shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees, lock=False)
+        simplification_operation = manager.Value(ctypes.c_int, -1, lock=False)
         barrier = manager.Barrier(len(chunks))
 
         futures = [
