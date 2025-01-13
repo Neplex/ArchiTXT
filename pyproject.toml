@@ -62,7 +62,7 @@ datasets = "*"
 
 pylint = "^3.3"
 mypy = ">=0.910,<1.15"
-ruff = "^0.8.0"
+ruff = "^0.9.1"
 
 # Typing stubs
 pandas-stubs = "*"
