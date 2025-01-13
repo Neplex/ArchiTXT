@@ -158,7 +158,9 @@ def compute_dist_matrix(subtrees: list[Tree], *, metric: METRIC_FUNC) -> npt.NDA
     )
 
 
-def equiv_cluster(trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> TREE_CLUSTER:
+def equiv_cluster(
+    trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC, _all_subtrees: bool = True
+) -> TREE_CLUSTER:
     """
     Clusters subtrees of a given tree based on their similarity. The clusters are created by applying
     a distance threshold `tau` to the linkage matrix, which is derived from pairwise subtree similarity calculations.
@@ -170,11 +172,15 @@ def equiv_cluster(trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_ME
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
     """
-    subtrees = [
-        subtree
-        for tree in trees
-        for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and not x.has_duplicate_entity())
-    ]
+    subtrees = (
+        [
+            subtree
+            for tree in trees
+            for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and not x.has_duplicate_entity())
+        ]
+        if _all_subtrees
+        else trees
+    )
 
     if len(subtrees) < 2:
         return set()
@@ -241,3 +247,28 @@ def get_equiv_of(
 
     # Return empty tuple if no similar cluster is found
     return ()
+
+
+def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> dict[str:int]:
+    """
+    Process the given forest to assign labels to entities based on clustering of their ancestor.
+
+    :param forest: The forest from which to extract and cluster entities.
+    :param tau: The similarity threshold for clustering.
+    :param metric: The similarity metric function used to compute the similarity between subtrees.
+    :return: A dictionary mapping entities to their respective cluster IDs.
+    """
+    entity_parents = [
+        subtree
+        for tree in forest
+        for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
+    ]
+    equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
+
+    return {
+        f'{child.label().name}${' '.join(child)}': i
+        for i, cluster in enumerate(equiv_subtrees)
+        for subtree in cluster
+        for child in subtree
+        if has_type(child, NodeType.ENT)
+    }

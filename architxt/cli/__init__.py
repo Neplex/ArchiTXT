@@ -20,6 +20,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from architxt.generator import gen_instance
+from architxt.metrics import Metrics
 from architxt.nlp import get_enriched_forest, get_sentence_from_disk
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
@@ -262,10 +263,37 @@ def cli_run(
     console.print(
         Panel(
             schema_str,
-            title="Schema as CFG",
+            title="Schema as CFG (labelled nodes only)",
             subtitle='[green]Valid Schema[/]' if schema.verify() else '[red]Invalid Schema[/]',
         )
     )
+
+    with console.status("[cyan]Computing metrics. This may take a while. Please wait..."):
+        valid_instance = schema.extract_valid_trees(new_forest)
+        metrics = Metrics(forest, valid_instance)
+
+        metrics_table = Table("Metric", "Value", title="Valid instance")
+
+        metrics_table.add_row("Coverage ▲", f"{metrics.coverage():.2f}")
+        metrics_table.add_row("Similarity ▲", f"{metrics.similarity():.2f}")
+        metrics_table.add_row("Edit distance ▼", str(metrics.edit_distance()))
+
+        metrics_table.add_section()
+
+        metrics_table.add_row("Cluster Mutual Information ▲", f"{metrics.cluster_ami(tau=tau):.2f}")
+        metrics_table.add_row("Cluster Completeness ▲", f"{metrics.cluster_completeness(tau=tau):.2f}")
+
+        schema_old = Schema.from_forest(forest, keep_unlabelled=True)
+        schema_new = Schema.from_forest(new_forest, keep_unlabelled=True)
+        grammar_metrics_table = Table("Metric", "Before Value", "After Value", title="Schema grammar")
+        grammar_metrics_table.add_row(
+            "Productions ▼",
+            str(len(schema_old.productions())),
+            f"{len(schema_new.productions())} ({len(schema_new.productions()) / len(schema_old.productions()) * 100:.2f}%)",
+        )
+        grammar_metrics_table.add_row("Overlap ▼", f"{schema_old.group_overlap:.2f}", f"{schema_new.group_overlap:.2f}")
+
+        console.print(Columns([metrics_table, grammar_metrics_table]))
 
 
 def cli_ui() -> None:

@@ -1,6 +1,8 @@
 import warnings
 from collections import defaultdict
+from copy import deepcopy
 from functools import cached_property
+from itertools import combinations
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.Errors import CancellationException
@@ -10,6 +12,7 @@ from nltk import CFG, Nonterminal, Production
 from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
 from architxt.model import NodeLabel, NodeType
+from architxt.similarity import jaccard
 from architxt.tree import Forest, has_type
 
 __all__ = ['Schema']
@@ -153,6 +156,20 @@ class Schema(CFG):
 
         return False
 
+    @property
+    def group_overlap(self) -> float:
+        """
+        Get the group overlap ratio as a combined Jaccard index.
+        The group overlap ratio is computed as the mean of all pairwise Jaccard indices for each pair of groups.
+
+        :return: The group overlap ratio as a float value between 0 and 1.
+                 A higher value indicates a higher degree of overlap between groups.
+        """
+        jaccard_indices = [jaccard(group1, group2) for group1, group2 in combinations(self.groups.values(), 2)]
+
+        # Combine scores (average of pairwise indices)
+        return sum(jaccard_indices) / len(jaccard_indices) if jaccard_indices else 0.0
+
     def as_cfg(self) -> str:
         """
         Converts the schema to a CFG representation.
@@ -176,3 +193,25 @@ class Schema(CFG):
         :returns: The schema as a Cypher creation script defining constraints and indexes.
         """
         raise NotImplementedError
+
+    def extract_valid_trees(self, forest: Forest) -> Forest:
+        """
+        Filters and returns a valid instance (according to the schema) of the provided forest by removing any subtrees
+        with labels that do not match valid labels.
+
+        :param forest: The input forest to be cleaned.
+        :return: A list of valid trees according to the schema.
+        """
+        valid_forest = deepcopy(forest)
+        valid_labels = self.entities | self.groups.keys() | self.relations.keys()
+
+        for tree in valid_forest:
+            for subtree in tree.subtrees():
+                if (
+                    (parent := subtree.parent())
+                    and not has_type(subtree, NodeType.COLL)
+                    and subtree.label() not in valid_labels
+                ):
+                    parent.remove(subtree)
+
+        return valid_forest

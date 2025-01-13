@@ -3,6 +3,7 @@ from collections.abc import Collection
 
 import mlflow
 
+from architxt.metrics import Metrics
 from architxt.model import NodeType
 from architxt.schema import Schema
 from architxt.similarity import TREE_CLUSTER
@@ -11,6 +12,7 @@ from architxt.tree import Forest, Tree, has_type
 __all__ = [
     'distribute_evenly',
     'log_clusters',
+    'log_instance_comparison_metrics',
     'log_metrics',
     'log_schema',
 ]
@@ -49,6 +51,31 @@ def distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
     return chunks
 
 
+def log_instance_comparison_metrics(
+    iteration: int, old_forest: Forest, new_forest: Forest, tau: float, metric: callable
+) -> None:
+    """
+    Logs comparison metrics to see the evolution of the rewriting for a specific iteration.
+
+    :param iteration: The current iteration number for logging.
+    :param old_forest: The initial forest to compare against.
+    :param new_forest: The updated forest to compare with.
+    :param tau: The similarity threshold for clustering.
+    :param metric: The similarity metric function used to compute the similarity between subtrees.
+    """
+    metrics = Metrics(old_forest, new_forest)
+    mlflow.log_metrics(
+        {
+            'coverage': metrics.coverage(),
+            'similarity': metrics.similarity(),
+            'edit_distance': metrics.edit_distance(),
+            'cluster_ami': metrics.cluster_ami(tau=tau, metric=metric),
+            'cluster_completeness': metrics.cluster_completeness(tau=tau, metric=metric),
+        },
+        step=iteration,
+    )
+
+
 def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()) -> None:
     """
     Logs various metrics related to a forest of trees and equivalent subtrees.
@@ -62,10 +89,11 @@ def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = (
     :return: None
     """
     # Count labels for all nodes in the forest
-    label_counts = Counter(str(subtree.label()) for tree in forest for subtree in tree.subtrees())
+    label_counts = Counter(subtree.label() for tree in forest for subtree in tree.subtrees())
 
     # Calculate the number of unlabeled nodes
     num_unlabeled = sum(not has_type(label) for label in label_counts)
+    unlabeled_ratio = num_unlabeled / len(label_counts) if len(label_counts) else 0
 
     # Entity statistics
     num_entities = sum(has_type(label, NodeType.ENT) for label in label_counts)
@@ -90,21 +118,22 @@ def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = (
     # Log the calculated metrics
     mlflow.log_metrics(
         {
-            'num_non_terminal_nodes': len(label_counts),
-            'num_unlabeled_nodes': num_unlabeled,
-            'num_equiv_subtrees': len(equiv_subtrees),
-            'num_entities': num_entities,
-            'num_entity_instances': num_entity_instances,
-            'entity_ratio': entity_ratio,
-            'num_groups': num_groups,
-            'num_group_instances': num_group_instances,
-            'group_ratio': group_ratio,
-            'num_relations': num_relations,
-            'num_relation_instances': num_relation_instances,
-            'relation_ratio': relation_ratio,
-            'num_collections': num_collections,
-            'num_collection_instances': num_collection_instances,
-            'collection_ratio': collection_ratio,
+            'non_terminal_nodes': len(label_counts),
+            'unlabeled_nodes': num_unlabeled,
+            'unlabeled_nodes_ratio': unlabeled_ratio,
+            'equiv_subtrees': len(equiv_subtrees),
+            'entity_type_total': num_entities,
+            'entity_instance_total': num_entity_instances,
+            'entity_instance_ratio': entity_ratio,
+            'group_type_total': num_groups,
+            'group_instance_total': num_group_instances,
+            'group_instance_ratio': group_ratio,
+            'relation_type_total': num_relations,
+            'relation_instance_total': num_relation_instances,
+            'relation_instance_ratio': relation_ratio,
+            'collection_type_total': num_collections,
+            'collection_instance_total': num_collection_instances,
+            'collection_instance_ratio': collection_ratio,
         },
         step=iteration,
     )
@@ -145,7 +174,13 @@ def log_schema(iteration: int, forest: Forest) -> None:
     :param iteration: The current iteration number for logging.
     :param forest: A forest of tree objects to analyze.
     """
-    schema = Schema.from_forest(forest)
+    schema = Schema.from_forest(forest, keep_unlabelled=True)
 
-    mlflow.log_metric('num_productions', len(schema.productions()))
+    mlflow.log_metrics(
+        {
+            'num_productions': len(schema.productions()),
+            'overlap': schema.group_overlap,
+        },
+        step=iteration,
+    )
     mlflow.log_text(schema.as_cfg(), f'debug/{iteration}/schema.txt')

@@ -1,3 +1,4 @@
+import uuid
 import warnings
 from collections.abc import Generator, Iterable, Sequence
 from pathlib import Path
@@ -11,7 +12,7 @@ from tqdm import tqdm
 from unidecode import unidecode
 
 from architxt.model import AnnotatedSentence, Entity, NodeType, Relation
-from architxt.tree import Tree, enrich_tree, fix_all_coord, reduce_all
+from architxt.tree import Tree, enrich_tree, fix_all_coord, has_type, reduce_all
 
 
 def split_sentences(text: str) -> list[str]:
@@ -392,7 +393,15 @@ def get_enriched_forest(
         reduce_all(tree, set(NodeType))
 
         # Don't yield an empty tree
-        if len(tree) and not any(isinstance(child, str) for child in tree):
-            assert tree.root().label() == 'SENT'
-            assert all(child.label() != 'SENT' for child in tree)
-            yield tree
+        if not len(tree) or any(isinstance(child, str) for child in tree):
+            continue
+
+        assert tree.root().label() == 'SENT'
+        assert all(child.label() != 'SENT' for child in tree)
+
+        # Rename nodes to unique undefined names
+        # This is needed when measuring statistics
+        for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT)):
+            subtree.set_label(f'UNDEF_{uuid.uuid4().hex}')
+
+        yield tree

@@ -43,6 +43,7 @@ anyio = "^4.6.0"
 rich = "^13.9.4"
 antlr4-python3-runtime = ">=4.13,<5"
 apted = "^1.0.3"
+cachetools = "^5.5.0"
 
 # Optional UI dependencies
 streamlit = { version = ">=1.39.0", optional = false }
@@ -67,6 +68,7 @@ ruff = "^0.8.0"
 pandas-stubs = "*"
 types-tqdm = "*"
 types-requests = "*"
+types-cachetools = "*"
 
 # Tools for generating grammar parsers
 antlr4-tools = "^0.2.1"

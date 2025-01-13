@@ -23,7 +23,7 @@ from .operations import (
     ReduceBottomOperation,
     ReduceTopOperation,
 )
-from .utils import distribute_evenly, log_clusters, log_metrics, log_schema
+from .utils import distribute_evenly, log_clusters, log_instance_comparison_metrics, log_metrics, log_schema
 
 __all__ = ['create_group', 'find_groups', 'rewrite']
 
@@ -80,12 +80,25 @@ def rewrite(
         }
     )
 
+    equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
+    log_metrics(0, forest, equiv_subtrees)
+    log_schema(0, forest)
+    log_clusters(0, equiv_subtrees)
+    log_instance_comparison_metrics(0, forest, forest, tau, metric)
+
+    if debug:
+        # Log the forest as SVG
+        rooted_forest = Tree('ROOT', deepcopy(forest))
+        mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), 'debug/0/tree.html')
+
+    new_forest = deepcopy(forest)
+
     with mlflow.start_span('rewriting'), ProcessPoolExecutor(max_workers=max_workers) as executor:
-        for iteration in trange(epoch, desc='rewrite trees'):
+        for iteration in trange(1, epoch, desc='rewrite trees'):
             with mlflow.start_span('iteration', attributes={'step': iteration}):
-                forest, has_simplified = _rewrite_step(
+                new_forest, has_simplified = _rewrite_step(
                     iteration,
-                    forest,
+                    new_forest,
                     tau=tau,
                     min_support=min_support,
                     metric=metric,
@@ -94,11 +107,16 @@ def rewrite(
                     executor=executor,
                 )
 
+                log_instance_comparison_metrics(iteration, forest, new_forest, tau, metric)
+
                 # Stop if no further simplifications are made
                 if iteration > 0 and not has_simplified:
                     break
 
-    return forest
+        new_forest, _ = _post_process(new_forest, tau=tau, metric=metric, executor=executor)
+        log_instance_comparison_metrics(iteration + 1, forest, new_forest, tau, metric)
+
+    return new_forest
 
 
 def _rewrite_step(
