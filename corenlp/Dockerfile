@@ -8,18 +8,18 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ARG CORENLP_VERSION=4.5.7
-ARG CORENLP_URL="http://nlp.stanford.edu/software/"
+ARG CORENLP_URL="https://nlp.stanford.edu/software/"
 ARG CORENLP_HOME=/opt/corenlp
 
 # Download and install CoreNLP
-RUN wget ${MODELS_URL}stanford-corenlp-${CORENLP_VERSION}.zip && \
+RUN wget ${CORENLP_URL}stanford-corenlp-${CORENLP_VERSION}.zip && \
     unzip stanford-corenlp-${CORENLP_VERSION}.zip && \
     mv stanford-corenlp-${CORENLP_VERSION} ${CORENLP_HOME} && \
     rm stanford-corenlp-${CORENLP_VERSION}.zip
 
 # Add models
-ADD ${MODELS_URL}stanford-corenlp-${CORENLP_VERSION}-models-english.jar ${CORENLP_HOME}
-ADD ${MODELS_URL}stanford-corenlp-${CORENLP_VERSION}-models-french.jar ${CORENLP_HOME}
+ADD ${CORENLP_URL}stanford-corenlp-${CORENLP_VERSION}-models-english.jar ${CORENLP_HOME}
+ADD ${CORENLP_URL}stanford-corenlp-${CORENLP_VERSION}-models-french.jar ${CORENLP_HOME}
 
 # Set up the CLASSPATH for CoreNLP (collect all jar files in the directory)
 RUN cd ${CORENLP_HOME} && \
