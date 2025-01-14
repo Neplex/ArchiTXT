@@ -39,12 +39,11 @@ class Edge(_Edge):
 
 
 @st.fragment()
-def graph(forest: Forest) -> None:
+def graph(schema: Schema) -> None:
     """Function to render schema graph visualization"""
     nodes = set()
     edges = set()
 
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
     for prod in schema.productions():
         if has_type(prod, {NodeType.GROUP, NodeType.REL}):
             lhs_symbol = prod.lhs().symbol().name
@@ -72,28 +71,37 @@ st.title("ArchiTxt")
 
 with st.sidebar:
     corenlp_url = st.text_input('Corenlp URL', value='http://localhost:9000')
-    language = st.selectbox('Language', ['French', 'English'])
 
-input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 Statistics', '📐 Schema', '🗄️ Instance'])
+input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 Metrics', '📐 Schema', '🗄️ Instance'])
 
-with input_tab, st.form(key='corpora', enter_to_submit=False):
+with input_tab:
     uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=True)
 
-    entities_filter = st_tags(label='Excluded entities', value=['MOMENT', 'DUREE', 'DATE'])
-    relations_filter = st_tags(label='Excluded relations', value=['TEMPORALITE', 'CAUSE-CONSEQUENCE'])
+    file_language = []
+    for file in uploaded_file:
+        language_columns = st.columns(2)
+        language_columns[0].text_input('Corpus', file.name, disabled=True)
+        language = language_columns[1].selectbox('Language', ['French', 'English'], key=file.name)
+        file_language.append((file, language))
 
     st.divider()
 
-    col1, col2, col3 = st.columns(3)
-    tau = col1.number_input('Tau', min_value=0.05, max_value=1.0, step=0.05, value=0.5)
-    epoch = col2.number_input('Epoch', min_value=1, step=1, value=100)
-    min_support = col3.number_input('Minimum Support', min_value=1, step=1, value=10)
-    submitted = st.form_submit_button("Start")
+    with st.form(key='corpora', enter_to_submit=False):
+        entities_filter = st_tags(label='Excluded entities', value=['MOMENT', 'DUREE', 'DATE'])
+        relations_filter = st_tags(label='Excluded relations', value=['TEMPORALITE', 'CAUSE-CONSEQUENCE'])
 
-if submitted and uploaded_file:
+        st.divider()
+
+        col1, col2, col3 = st.columns(3)
+        tau = col1.number_input('Tau', min_value=0.05, max_value=1.0, step=0.05, value=0.5)
+        epoch = col2.number_input('Epoch', min_value=1, step=1, value=100)
+        min_support = col3.number_input('Minimum Support', min_value=1, step=1, value=10)
+        submitted = st.form_submit_button("Start")
+
+if submitted and file_language:
     try:
         forest = []
-        for file in uploaded_file:
+        for file, language in file_language:
             forest += load_or_cache_corpus(
                 file,
                 entities_filter=set(entities_filter),
@@ -103,6 +111,9 @@ if submitted and uploaded_file:
                 language=language,
             )
 
+        if mlflow.active_run():
+            mlflow.end_run()
+
         with st.spinner('Computing...'), mlflow.start_run(run_name='UI run', log_system_metrics=True) as mlflow_run:
             database = rewrite(
                 forest,
@@ -111,33 +122,50 @@ if submitted and uploaded_file:
                 min_support=min_support,
             )
 
-            # Display statistics tab
-            with stats_tab:
-                run_id = mlflow_run.info.run_id
-                client = mlflow.tracking.MlflowClient()
+        # Display statistics tab
+        with stats_tab:
+            run_id = mlflow_run.info.run_id
+            client = mlflow.tracking.MlflowClient()
 
-                st.line_chart(
-                    {
-                        metric: [x.value for x in client.get_metric_history(run_id, metric)]
-                        for metric in [
-                            'num_productions',
-                            'num_unlabeled_nodes',
-                            'num_groups',
-                            'num_relations',
-                            'num_collections',
-                        ]
-                    }
-                )
+            st.line_chart(
+                {
+                    metric: [x.value for x in client.get_metric_history(run_id, metric)]
+                    for metric in [
+                        'coverage',
+                        'similarity',
+                        'edit_distance',
+                        'cluster_ami',
+                        'cluster_completeness',
+                        'overlap',
+                    ]
+                }
+            )
 
-                st.bar_chart([x.value for x in client.get_metric_history(run_id, 'edit_op')])
+            st.line_chart(
+                {
+                    metric: [x.value for x in client.get_metric_history(run_id, metric)]
+                    for metric in [
+                        'num_productions',
+                        'unlabeled_nodes',
+                        'group_instance_total',
+                        'relation_instance_total',
+                        'collection_instance_total',
+                    ]
+                }
+            )
 
-            # Display schema graph
-            with schema_tab:
-                graph(database)
+            st.bar_chart([x.value for x in client.get_metric_history(run_id, 'edit_op')])
 
-            # Display instance data
-            with instance_tab:
-                dataframe(database)
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
+
+        # Display schema graph
+        with schema_tab:
+            graph(schema)
+
+        # Display instance data
+        with instance_tab:
+            clean_database = schema.extract_valid_trees(database)
+            dataframe(clean_database)
 
     except Exception as e:
         st.error(f"An error occurred: {e!s}")
