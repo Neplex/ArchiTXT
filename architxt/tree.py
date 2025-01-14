@@ -260,16 +260,16 @@ class Tree(ParentedTree):
             parent.__reset_cache()
 
     @overload
-    def __setitem__(self, pos: TREE_POS, subtree: 'Tree | str') -> None: ...
+    def __setitem__(self, pos: TREE_POS | int, subtree: 'Tree | str') -> None: ...
 
     @overload
     def __setitem__(self, pos: slice, subtree: 'list[Tree | str]') -> None: ...
 
-    def __setitem__(self, pos: TREE_POS | slice, subtree: 'list[Tree | str] | Tree | str') -> None:
+    def __setitem__(self, pos: TREE_POS | int | slice, subtree: 'list[Tree | str] | Tree | str') -> None:
         super().__setitem__(pos, subtree)
         self.__reset_cache()
 
-    def __delitem__(self, pos: TREE_POS | slice) -> None:
+    def __delitem__(self, pos: TREE_POS | int | slice) -> None:
         super().__delitem__(pos)
         self.__reset_cache()
 

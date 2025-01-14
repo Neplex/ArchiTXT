@@ -12,8 +12,8 @@ import cloudpickle
 import mlflow
 import more_itertools
 import typer
-from mlflow.data import Dataset
 from mlflow.data.code_dataset_source import CodeDatasetSource
+from mlflow.data.meta_dataset import MetaDataset
 from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
@@ -97,11 +97,11 @@ def load_or_cache_corpus(
         corpus_cache_path = Path(f'{key}.pkl')
 
         mlflow.log_input(
-            Dataset(
+            MetaDataset(
                 CodeDatasetSource(
                     {
-                        'entities_filter': sorted(entities_filter),
-                        'relations_filter': sorted(relations_filter),
+                        'entities_filter': sorted(entities_filter or []),
+                        'relations_filter': sorted(relations_filter or []),
                         'entities_mapping': entities_mapping,
                         'relations_mapping': relations_mapping,
                         'cache_file': str(corpus_cache_path.absolute()),

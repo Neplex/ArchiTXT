@@ -1,9 +1,11 @@
 import ctypes
 import functools
 from collections.abc import Sequence
-from concurrent.futures import Executor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
-from multiprocessing import Barrier, Manager, Value, cpu_count
+from multiprocessing import Manager, cpu_count
+from multiprocessing.managers import ValueProxy
+from multiprocessing.synchronize import Barrier
 
 import mlflow
 from mlflow.entities import SpanEvent
@@ -128,7 +130,7 @@ def _rewrite_step(
     metric: METRIC_FUNC,
     edit_ops: Sequence[type[Operation]],
     debug: bool,
-    executor: Executor,
+    executor: ProcessPoolExecutor,
 ) -> tuple[Forest, bool]:
     """
     Perform a single rewrite step on the forest.
@@ -183,7 +185,7 @@ def _post_process(
     *,
     tau: float,
     metric: METRIC_FUNC,
-    executor: Executor,
+    executor: ProcessPoolExecutor,
 ) -> tuple[Forest, TREE_CLUSTER]:
     """
     Post-process the forest to find and name relations and collections.
@@ -223,7 +225,7 @@ def apply_operations(
     *,
     equiv_subtrees: TREE_CLUSTER,
     early_exit: bool = True,
-    executor: Executor,
+    executor: ProcessPoolExecutor,
 ) -> tuple[Forest, int | None]:
     """
     Apply a sequence of edit operations to a forest, potentially simplifying its structure.
@@ -274,7 +276,7 @@ def apply_operations(
 
         # Flatten the results and extract the simplification operation ID if any
         forest = [tree for chunk in as_completed(futures) for tree in chunk.result()]
-        op_id = simplification_operation.value
+        op_id = simplification_operation.get()
 
     return forest, op_id if op_id >= 0 else None
 
@@ -283,27 +285,34 @@ def apply_operations_worker(
     idx: int,
     edit_ops: Sequence[tuple[str, Operation]],
     forest: Forest,
-    equiv_subtrees: Value,
+    shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
     early_exit: bool,
-    simplification_operation: Value,
+    simplification_operation: ValueProxy[int],
     barrier: Barrier,
 ) -> Forest:
     """
     Apply the given operation to the forest.
 
+    :param idx: The index of the worker.
     :param edit_ops: The list of operations to perform on the forest.
     :param forest: The forest to perform on.
-    :param equiv_subtrees: The set of equivalent subtrees.
+    :param shared_equiv_subtrees: The shared set of equivalent subtrees.
+    :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
+                       If `False`, all operations are applied.
+    :param simplification_operation: A shared integer value to store the index of the operation that simplified a tree.
+    :param barrier: A barrier to synchronize the workers before starting the next operation.
     :return: The rewritten forest and the tuple of flags for each tree indicating if simplifications occurred.
     """
+    equiv_subtrees = shared_equiv_subtrees.get()
+
     for op_id, (name, operation) in enumerate(edit_ops):
-        op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees.value)
+        op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees)
 
         with mlflow.start_span(name):
             forest, simplified = zip(*map(op_fn, tqdm(forest, desc=name, leave=False, position=idx + 1)), strict=False)
 
             if any(simplified):
-                simplification_operation.value = op_id
+                simplification_operation.set(op_id)
 
             barrier.wait()  # Wait for all workers to finish this operation
 
@@ -341,9 +350,8 @@ def find_groups(
 
     :return: A boolean indicating if groups were created.
     """
-    frequent_clusters = filter(lambda cluster: len(cluster) > min_support, equiv_subtrees)
     frequent_clusters = sorted(
-        frequent_clusters,
+        filter(lambda cluster: len(cluster) > min_support, equiv_subtrees),
         key=lambda cluster: (
             len(cluster),
             sum(len(st.entities()) for st in cluster) / len(cluster),

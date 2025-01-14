@@ -1,6 +1,6 @@
 import math
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from itertools import combinations
 
 import numpy as np
@@ -125,7 +125,7 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
     return similarity(x, y, metric=metric) >= tau
 
 
-def compute_dist_matrix(subtrees: list[Tree], *, metric: METRIC_FUNC) -> npt.NDArray[np.uint16]:
+def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> npt.NDArray[np.uint16]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
 
@@ -179,7 +179,7 @@ def equiv_cluster(
             for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and not x.has_duplicate_entity())
         ]
         if _all_subtrees
-        else trees
+        else list(trees)
     )
 
     if len(subtrees) < 2:
@@ -230,17 +230,17 @@ def get_equiv_of(
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     :return: A tuple representing the cluster of subtrees that meet the similarity threshold.
     """
-    distance_to_center = []
+    distance_to_center = {}
     for cluster in equiv_subtrees:
         if t in cluster or (cluster_sim := similarity(t, cluster[0], metric=metric)) >= tau:
             return cluster
 
-        distance_to_center.append(cluster_sim)
+        distance_to_center[cluster] = cluster_sim
 
     # Sort equiv subtrees by similarity to the center element (the first one as the cluster are sorted)
-    equiv_subtrees = sorted(zip(equiv_subtrees, distance_to_center), key=lambda x: x[1], reverse=True)
+    sorted_equiv_subtrees = sorted(distance_to_center.items(), key=lambda x: x[1], reverse=True)
 
-    for cluster, _ in equiv_subtrees:
+    for cluster, _ in sorted_equiv_subtrees:
         # Early exit: stop checking once we find a matching cluster
         if t in cluster or any(sim(x, t, tau, metric) for x in cluster):
             return cluster
@@ -249,7 +249,7 @@ def get_equiv_of(
     return ()
 
 
-def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> dict[str:int]:
+def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> dict[str, int]:
     """
     Process the given forest to assign labels to entities based on clustering of their ancestor.
 
@@ -266,7 +266,7 @@ def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_M
     equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
 
     return {
-        f'{child.label().name}${' '.join(child)}': i
+        f"{child.label().name}${' '.join(child)}": i
         for i, cluster in enumerate(equiv_subtrees)
         for subtree in cluster
         for child in subtree

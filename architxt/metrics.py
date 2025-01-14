@@ -8,12 +8,12 @@ from .tree import Forest, Tree, has_type
 
 
 class EditDistanceConfig(APTEDConfig):
-    def rename(self, node1: Tree | str, node2: Tree | str):
+    def rename(self, node1: Tree | str, node2: Tree | str) -> int:
         name1 = node1.label if isinstance(node1, Tree) else node1
         name2 = node2.label if isinstance(node2, Tree) else node2
         return int(name1 != name2)
 
-    def children(self, node: Tree | str):
+    def children(self, node: Tree | str) -> list[Tree]:
         return node if isinstance(node, Tree) else []
 
 
@@ -37,12 +37,12 @@ class Metrics:
 
     def coverage(self) -> float:
         source_entities = {
-            f'{subtree.label().name}${' '.join(subtree)}'
+            f"{subtree.label().name}${' '.join(subtree)}"
             for tree in self._source
             for subtree in tree.subtrees(lambda x: has_type(x, NodeType.ENT))
         }
         destination_entities = {
-            f'{subtree.label().name}${' '.join(subtree)}'
+            f"{subtree.label().name}${' '.join(subtree)}"
             for tree in self._destination
             for subtree in tree.subtrees(lambda x: has_type(x, NodeType.ENT))
         }

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from os.path import commonprefix
 
-TREE_POS = int | tuple[int, ...]
+TREE_POS = tuple[int, ...]
 
 
 class NodeType(str, Enum):
@@ -65,7 +65,7 @@ class TreeEntity:
     def root_pos(self) -> tuple[int, ...]:
         """Get the position that covers every position of the entity."""
         prefix = commonprefix(self.positions)
-        return prefix if prefix != self.positions[0] else tuple(prefix[:-1])
+        return tuple(prefix) if prefix != self.positions[0] else tuple(prefix[:-1])
 
     def __post_init__(self) -> None:
         if not self.positions:

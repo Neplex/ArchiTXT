@@ -66,7 +66,7 @@ class FindSubGroupsOperation(Operation):
 
         return None
 
-    def apply(self, tree, *, equiv_subtrees: TREE_CLUSTER):
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
         simplified = False
 
         # Generate candidate subtrees that do not include ENT, REL, or COLL nodes as their children.
@@ -81,7 +81,7 @@ class FindSubGroupsOperation(Operation):
 
             # Compute initial support for the subtree
             group_support = len(self.get_equiv_of(subtree, equiv_subtrees=equiv_subtrees))
-            entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
+            entity_trees = [child for child in subtree if has_type(child, NodeType.ENT)]
             entity_labels = {ent.label() for ent in entity_trees}
 
             # To narrow down the search space, we focus on reducing the entity trees to consider.
@@ -163,7 +163,7 @@ class FindSubGroupsOperation(Operation):
                     subtree.extend(deepcopy(max_subtree[:]))
 
                 # Reset entity trees and k
-                entity_trees = tuple(filter(lambda child: has_type(child, NodeType.ENT), subtree))
+                entity_trees = [child for child in subtree if has_type(child, NodeType.ENT)]
                 k = min(len(entity_trees), k)
 
         return tree, simplified
@@ -242,7 +242,7 @@ class MergeGroupsOperation(Operation):
 
         return None
 
-    def apply(self, tree, *, equiv_subtrees: TREE_CLUSTER):
+    def apply(self, tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
         simplified = False
 
         for subtree in sorted(

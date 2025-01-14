@@ -6,7 +6,7 @@ import mlflow
 from architxt.metrics import Metrics
 from architxt.model import NodeType
 from architxt.schema import Schema
-from architxt.similarity import TREE_CLUSTER
+from architxt.similarity import METRIC_FUNC, TREE_CLUSTER
 from architxt.tree import Forest, Tree, has_type
 
 __all__ = [
@@ -39,7 +39,7 @@ def distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
     # Sort trees in descending order of their leaf count for a greedy allocation.
     sorted_trees = sorted(trees, key=lambda tree: len(tree.leaves()), reverse=True)
 
-    chunks = [[] for _ in range(n)]
+    chunks: list[list[Tree]] = [[] for _ in range(n)]
     chunk_complexities = [0] * n
 
     # Greedy distribution: Assign each tree to the chunk with the smallest current complexity.
@@ -52,7 +52,7 @@ def distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
 
 
 def log_instance_comparison_metrics(
-    iteration: int, old_forest: Forest, new_forest: Forest, tau: float, metric: callable
+    iteration: int, old_forest: Forest, new_forest: Forest, tau: float, metric: METRIC_FUNC
 ) -> None:
     """
     Logs comparison metrics to see the evolution of the rewriting for a specific iteration.
@@ -76,7 +76,7 @@ def log_instance_comparison_metrics(
     )
 
 
-def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = ()) -> None:
+def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER | None = None) -> None:
     """
     Logs various metrics related to a forest of trees and equivalent subtrees.
 
@@ -121,7 +121,7 @@ def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER = (
             'non_terminal_nodes': len(label_counts),
             'unlabeled_nodes': num_unlabeled,
             'unlabeled_nodes_ratio': unlabeled_ratio,
-            'equiv_subtrees': len(equiv_subtrees),
+            'equiv_subtrees': len(equiv_subtrees) if equiv_subtrees else 0,
             'entity_type_total': num_entities,
             'entity_instance_total': num_entity_instances,
             'entity_instance_ratio': entity_ratio,
