@@ -236,6 +236,9 @@ class Tree(ParentedTree):
         """
         return any(has_type(child, NodeType.ENT) for child in self)
 
+    def has_unlabelled_nodes(self) -> bool:
+        return any(not has_type(subtree) for subtree in self)
+
     def merge(self, tree: 'Tree') -> 'Tree':
         """
         Merge two trees into one.
