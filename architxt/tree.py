@@ -7,7 +7,7 @@ from functools import cache
 from typing import Any, TypeAlias, overload
 
 import pandas as pd
-from nltk.grammar import Production
+from nltk.grammar import Nonterminal, Production
 from nltk.tokenize.util import align_tokens
 from nltk.tree import ParentedTree
 
@@ -372,6 +372,8 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
         label = t.label()
     elif isinstance(t, Production):
         label = t.lhs().symbol()
+    elif isinstance(t, Nonterminal):
+        label = t.symbol()
     else:
         return False
 

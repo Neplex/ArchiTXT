@@ -13,7 +13,7 @@ from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
 from architxt.model import NodeLabel, NodeType
 from architxt.similarity import jaccard
-from architxt.tree import Forest, has_type
+from architxt.tree import Forest, Tree, has_type
 
 __all__ = ['Schema']
 
@@ -107,11 +107,7 @@ class Schema(CFG):
     def entities(self) -> set[NodeLabel]:
         """The set of entities in the schema."""
         return {
-            entity.symbol()
-            for production in self.productions()
-            if has_type(production, NodeType.GROUP)
-            for entity in production.rhs()
-            if has_type(entity, NodeType.ENT)
+            rhs.symbol() for production in self.productions() for rhs in production.rhs() if has_type(rhs, NodeType.ENT)
         }
 
     @cached_property
@@ -198,6 +194,7 @@ class Schema(CFG):
         """
         Filters and returns a valid instance (according to the schema) of the provided forest by removing any subtrees
         with labels that do not match valid labels.
+        This method also gets rid of redundant collections.
 
         :param forest: The input forest to be cleaned.
         :return: A list of valid trees according to the schema.
@@ -206,12 +203,12 @@ class Schema(CFG):
         valid_labels = self.entities | self.groups.keys() | self.relations.keys()
 
         for tree in valid_forest:
-            for subtree in tree.subtrees():
-                if (
-                    (parent := subtree.parent())
-                    and not has_type(subtree, NodeType.COLL)
-                    and subtree.label() not in valid_labels
-                ):
-                    parent.remove(subtree)
+            for subtree in reversed(list(tree.subtrees(lambda t: t.label() not in valid_labels))):
+                if not (parent := subtree.parent()):
+                    continue
+
+                children = [deepcopy(child) for child in subtree if isinstance(child, Tree)]
+                parent.remove(subtree, recursive=False)
+                parent.extend(children)
 
         return valid_forest
