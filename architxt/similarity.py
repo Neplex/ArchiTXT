@@ -249,13 +249,14 @@ def get_equiv_of(
     return ()
 
 
-def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> dict[str, int]:
+def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DEFAULT_METRIC) -> dict[str, int]:
     """
     Process the given forest to assign labels to entities based on clustering of their ancestor.
 
     :param forest: The forest from which to extract and cluster entities.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
+                    If None, use the parent label as the equivalent class.
     :return: A dictionary mapping entities to their respective cluster IDs.
     """
     entity_parents = [
@@ -263,7 +264,15 @@ def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_M
         for tree in forest
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
     ]
-    equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
+
+    if metric is None:
+        equiv_subtrees_map = defaultdict(list)
+        for subtree in entity_parents:
+            equiv_subtrees_map[subtree.label()].append(subtree)
+        equiv_subtrees = equiv_subtrees_map.values()
+
+    else:
+        equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
 
     return {
         f"{child.label().name}${' '.join(child)}": i

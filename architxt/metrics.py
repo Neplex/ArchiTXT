@@ -26,12 +26,12 @@ class Metrics:
     @cachedmethod(lambda self: self._cluster_cache)
     def _clusters(self, tau: float, metric: METRIC_FUNC) -> tuple[tuple[int, ...], tuple[int, ...]]:
         source_clustering = entity_labels(self._source, tau=tau, metric=metric)
-        destination_clustering = entity_labels(self._destination, tau=tau, metric=metric)
+        destination_clustering = entity_labels(self._destination, tau=tau, metric=None)
 
-        entities = sorted(set(source_clustering.keys()) & set(destination_clustering.keys()))
+        entities = sorted(set(source_clustering.keys()) | set(destination_clustering.keys()))
 
-        source_labels = tuple(source_clustering.get(ent, -1) for ent in entities)
-        destination_labels = tuple(destination_clustering.get(ent, -1) for ent in entities)
+        source_labels = tuple(source_clustering.get(ent, -i) for i, ent in enumerate(entities))
+        destination_labels = tuple(destination_clustering.get(ent, -i) for i, ent in enumerate(entities))
 
         return source_labels, destination_labels
 
