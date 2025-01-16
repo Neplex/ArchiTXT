@@ -646,6 +646,16 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     >>> ent_tree = ins_ent(t, t_ent)
     >>> print(t.pformat(margin=255))
     (S (ENT::xxx Alice like (ENT::yyy apples)))
+
+    >>> t = Tree.fromstring("(S x y z)")
+    >>> t_ent = TreeEntity(name="XY", positions=[(0,), (1,)])
+    >>> ent_tree = ins_ent(t, t_ent)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::XY x y) z)
+    >>> t_ent = TreeEntity(name="YZ", positions=[(0, 1), (1,)])
+    >>> ent_tree = ins_ent(t, t_ent)
+    >>> print(t.pformat(margin=255))
+    (S (ENT::XY x y) (ENT::YZ y z))
     """
     assert tree is not None
 
@@ -679,8 +689,24 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     # Collect and delete children from the original positions
     children = []
     for child_position in reversed(tree_ent.positions):
-        children.append(tree[child_position])
-        tree[child_position[:-1]].pop(child_position[-1], recursive=False)
+        parent_position = child_position[:-1]
+
+        if not has_type(tree[parent_position], NodeType.ENT):
+            # The entity has no conflict
+            children.append(tree[child_position])
+            tree[parent_position].pop(child_position[-1], recursive=False)
+
+        elif len(parent_position) <= len(anchor_pos) and parent_position == anchor_pos[: len(parent_position)]:
+            # The entity is a child of another
+            children.append(tree[child_position])
+            tree[parent_position].pop(child_position[-1], recursive=False)
+
+        elif any(
+            leaf_position not in tree_ent.positions for leaf_position in tree[parent_position].treepositions('leaves')
+        ):
+            # The entity overlap with another we need to duplicate overlapping leaves
+            # Else, the entity is a parent entity, so we include only leaves not present in nested entities
+            children.append(tree[child_position])
 
     # Create a new tree node for the entity and insert it into the tree
     new_tree = Tree(NodeLabel(NodeType.ENT, tree_ent.name), children=reversed(children))
@@ -758,8 +784,9 @@ def is_conflicting_entity(
             warnings.warn(
                 f"Entity {entity.name} with tokens {entity_span} ('{' '.join(tree.leaves()[i] for i in entity_span)}') "
                 f"partially overlaps with a previously inserted entity with tokens {span} ('{' '.join(tree.leaves()[i] for i in span)}')."
+                "Overlapping tokens will be duplicated."
             )
-            return True
+            return False
 
     return False
 
