@@ -83,6 +83,7 @@ def load_or_cache_corpus(
         # Generate a cache key based on the archive file's content
         archive_file.seek(0)
         file_hash = hashlib.file_digest(archive_file, hashlib.md5)
+        file_hash.update(language.encode())
 
         if entities_filter:
             file_hash.update('$E'.join(sorted(entities_filter)).encode())
