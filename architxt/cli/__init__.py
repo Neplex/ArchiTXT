@@ -242,7 +242,7 @@ def cli_run(
         )
         console.print(Panel(schema.as_cfg(), title="Synthetic Database Schema"))
         with console.status("[cyan]Generating synthetic instances..."):
-            forest.extend(gen_instance(schema, size=gen_instances))
+            forest.extend(gen_instance(schema, size=gen_instances, generate_collections=False))
         console.print(f'[green]Generated {gen_instances} synthetic instances.[/]')
 
     if shuffle:
@@ -284,14 +284,16 @@ def cli_run(
         metrics_table.add_row("Cluster Completeness ▲", f"{metrics.cluster_completeness(tau=tau):.2f}")
 
         schema_old = Schema.from_forest(forest, keep_unlabelled=True)
-        schema_new = Schema.from_forest(new_forest, keep_unlabelled=True)
         grammar_metrics_table = Table("Metric", "Before Value", "After Value", title="Schema grammar")
         grammar_metrics_table.add_row(
             "Productions ▼",
             str(len(schema_old.productions())),
-            f"{len(schema_new.productions())} ({len(schema_new.productions()) / len(schema_old.productions()) * 100:.2f}%)",
+            f"{len(schema.productions())} ({len(schema.productions()) / len(schema_old.productions()) * 100:.2f}%)",
         )
-        grammar_metrics_table.add_row("Overlap ▼", f"{schema_old.group_overlap:.2f}", f"{schema_new.group_overlap:.2f}")
+        grammar_metrics_table.add_row("Overlap ▼", f"{schema_old.group_overlap:.2f}", f"{schema.group_overlap:.2f}")
+        grammar_metrics_table.add_row(
+            "Balance ▲", f"{schema_old.group_balance_score:.2f}", f"{schema.group_balance_score:.2f}"
+        )
 
         console.print(Columns([metrics_table, grammar_metrics_table]))
 

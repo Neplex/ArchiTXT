@@ -180,6 +180,7 @@ def log_schema(iteration: int, forest: Forest) -> None:
         {
             'num_productions': len(schema.productions()),
             'overlap': schema.group_overlap,
+            'balance': schema.group_balance_score,
         },
         step=iteration,
     )

@@ -1,3 +1,4 @@
+import math
 import warnings
 from collections import defaultdict
 from copy import deepcopy
@@ -165,6 +166,42 @@ class Schema(CFG):
 
         # Combine scores (average of pairwise indices)
         return sum(jaccard_indices) / len(jaccard_indices) if jaccard_indices else 0.0
+
+    @property
+    def group_balance_score(self) -> float:
+        """
+        Get the balance score of attributes across groups.
+
+        The balance metric (B) measures the dispersion of attributes (coefficient of variation),
+        indicating if the schema is well-balanced.
+        A higher balance metric indicates that attributes are distributed more evenly across groups, while
+        a lower balance metric suggests that some groups may be too large (wide) or too small (fragmented).
+
+        .. math::
+            B = 1 - \frac{\sigma(A)}{\mu(A)}
+
+        Where:
+            - :math:`A`: The set of attribute counts for all groups.
+            - :math:`\mu(A)`: The mean number of attributes per group.
+            - :math:`\sigma(A)`: The standard deviation of attribute counts across groups.
+
+        returns: Balance metric (B), a measure of attribute dispersion.
+           - :math:`B \approx 1`: Attributes are evenly distributed.
+           - :math:`B \approx 0`: Significant imbalance; some groups are much larger or smaller than others.
+        """
+        if not len(self.groups):
+            return 1.0
+
+        attribute_counts = [len(attributes) for attributes in self.groups.values()]
+
+        mean_attributes = sum(attribute_counts) / len(attribute_counts)
+
+        variance = sum((count - mean_attributes) ** 2 for count in attribute_counts) / len(attribute_counts)
+        std_dev = math.sqrt(variance)
+
+        variation = std_dev / mean_attributes if mean_attributes else 1.0
+
+        return 1 - variation
 
     def as_cfg(self) -> str:
         """
