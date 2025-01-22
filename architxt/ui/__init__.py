@@ -1,17 +1,18 @@
+import random
 from copy import deepcopy
 
 import mlflow
+import pandas as pd
 import streamlit as st
 from streamlit_agraph import Config, agraph
 from streamlit_agraph import Edge as _Edge
 from streamlit_agraph import Node as _Node
 from streamlit_tags import st_tags
 
-from architxt.cli import load_or_cache_corpus
-from architxt.model import NodeType
+from architxt.cli import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER, load_or_cache_corpus
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
-from architxt.tree import Forest, Tree, has_type
+from architxt.tree import Forest, Tree
 
 mlflow.set_experiment('ArchiTXT')
 
@@ -44,17 +45,17 @@ def graph(schema: Schema) -> None:
     nodes = set()
     edges = set()
 
-    for prod in schema.productions():
-        if has_type(prod, {NodeType.GROUP, NodeType.REL}):
-            lhs_symbol = prod.lhs().symbol().name
-            nodes.add(Node(id=lhs_symbol, label=lhs_symbol))
+    for entity in schema.entities:
+        nodes.add(Node(id=entity, label=entity))
 
-            for nt in prod.rhs():
-                symbol = nt.symbol().name if isinstance(nt.symbol(), NodeType) else nt.symbol()
-                nodes.add(Node(id=symbol, label=symbol))
+    for group, entities in schema.groups.items():
+        nodes.add(Node(id=group, label=group))
 
-                label = 'REL' if has_type(prod, NodeType.REL) else ''
-                edges.add(Edge(source=lhs_symbol, target=symbol, label=label))
+        for entity in entities:
+            edges.add(Edge(source=group, target=entity))
+
+    for relation, (group1, group2) in schema.relations.items():
+        edges.add(Edge(source=group1, target=group2, label=relation))
 
     agraph(nodes=nodes, edges=edges, config=Config(directed=True))
 
@@ -63,11 +64,11 @@ def graph(schema: Schema) -> None:
 def dataframe(forest: Forest) -> None:
     """Function to render instance DataFrames"""
     final_tree = Tree('ROOT', deepcopy(forest))
-    table = st.selectbox('Group', sorted(final_tree.groups()))
-    st.dataframe(final_tree.group_instances(table))
+    group_name = st.selectbox('Group', sorted(final_tree.groups()))
+    st.dataframe(final_tree.group_instances(group_name), use_container_width=True)
 
 
-st.title("ArchiTxt")
+st.title("ArchiTXT")
 
 with st.sidebar:
     corenlp_url = st.text_input('Corenlp URL', value='http://localhost:9000')
@@ -77,18 +78,25 @@ input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 M
 with input_tab:
     uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=True)
 
-    file_language = []
-    for file in uploaded_file:
-        language_columns = st.columns(2)
-        language_columns[0].text_input('Corpus', file.name, disabled=True)
-        language = language_columns[1].selectbox('Language', ['French', 'English'], key=file.name)
-        file_language.append((file, language))
+    if uploaded_file:
+        file_language_table = st.data_editor(
+            pd.DataFrame([{'Corpora': file.name, 'Language': 'English'} for file in uploaded_file]),
+            column_config={
+                'Corpora': st.column_config.TextColumn(disabled=True),
+                'Language': st.column_config.SelectboxColumn(options=['English', 'French'], required=True),
+            },
+            hide_index=True,
+            use_container_width=True,
+        )
+        file_language = {row['Corpora']: row['Language'] for _, row in file_language_table.iterrows()}
 
     st.divider()
 
     with st.form(key='corpora', enter_to_submit=False):
-        entities_filter = st_tags(label='Excluded entities', value=['MOMENT', 'DUREE', 'DATE'])
-        relations_filter = st_tags(label='Excluded relations', value=['TEMPORALITE', 'CAUSE-CONSEQUENCE'])
+        entities_filter = st_tags(label='Excluded entities', value=list(ENTITIES_FILTER))
+        relations_filter = st_tags(label='Excluded relations', value=list(RELATIONS_FILTER))
+        st.text('Entity mapping')
+        entity_mapping = st.data_editor(ENTITIES_MAPPING, use_container_width=True, hide_index=True, num_rows="dynamic")
 
         st.divider()
 
@@ -96,26 +104,34 @@ with input_tab:
         tau = col1.number_input('Tau', min_value=0.05, max_value=1.0, step=0.05, value=0.5)
         epoch = col2.number_input('Epoch', min_value=1, step=1, value=100)
         min_support = col3.number_input('Minimum Support', min_value=1, step=1, value=10)
+        sample = col1.number_input('Sample size', min_value=0, step=1, value=0, help='0 means no sampling')
+        shuffle = col2.selectbox('Shuffle', options=[True, False])
         submitted = st.form_submit_button("Start")
 
 if submitted and file_language:
     try:
-        forest = []
-        for file, language in file_language:
-            forest += load_or_cache_corpus(
-                file,
-                entities_filter=set(entities_filter),
-                relations_filter=set(relations_filter),
-                entities_mapping={'FREQ': 'FREQUENCE'},
-                corenlp_url=corenlp_url,
-                language=language,
-            )
-
         if mlflow.active_run():
             mlflow.end_run()
 
         with st.spinner('Computing...'), mlflow.start_run(run_name='UI run', log_system_metrics=True) as mlflow_run:
-            database = rewrite(
+            forest = []
+            for file in uploaded_file:
+                forest += load_or_cache_corpus(
+                    file,
+                    entities_filter=set(entities_filter),
+                    relations_filter=set(relations_filter),
+                    entities_mapping=entity_mapping,
+                    corenlp_url=corenlp_url,
+                    language=file_language[file.name],
+                )
+
+            if sample:
+                forest = random.sample(forest, sample)
+
+            if shuffle:
+                random.shuffle(forest)
+
+            forest = rewrite(
                 forest,
                 tau=tau,
                 epoch=epoch,
@@ -128,17 +144,22 @@ if submitted and file_language:
             client = mlflow.tracking.MlflowClient()
 
             st.line_chart(
-                {
-                    metric: [x.value for x in client.get_metric_history(run_id, metric)]
-                    for metric in [
-                        'coverage',
-                        'similarity',
-                        'edit_distance',
-                        'cluster_ami',
-                        'cluster_completeness',
-                        'overlap',
+                pd.DataFrame(
+                    [
+                        metric.to_dictionary()
+                        for metric_name in [
+                            'coverage',
+                            'cluster_ami',
+                            'cluster_completeness',
+                            'overlap',
+                            'balance',
+                        ]
+                        for metric in client.get_metric_history(run_id, metric_name)
                     ]
-                }
+                ),
+                x='step',
+                y='value',
+                color='key',
             )
 
             st.line_chart(
@@ -164,8 +185,8 @@ if submitted and file_language:
 
         # Display instance data
         with instance_tab:
-            clean_database = schema.extract_valid_trees(database)
-            dataframe(clean_database)
+            clean_forest = schema.extract_valid_trees(forest)
+            dataframe(clean_forest)
 
     except Exception as e:
         st.error(f"An error occurred: {e!s}")
