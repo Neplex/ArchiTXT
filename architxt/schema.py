@@ -242,6 +242,7 @@ class Schema(CFG):
         for tree in valid_forest:
             for subtree in reversed(list(tree.subtrees(lambda t: t.label() not in valid_labels))):
                 if not (parent := subtree.parent()):
+                    subtree.set_label('ROOT')
                     continue
 
                 children = [deepcopy(child) for child in subtree if isinstance(child, Tree)]

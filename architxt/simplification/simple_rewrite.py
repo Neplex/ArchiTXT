@@ -38,6 +38,7 @@ def simple_rewrite(forest: Forest, **kwargs) -> Forest:
                 entities.remove(entity.label().name)
 
         group_tree = Tree(group_label, group_entities)
-        new_forest.append(group_tree)
+        tree = Tree('ROOT', [group_tree])
+        new_forest.append(tree)
 
     return new_forest
