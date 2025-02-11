@@ -1,9 +1,105 @@
+from collections.abc import Hashable
+from itertools import combinations
+
+import pandas as pd
 from apted import APTED
 from apted import Config as APTEDConfig
 from cachetools import cachedmethod
 
+from .schema import Schema
 from .similarity import DEFAULT_METRIC, METRIC_FUNC, entity_labels, jaccard, similarity
 from .tree import Forest, NodeType, Tree, has_type
+
+__all__ = ['Metrics', 'confidence', 'dependency_score', 'redundancy_score']
+
+
+def confidence(dataframe: pd.DataFrame, column: Hashable) -> float:
+    """
+    Computes the confidence score of the functional dependency ``X -> column`` in a DataFrame.
+
+    The confidence score quantifies the strength of the association rule ``X -> column``,
+    where ``X`` represents the set of all other attributes in the DataFrame.
+    It is computed as the median of the confidence scores across all instantiated association rules.
+
+    The confidence of each instantiated rule is calculated as the ratio of the consequent support
+    (i.e., the count of each unique value in the specified column) to the antecedent support
+    (i.e., the count of unique combinations of all other columns).
+    A higher confidence score indicates a stronger dependency between the attributes.
+
+    :param dataframe: A pandas DataFrame containing the data to analyze.
+    :param column: The column for which to compute the confidence score.
+    :return: The median confidence score or ``0.0`` if the data is empty.
+
+    >>> data = pd.DataFrame({
+    ...     'A': ['x', 'y', 'x', 'x', 'y'],
+    ...     'B': [1, 2, 1, 3, 2]
+    ... })
+    >>> confidence(data, 'A')
+    1.0
+    >>> confidence(data, 'B')
+    0.6666666666666666
+    """
+    consequent_support = dataframe.groupby(column).value_counts()
+    antecedent_support = dataframe.drop(columns=[column]).value_counts()
+    confidence_score = consequent_support / antecedent_support
+
+    return confidence_score.median() if not consequent_support.empty else 0.0
+
+
+def dependency_score(dataframe: pd.DataFrame, attributes: list[Hashable]) -> float:
+    """
+    Computes the dependency score of a subset of attributes in a DataFrame.
+
+    The dependency score measures the strength of the functional dependency in the given subset of attributes.
+    It is defined as the maximum confidence score among all attributes in the subset,
+    treating each attribute as a potential consequent of a functional dependency.
+
+    :param dataframe: A pandas DataFrame containing the data to analyze.
+    :param attributes: A list of attributes to evaluate for functional dependencies.
+    :return: The maximum confidence score among the given attributes.
+
+    >>> data = pd.DataFrame({
+    ...     'A': ['x', 'y', 'x', 'x', 'y'],
+    ...     'B': [1, 2, 1, 3, 2]
+    ... })
+    >>> dependency_score(data, ['A', 'B'])
+    1.0
+    """
+    return pd.Series(attributes).map(lambda x: confidence(dataframe[attributes], x)).max()
+
+
+def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
+    """
+    Computes the redundancy score for an entire DataFrame.
+
+    The overall redundancy score measures the fraction of rows that are redundant in at least one subset of attributes
+    that satisfies a functional dependency above a given threshold tau.
+
+    :param dataframe: A pandas DataFrame containing the data to analyze.
+    :param tau: The dependency threshold to determine redundancy (default is 1.0).
+    :return: The proportion of redundant rows in the dataset.
+
+    >>> data = pd.DataFrame({
+    ...     'A': ['x', 'y', 'x', 'x', 'y'],
+    ...     'B': [1, 2, 1, 3, 2]
+    ... })
+    >>> dependency_score(data, ['A', 'B'])
+    1.0
+    """
+    # Create a boolean Series initialized to False for all rows.
+    duplicates = pd.Series(False, index=dataframe.index)
+    attributes = dataframe.columns.tolist()
+
+    # For each candidate attribute set, if its dependency score is above the threshold,
+    # mark the rows that are duplicates on that set.
+    for i in range(2, len(attributes)):
+        for attrs in combinations(attributes, i):
+            attrs = list(attrs)
+            if dependency_score(dataframe, attrs) >= tau:
+                duplicates |= dataframe[attrs].dropna().duplicated(keep=False)
+
+    # The table-level redundancy is the fraction of rows that are duplicates in at least one candidate set.
+    return duplicates.sum() / dataframe.shape[0]
 
 
 class EditDistanceConfig(APTEDConfig):
@@ -114,3 +210,20 @@ class Metrics:
 
         source_labels, destination_labels = self._clusters(tau, metric)
         return completeness_score(source_labels, destination_labels)
+
+    def redundancy(self, *, tau: float = 1.0):
+        """
+        Computes the redundancy score for the entire instance.
+
+        The overall redundancy score measures the fraction of rows that are redundant in at least
+        one subset of attributes that satisfies a functional dependency above a given threshold tau.
+
+        :param tau: The dependency threshold to determine redundancy (default is 1.0).
+        :return: The proportion of redundant rows in the dataset.
+        """
+        schema = Schema.from_forest(self._destination)
+        datasets = schema.extract_datasets(self._destination)
+        group_redundancy = pd.Series(datasets.values()).map(lambda df: redundancy_score(df, tau=tau))
+        redundancy = group_redundancy[group_redundancy > 0].median()
+
+        return redundancy if redundancy is not pd.NA else 0.0

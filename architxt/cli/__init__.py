@@ -276,25 +276,28 @@ def cli_run(
 
         metrics_table = Table("Metric", "Value", title="Valid instance")
 
-        metrics_table.add_row("Coverage ▲", f"{metrics.coverage():.2f}")
-        metrics_table.add_row("Similarity ▲", f"{metrics.similarity():.2f}")
+        metrics_table.add_row("Coverage ▲", f"{metrics.coverage():.3f}")
+        metrics_table.add_row("Similarity ▲", f"{metrics.similarity():.3f}")
         metrics_table.add_row("Edit distance ▼", str(metrics.edit_distance()))
+        metrics_table.add_row("Redundancy (1.0) ▼", f"{metrics.redundancy(tau=1.0):.3f}")
+        metrics_table.add_row("Redundancy (0.7) ▼", f"{metrics.redundancy(tau=0.7):.3f}")
+        metrics_table.add_row("Redundancy (0.5) ▼", f"{metrics.redundancy(tau=0.5):.3f}")
 
         metrics_table.add_section()
 
-        metrics_table.add_row("Cluster Mutual Information ▲", f"{metrics.cluster_ami(tau=tau):.2f}")
-        metrics_table.add_row("Cluster Completeness ▲", f"{metrics.cluster_completeness(tau=tau):.2f}")
+        metrics_table.add_row("Cluster Mutual Information ▲", f"{metrics.cluster_ami(tau=tau):.3f}")
+        metrics_table.add_row("Cluster Completeness ▲", f"{metrics.cluster_completeness(tau=tau):.3f}")
 
         schema_old = Schema.from_forest(forest, keep_unlabelled=True)
         grammar_metrics_table = Table("Metric", "Before Value", "After Value", title="Schema grammar")
         grammar_metrics_table.add_row(
             "Productions ▼",
             str(len(schema_old.productions())),
-            f"{len(schema.productions())} ({len(schema.productions()) / len(schema_old.productions()) * 100:.2f}%)",
+            f"{len(schema.productions())} ({len(schema.productions()) / len(schema_old.productions()) * 100:.3f}%)",
         )
-        grammar_metrics_table.add_row("Overlap ▼", f"{schema_old.group_overlap:.2f}", f"{schema.group_overlap:.2f}")
+        grammar_metrics_table.add_row("Overlap ▼", f"{schema_old.group_overlap:.3f}", f"{schema.group_overlap:.3f}")
         grammar_metrics_table.add_row(
-            "Balance ▲", f"{schema_old.group_balance_score:.2f}", f"{schema.group_balance_score:.2f}"
+            "Balance ▲", f"{schema_old.group_balance_score:.3f}", f"{schema.group_balance_score:.3f}"
         )
 
         console.print(Columns([metrics_table, grammar_metrics_table]))
@@ -363,9 +366,9 @@ def cli_stats(
 
     stats_table.add_row("Total Trees", str(total_trees))
     stats_table.add_row("Total Entities", str(total_entities))
-    stats_table.add_row("Average Tree Height", f"{avg_height:.2f}")
+    stats_table.add_row("Average Tree Height", f"{avg_height:.3f}")
     stats_table.add_row("Maximum Tree Height", str(max_height))
-    stats_table.add_row("Average Tree size", f"{avg_size:.2f}")
+    stats_table.add_row("Average Tree size", f"{avg_size:.3f}")
     stats_table.add_row("Maximum Tree size", str(max_size))
 
     console.print(Columns([*tables, stats_table], equal=True))

@@ -5,6 +5,7 @@ from copy import deepcopy
 from functools import cached_property
 from itertools import combinations
 
+import pandas as pd
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.Errors import CancellationException
 from antlr4.error.ErrorStrategy import BailErrorStrategy
@@ -249,3 +250,18 @@ class Schema(CFG):
                 parent.extend(children)
 
         return valid_forest
+
+    def extract_datasets(self, forest: Forest) -> dict[str, pd.DataFrame]:
+        """
+        Extract datasets from a forest for each group defined in the schema.
+
+        :param forest: The input forest to extract datasets from.
+        :return: A mapping from group names to datasets.
+        """
+        cleaned_forest = self.extract_valid_trees(forest)
+
+        return {
+            group: dataset
+            for group in self.groups
+            if not (dataset := pd.concat([tree.group_instances(group.name) for tree in cleaned_forest])).empty
+        }
