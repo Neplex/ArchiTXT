@@ -3,9 +3,8 @@ from itertools import combinations
 
 import more_itertools
 
-from architxt.model import NodeLabel, NodeType
 from architxt.similarity import TREE_CLUSTER
-from architxt.tree import Tree, has_type
+from architxt.tree import NodeLabel, NodeType, Tree, has_type
 
 from .operation import Operation
 

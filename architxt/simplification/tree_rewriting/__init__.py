@@ -12,9 +12,8 @@ from mlflow.entities import SpanEvent
 from nltk import TreePrettyPrinter
 from tqdm import tqdm, trange
 
-from architxt.model import NodeLabel, NodeType
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
-from architxt.tree import Forest, Tree, has_type, reduce_all
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type, reduce_all
 
 from .operations import (
     FindCollectionsOperation,

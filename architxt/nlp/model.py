@@ -1,32 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
 from os.path import commonprefix
 
-TREE_POS = tuple[int, ...]
+from architxt.tree import TREE_POS
 
-
-class NodeType(str, Enum):
-    ENT = 'ENT'
-    GROUP = 'GROUP'
-    REL = 'REL'
-    COLL = 'COLL'
-
-
-class NodeLabel(str):
-    type: NodeType
-    name: str
-
-    __slots__ = ('name', 'type')
-
-    def __new__(cls, label_type: NodeType, label: str = ''):
-        return super().__new__(cls, f'{label_type.value}::{label}' if label else label_type.value)
-
-    def __init__(self, label_type: NodeType, label: str = '') -> None:
-        self.name = label
-        self.type = label_type
-
-    def __reduce__(self):
-        return NodeLabel, (self.type, self.name)
+__all__ = ['AnnotatedSentence', 'Entity', 'Relation', 'TreeEntity', 'TreeRel']
 
 
 @dataclass(slots=True)

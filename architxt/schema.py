@@ -12,9 +12,8 @@ from nltk import CFG, Nonterminal, Production
 
 from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
-from architxt.model import NodeLabel, NodeType
 from architxt.similarity import jaccard
-from architxt.tree import Forest, Tree, has_type
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type
 
 __all__ = ['Schema']
 

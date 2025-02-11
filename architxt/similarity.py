@@ -11,8 +11,7 @@ from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 from tqdm import tqdm
 
-from architxt.model import NodeType
-from architxt.tree import Forest, Tree, has_type
+from architxt.tree import Forest, NodeType, Tree, has_type
 
 METRIC_FUNC = Callable[[set[str], set[str]], float]
 TREE_CLUSTER = set[tuple[Tree, ...]]

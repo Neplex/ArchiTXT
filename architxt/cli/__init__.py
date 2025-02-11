@@ -21,7 +21,8 @@ from rich.table import Table
 
 from architxt.generator import gen_instance
 from architxt.metrics import Metrics
-from architxt.nlp import get_enriched_forest, get_sentence_from_disk
+from architxt.nlp.brat import load_brat_dataset
+from architxt.nlp.parser import parse_sentences
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Tree
@@ -132,14 +133,14 @@ def load_or_cache_corpus(
             tmp_path = Path(tmp_dir)
 
             # Parse sentences and enrich the forest
-            sentences = get_sentence_from_disk(
+            sentences = load_brat_dataset(
                 tmp_path,
                 entities_filter=entities_filter,
                 relations_filter=relations_filter,
                 entities_mapping=entities_mapping,
                 relations_mapping=relations_mapping,
             )
-            forest = list(get_enriched_forest(sentences, corenlp_url=corenlp_url, language=language))
+            forest = list(parse_sentences(sentences, corenlp_url=corenlp_url, language=language))
             console.print(f'[green]Dataset loaded! {len(forest)} sentences found.[/]')
 
         # Save processed data to cache

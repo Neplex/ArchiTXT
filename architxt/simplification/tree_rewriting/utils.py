@@ -4,10 +4,9 @@ from collections.abc import Collection
 import mlflow
 
 from architxt.metrics import Metrics
-from architxt.model import NodeType
 from architxt.schema import Schema
 from architxt.similarity import METRIC_FUNC, TREE_CLUSTER
-from architxt.tree import Forest, Tree, has_type
+from architxt.tree import Forest, NodeType, Tree, has_type
 
 __all__ = [
     'distribute_evenly',

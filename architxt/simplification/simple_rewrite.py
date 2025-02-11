@@ -2,8 +2,7 @@ from copy import deepcopy
 
 from tqdm import tqdm
 
-from architxt.model import NodeLabel, NodeType
-from architxt.tree import Forest, Tree
+from architxt.tree import Forest, NodeLabel, NodeType, Tree
 
 
 def simple_rewrite(forest: Forest, **kwargs) -> Forest:

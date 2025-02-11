@@ -2,9 +2,8 @@ from apted import APTED
 from apted import Config as APTEDConfig
 from cachetools import cachedmethod
 
-from .model import NodeType
 from .similarity import DEFAULT_METRIC, METRIC_FUNC, entity_labels, jaccard, similarity
-from .tree import Forest, Tree, has_type
+from .tree import Forest, NodeType, Tree, has_type
 
 
 class EditDistanceConfig(APTEDConfig):

@@ -4,9 +4,8 @@ Generator of instances
 
 from collections.abc import Generator, Iterable
 
-from architxt.model import NodeLabel, NodeType
 from architxt.schema import Schema
-from architxt.tree import Tree
+from architxt.tree import NodeLabel, NodeType, Tree
 
 __all__ = ['gen_instance']
 

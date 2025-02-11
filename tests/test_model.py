@@ -1,5 +1,5 @@
 import pytest
-from architxt.model import NodeLabel, NodeType
+from architxt.tree import NodeLabel, NodeType
 
 
 @pytest.mark.parametrize(
