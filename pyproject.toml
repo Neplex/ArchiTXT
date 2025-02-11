@@ -50,8 +50,12 @@ streamlit = { version = ">=1.39.0", optional = false }
 streamlit-agraph = { version = "*", optional = false }
 streamlit-tags = { version = "*", optional = false }
 
+# Documentation
+sphinx = { version = "^8.1.3", optional = true }
+
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
+doc = ["sphinx"]
 
 [tool.poetry.group.dev.dependencies]
 wheel = "^0.45.0"
