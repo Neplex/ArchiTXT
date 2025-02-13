@@ -1,13 +1,16 @@
+import asyncio
 import hashlib
 import random
 import subprocess
 from collections import Counter
+from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path
 from tarfile import TarFile
 from tempfile import TemporaryDirectory
 from typing import BinaryIO
 
+import click
 import cloudpickle
 import mlflow
 import more_itertools
@@ -22,10 +25,11 @@ from rich.table import Table
 from architxt.generator import gen_instance
 from architxt.metrics import Metrics
 from architxt.nlp.brat import load_brat_dataset
-from architxt.nlp.parser import parse_sentences
+from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
+from architxt.nlp.parser import Parser
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
-from architxt.tree import Tree
+from architxt.tree import Forest
 
 console = Console()
 
@@ -55,17 +59,28 @@ ENTITIES_MAPPING = {
 }
 
 
-def load_or_cache_corpus(
+async def write_cache(forest: Forest, path: Path) -> None:
+    with path.open('wb') as cache_file:
+        await asyncio.to_thread(cloudpickle.dump, forest, cache_file, protocol=5, buffer_callback=None)
+
+
+async def read_cache(path: Path) -> Forest:
+    with path.open('rb') as cache_file:
+        return await asyncio.to_thread(cloudpickle.load, cache_file)
+
+
+async def load_or_cache_corpus(
     archive_file: BytesIO | BinaryIO,
     *,
     entities_filter: set[str] | None = None,
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-    corenlp_url: str,
+    parser: Parser,
     language: str,
     name: str | None = None,
-) -> list[Tree]:
+    resolver: EntityResolver | None = None,
+) -> Forest:
     """
     Load the corpus from disk or cache.
 
@@ -74,16 +89,17 @@ def load_or_cache_corpus(
     :param relations_filter: A set of relation types to exclude from the output. If None, no filtering is applied.
     :param entities_mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
     :param relations_mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
-    :param corenlp_url: The URL of the CoreNLP server.
+    :param parser: The NLP parser to use.
     :param language: The language to use for parsing.
     :param name: The corpus name.
+    :param resolver: An optional entity resolver to use.
 
     :returns: A list of parsed trees representing the enriched corpus.
     """
     try:
         # Generate a cache key based on the archive file's content
         archive_file.seek(0)
-        file_hash = hashlib.file_digest(archive_file, hashlib.md5)
+        file_hash = await asyncio.to_thread(hashlib.file_digest, archive_file, hashlib.md5)
         file_hash.update(language.encode())
 
         if entities_filter:
@@ -94,6 +110,8 @@ def load_or_cache_corpus(
             file_hash.update('$EM'.join(sorted(f'{key}={value}' for key, value in entities_mapping.items())).encode())
         if relations_mapping:
             file_hash.update('$RM'.join(sorted(f'{key}={value}' for key, value in relations_mapping.items())).encode())
+        if resolver:
+            file_hash.update(resolver.name.encode())
 
         key = file_hash.hexdigest()
         corpus_cache_path = Path(f'{key}.pkl')
@@ -117,8 +135,7 @@ def load_or_cache_corpus(
         # Attempt to load from cache if available
         if corpus_cache_path.exists():
             console.print(f'[green]Loading corpus from cache:[/] {corpus_cache_path.absolute()}')
-            with corpus_cache_path.open('rb') as cache_file:
-                return cloudpickle.load(cache_file)
+            return await read_cache(corpus_cache_path)
 
         archive_file.seek(0)
         console.print(f'[yellow]Loading corpus from disk:[/] {archive_file.name}')
@@ -129,7 +146,7 @@ def load_or_cache_corpus(
             TemporaryDirectory() as tmp_dir,
         ):
             # Extract archive contents to a temporary directory
-            corpus.extractall(tmp_dir)
+            await asyncio.to_thread(corpus.extractall, tmp_dir, None)
             tmp_path = Path(tmp_dir)
 
             # Parse sentences and enrich the forest
@@ -140,13 +157,12 @@ def load_or_cache_corpus(
                 entities_mapping=entities_mapping,
                 relations_mapping=relations_mapping,
             )
-            forest = list(parse_sentences(sentences, corenlp_url=corenlp_url, language=language))
+            forest = [tree async for _, tree in parser.parse_batch(sentences, language=language, resolver=resolver)]
             console.print(f'[green]Dataset loaded! {len(forest)} sentences found.[/]')
 
         # Save processed data to cache
         console.print(f'[blue]Saving cache file to:[/] {corpus_cache_path.absolute()}')
-        with corpus_cache_path.open('wb') as cache_file:
-            cloudpickle.dump(forest, cache_file)
+        await write_cache(forest, corpus_cache_path)
 
         return forest
 
@@ -155,7 +171,32 @@ def load_or_cache_corpus(
         raise
 
 
-def load_corpus_paths(
+async def load_corpus(
+    archive_path: Path,
+    *,
+    entities_filter: set[str] | None = None,
+    relations_filter: set[str] | None = None,
+    entities_mapping: dict[str, str] | None = None,
+    relations_mapping: dict[str, str] | None = None,
+    language: str,
+    parser: Parser,
+    resolver: EntityResolver | None = None,
+):
+    with archive_path.open('rb') as corpus:
+        return await load_or_cache_corpus(
+            corpus,
+            name=archive_path.name,
+            entities_filter=entities_filter,
+            relations_filter=relations_filter,
+            entities_mapping=entities_mapping,
+            relations_mapping=relations_mapping,
+            language=language,
+            parser=parser,
+            resolver=resolver,
+        )
+
+
+async def load_corpus_batch(
     corpus_path: list[Path],
     language: list[str],
     *,
@@ -164,23 +205,32 @@ def load_corpus_paths(
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
     corenlp_url: str,
-) -> list[Tree]:
+    resolver: str | None = None,
+) -> Forest:
     try:
-        forest = []
-        for path, lang in zip(corpus_path, language, strict=True):
-            with path.open('rb') as corpus:
-                forest += load_or_cache_corpus(
-                    corpus,
-                    entities_filter=entities_filter,
-                    relations_filter=relations_filter,
-                    entities_mapping=entities_mapping,
-                    relations_mapping=relations_mapping,
-                    corenlp_url=corenlp_url,
-                    language=lang,
-                    name=path.name,
+        with Parser(corenlp_url=corenlp_url) as parser:
+            resolver_ctx = (
+                ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else nullcontext()
+            )
+
+            async with resolver_ctx as resolver:
+                forests = await asyncio.gather(
+                    *[
+                        load_corpus(
+                            path,
+                            entities_filter=entities_filter,
+                            relations_filter=relations_filter,
+                            entities_mapping=entities_mapping,
+                            relations_mapping=relations_mapping,
+                            parser=parser,
+                            language=language,
+                            resolver=resolver,
+                        )
+                        for path, language in zip(corpus_path, language, strict=True)
+                    ]
                 )
 
-        return forest
+                return [tree for forest in forests for tree in forest]
 
     except Exception as error:
         console.print_exception()
@@ -201,19 +251,27 @@ def cli_run(
     workers: int | None = typer.Option(
         None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores."
     ),
+    resolver: str | None = typer.Option(
+        None,
+        help="The entity resolver to use when loading the corpus.",
+        click_type=click.Choice(['umls', 'mesh', 'rxnorm', 'go', 'hpo'], case_sensitive=False),
+    ),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     output: Path | None = typer.Option(None, exists=False, writable=True, help="Path to save the result."),
 ) -> None:
     """
     Automatically structure a corpus as a database instance and print the database schema as a CFG.
     """
-    forest = load_corpus_paths(
-        corpus_path,
-        language,
-        corenlp_url=corenlp_url,
-        entities_filter=ENTITIES_FILTER,
-        relations_filter=RELATIONS_FILTER,
-        entities_mapping=ENTITIES_MAPPING,
+    forest = asyncio.run(
+        load_corpus_batch(
+            corpus_path,
+            language,
+            corenlp_url=corenlp_url,
+            entities_filter=ENTITIES_FILTER,
+            relations_filter=RELATIONS_FILTER,
+            entities_mapping=ENTITIES_MAPPING,
+            resolver=resolver,
+        )
     )
     forest = list(filter(lambda t: len(t.leaves()) < 30, forest))
 
@@ -327,13 +385,15 @@ def cli_stats(
     """
     Display overall corpus statistics.
     """
-    forest = load_corpus_paths(
-        corpus_path,
-        language,
-        corenlp_url=corenlp_url,
-        entities_filter=ENTITIES_FILTER,
-        relations_filter=RELATIONS_FILTER,
-        entities_mapping=ENTITIES_MAPPING,
+    forest = asyncio.run(
+        load_corpus_batch(
+            corpus_path,
+            language,
+            corenlp_url=corenlp_url,
+            entities_filter=ENTITIES_FILTER,
+            relations_filter=RELATIONS_FILTER,
+            entities_mapping=ENTITIES_MAPPING,
+        )
     )
 
     # Entity Count
@@ -382,13 +442,15 @@ def cli_largest_tree(
     """
     Display the largest tree in the corpus along with its sentence and structure.
     """
-    forest = load_corpus_paths(
-        corpus_path,
-        language,
-        corenlp_url=corenlp_url,
-        entities_filter=ENTITIES_FILTER,
-        relations_filter=RELATIONS_FILTER,
-        entities_mapping=ENTITIES_MAPPING,
+    forest = asyncio.run(
+        load_corpus_batch(
+            corpus_path,
+            language,
+            corenlp_url=corenlp_url,
+            entities_filter=ENTITIES_FILTER,
+            relations_filter=RELATIONS_FILTER,
+            entities_mapping=ENTITIES_MAPPING,
+        )
     )
 
     # Find the largest tree

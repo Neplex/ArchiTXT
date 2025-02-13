@@ -1,4 +1,6 @@
+import asyncio
 import random
+from contextlib import nullcontext
 from copy import deepcopy
 
 import mlflow
@@ -10,11 +12,22 @@ from streamlit_agraph import Node as _Node
 from streamlit_tags import st_tags
 
 from architxt.cli import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER, load_or_cache_corpus
+from architxt.nlp.entity_resolver import ScispacyResolver
+from architxt.nlp.parser import Parser
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Forest, Tree
 
 mlflow.set_experiment('ArchiTXT')
+
+RESOLVER_NAMES = {
+    None: 'No resolution',
+    'umls': 'Unified Medical Language System (UMLS)',
+    'mesh': 'Medical Subject Headings (MeSH)',
+    'rxnorm': 'RxNorm',
+    'go': 'Gene Ontology (GO)',
+    'hpo': 'Human Phenotype Ontology (HPO)',
+}
 
 
 class Node(_Node):
@@ -72,6 +85,11 @@ st.title("ArchiTXT")
 
 with st.sidebar:
     corenlp_url = st.text_input('Corenlp URL', value='http://localhost:9000')
+    resolver_name = st.selectbox(
+        'Entity Resolver',
+        options=RESOLVER_NAMES.keys(),
+        format_func=RESOLVER_NAMES.get,
+    )
 
 input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 Metrics', '📐 Schema', '🗄️ Instance'])
 
@@ -108,25 +126,42 @@ with input_tab:
         shuffle = col2.selectbox('Shuffle', options=[True, False])
         submitted = st.form_submit_button("Start")
 
+
+async def load_forest() -> Forest:
+    with Parser(corenlp_url=corenlp_url) as parser:
+        resolver_ctx = (
+            ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
+        )
+
+        async with resolver_ctx as resolver:
+            forests = await asyncio.gather(
+                *[
+                    load_or_cache_corpus(
+                        file,
+                        entities_filter=set(entities_filter),
+                        relations_filter=set(relations_filter),
+                        entities_mapping=entity_mapping,
+                        parser=parser,
+                        language=file_language[file.name],
+                        resolver=resolver,
+                    )
+                    for file in uploaded_file
+                ]
+            )
+
+            return [tree for forest in forests for tree in forest]
+
+
 if submitted and file_language:
     try:
         if mlflow.active_run():
             mlflow.end_run()
 
         with st.spinner('Computing...'), mlflow.start_run(run_name='UI run', log_system_metrics=True) as mlflow_run:
-            forest = []
-            for file in uploaded_file:
-                forest += load_or_cache_corpus(
-                    file,
-                    entities_filter=set(entities_filter),
-                    relations_filter=set(relations_filter),
-                    entities_mapping=entity_mapping,
-                    corenlp_url=corenlp_url,
-                    language=file_language[file.name],
-                )
+            forest = asyncio.run(load_forest())
 
             if sample:
-                forest = random.sample(forest, sample)
+                forest = random.sample(list(forest), sample)
 
             if shuffle:
                 random.shuffle(forest)

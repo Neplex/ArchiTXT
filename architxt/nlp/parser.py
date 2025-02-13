@@ -1,45 +1,122 @@
+import asyncio
 import uuid
 import warnings
-from collections.abc import Generator, Iterable
+from collections.abc import AsyncGenerator, AsyncIterable, Iterable
 from copy import deepcopy
 
 import requests.exceptions
+from aiostream import stream
 from nltk.parse.corenlp import CoreNLPParser
 from nltk.tokenize.util import align_tokens
 
+from architxt.nlp.entity_resolver import EntityResolver
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation, TreeEntity, TreeRel
 from architxt.tree import NodeLabel, NodeType, Tree, has_type, reduce_all
 
-__all__ = ['parse_sentences']
+__all__ = ['Parser']
 
 
-def parse_sentences(
-    sentences: Iterable[AnnotatedSentence],
-    *,
-    corenlp_url: str,
-    language: str,
-) -> Generator[Tree, None, None]:
-    """
-    Enriches and processes syntax trees for a given collection of sentences.
+class Parser:
+    def __init__(
+        self,
+        *,
+        corenlp_url: str,
+        max_concurrency: int = 16,
+    ):
+        """
+        :param corenlp_url: The URL of the CoreNLP server.
+        :param max_concurrency: Maximum concurrent requests to CoreNLP.
+        """
+        self.corenlp = CoreNLPParser(url=corenlp_url)
+        self.semaphore = asyncio.Semaphore(max_concurrency)
+        self.max_concurrency = max_concurrency
 
-    This function takes an iterable of sentences, parses each one into a syntax tree, enriches the tree by
-    fixing coordination structures, adding extra information (entities and relations), and applying reductions.
+    def __enter__(self):
+        return self
 
-    :param sentences: An iterable collection of `AnnotatedSentence`.
-    :param corenlp_url: The URL of the CoreNLP server.
-    :param language: The language to use for parsing.
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.corenlp.session.close()
 
-    :yields: An enriched tree object for each sentence.
+    async def parse_batch(
+        self,
+        sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence],
+        language: str,
+        resolver: EntityResolver | None = None,
+        batch_size: int | None = None,
+    ) -> AsyncGenerator[tuple[AnnotatedSentence, Tree]]:
+        """
+        Parse a batch of annotated sentences into enriched syntax trees.
 
-    Example:
-        .. code-block:: python
+        This function processes an iterable (or asynchronous iterable) of sentences, parses each sentence into a
+        syntax tree, enriches the tree by resolving coordination structures,
+        and applies further enhancements like entity and relation enrichment.
+        Optionally, an external entity resolver can be used to unify entities and relations across sentences.
 
-            for enriched_tree in get_enriched_forest(sentences, corenlp_url="http://localhost:9000"):
-                print(enriched_tree)
+        :param sentences: An iterable or asynchronous iterable of `AnnotatedSentence` objects to be parsed.
+        :param language: The language to use for parsing.
+        :param resolver: An optional entity resolver used to resolve entities within the parsed trees.
+            If `None`, no entity resolution is performed.
+        :param batch_size: The maximum number of concurrent parsing tasks that can run at once.
+            If `None`, it defaults to the class maximum concurrency parameter.
+            It should generally be less than or equal to the maximum concurrency limit.
+            It will only load at most `batch_size` element from the input iterable.
 
-    """
-    # Iterate over the parsed trees and associated sentences
-    for sentence, tree in raw_parse_sentences(sentences, corenlp_url=corenlp_url, language=language):
+        :yields: A tuple of the original `AnnotatedSentence` and its enriched `Tree`.
+            Each sentence is parsed independently, and results are yielded as they become available.
+
+        Example:
+            .. code-block:: python
+
+                with Parser(corenlp_url="http://localhost:9000") as parser:
+                    async for sentence, tree in parser.parse_batch(sentences, language="English"):
+                        print(sentence)
+                        print(tree)
+        """
+        # Convert sync iterable to async for compatibility
+        sentences = stream.iterate(sentences)
+
+        async def task(sent):
+            return sent, await self.parse(sent, language=language, resolver=resolver)
+
+        async for sentence, tree in stream.map(
+            sentences, task, ordered=False, task_limit=batch_size or self.max_concurrency
+        ):
+            if tree:
+                yield sentence, tree
+
+    async def parse(
+        self,
+        sentence: AnnotatedSentence,
+        *,
+        language: str,
+        resolver: EntityResolver | None = None,
+    ) -> Tree | None:
+        """
+        Parse an annotated sentence into an enriched syntax tree.
+
+        This function takes an annotated sentence, parses it into a syntax tree, enriches the tree by
+        fixing coordination structures, adding extra information (entities and relations), and applying reductions.
+        An external entity resolver could be used to unify entities and relations.
+
+        :param sentence: The annotated sentence to parse.
+        :param language: The language to use for parsing.
+        :param resolver: An optional entity resolver used to resolve entities within the parsed trees.
+            If `None`, no entity resolution is performed.
+
+        :returns: An enriched tree object.
+
+        Example:
+            .. code-block:: python
+
+                with Parser(corenlp_url="http://localhost:9000") as parser:
+                    enriched_tree = parse_sentence(sentence, language='English')
+
+        """
+        tree = await self.raw_parse(sentence.txt, language)
+
+        if not tree:
+            return None
+
         # Replace specific parenthesis tokens ('-LRB-' for '(', '-RRB-' for ')') in the leaf nodes
         for subtree in tree.subtrees(lambda x: x.height() == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
             subtree[0] = '(' if subtree[0] == '-LRB-' else ')'
@@ -53,14 +130,14 @@ def parse_sentences(
         except ValueError as error:
             # Alignment issue, skip the tree
             warnings.warn(f'Alignment issue: {error}')
-            continue
+            return None
 
         # Reduce the tree structure removing unneeded nodes
         reduce_all(tree, set(NodeType))
 
         # Don't yield an empty tree
         if not len(tree) or any(isinstance(child, str) for child in tree):
-            continue
+            return None
 
         assert tree.root().label() == 'SENT'
         assert all(child.label() != 'SENT' for child in tree)
@@ -70,50 +147,46 @@ def parse_sentences(
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT)):
             subtree.set_label(f'UNDEF_{uuid.uuid4().hex}')
 
-        yield tree
+        if resolver:
+            await resolve_tree(tree, resolver)
 
+        return tree
 
-def raw_parse_sentences(
-    sentences: Iterable[AnnotatedSentence], *, corenlp_url: str, language: str
-) -> Generator[tuple[AnnotatedSentence, Tree], None, None]:
-    """
-    Parses a collection of sentences into syntax trees using CoreNLP.
+    async def raw_parse(self, sentence: str, language: str) -> Tree | None:
+        """
+        Parses a sentences into syntax trees using CoreNLP server.
 
-    This function takes an iterable of sentences and processes each
-    sentence through a CoreNLP server to get its syntax tree.
-    The tree is then converted into a tree from NLTK.
+        :param sentence: A sentence to parse.
+        :param language: The language to use for parsing.
 
-    :param sentences: An iterable collection of `AnnotatedSentence` objects.
-    :param corenlp_url: The URL of the CoreNLP server.
-    :param language: The language to use for parsing.
+        :returns: The parse tree of the sentence.
 
-    :yields: A tuple of the original `AnnotatedSentence` and its corresponding tree.
+        Example:
+            .. code-block:: python
 
-    Example:
-        .. code-block:: python
-
-            for sentence, tree in get_trees(sentences, corenlp_url="http://localhost:9000"):
-                print(sentence, tree)
-
-    """
-    nltk_parser = CoreNLPParser(url=corenlp_url)
-    properties = {
-        'tokenize.language': language,
-        'ssplit.eolonly': 'true',
-    }
-
-    for sentence in sentences:
+                with Parser(corenlp_url="http://localhost:9000") as parser:
+                    tree = parser.raw_parse(sentence, language='English')
+        """
         try:
-            # Parse the sentence text using the CoreNLP server
-            for rooted_tree in nltk_parser.parse_text(sentence.txt, properties=properties):
-                # Each rooted_tree may contain multiple sentence subtrees; iterate over each
-                for sent_tree in rooted_tree:
-                    # Convert each subtree into a tree and yield along with the original sentence
-                    yield sentence, Tree.convert(sent_tree)
+            async with self.semaphore:
+                parse_trees = await asyncio.to_thread(
+                    self.corenlp.raw_parse,
+                    sentence,
+                    properties={
+                        'tokenize.language': language,
+                        'ssplit.eolonly': 'true',
+                    },
+                )
 
-        except requests.exceptions.ConnectionError as error:  # noqa: PERF203
-            # Handle connection issues with the CoreNLP server
-            print(f'Cannot parse the following text due to {error.strerror} : "{sentence.txt}"')
+            # CoreNLP return a list of candidates tree, we only select the first one.
+            # A parse tree may contain multiple sentence subtrees we select only one and convert it into a tree.
+            for rooted_tree in parse_trees:
+                for sent_tree in rooted_tree:
+                    return Tree.convert(sent_tree)
+
+        except requests.exceptions.ConnectionError as error:
+            print(f'Cannot parse the following text due to {error.strerror} : "{sentence}"')
+            return None
 
 
 def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:
@@ -528,3 +601,15 @@ def is_conflicting_entity(
             return False
 
     return False
+
+
+async def resolve_tree(tree: Tree, resolver: EntityResolver) -> None:
+    """
+    Resolve entities in a tree using the provided entity resolver.
+    """
+    ent_trees = list(tree.subtrees(lambda x: has_type(x, NodeType.ENT)))
+    ent_texts = await resolver(' '.join(ent_tree.leaves()) for ent_tree in ent_trees)
+
+    for ent_tree, ent_text in zip(ent_trees, ent_texts):
+        ent_tree.clear()
+        ent_tree.append(ent_text)
