@@ -144,6 +144,8 @@ select = [
     "PT", # Pytesst checks
     "RET", # Returns
     "PTH", # Prefer Pathlib
+    "TC", # Type checking
+    "SLOT",
 ]
 
 [tool.ruff.format]

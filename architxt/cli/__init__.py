@@ -275,7 +275,6 @@ def cli_run(
             resolver_name=resolver,
         )
     )
-    forest = list(filter(lambda t: len(t.leaves()) < 30, forest))
 
     # Rewrite the trees
     mlflow.enable_system_metrics_logging()

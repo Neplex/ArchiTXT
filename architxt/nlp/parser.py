@@ -612,6 +612,6 @@ async def resolve_tree(tree: Tree, resolver: EntityResolver) -> None:
     ent_trees = list(tree.subtrees(lambda x: has_type(x, NodeType.ENT)))
     ent_texts = await resolver(' '.join(ent_tree.leaves()) for ent_tree in ent_trees)
 
-    for ent_tree, ent_text in zip(ent_trees, ent_texts):
+    for ent_tree, ent_text in zip(ent_trees, ent_texts, strict=True):
         ent_tree.clear()
         ent_tree.append(ent_text)
