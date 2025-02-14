@@ -1,6 +1,6 @@
 import contextlib
 from collections import Counter
-from collections.abc import Collection, Iterable
+from collections.abc import Callable, Collection, Iterable
 from copy import deepcopy
 from enum import Enum
 from functools import cache
@@ -38,14 +38,15 @@ class NodeLabel(str):
 
     __slots__ = ('name', 'type')
 
-    def __new__(cls, label_type: NodeType, label: str = ''):
-        return super().__new__(cls, f'{label_type.value}::{label}' if label else label_type.value)
+    def __new__(cls, label_type: NodeType, label: str = '') -> 'NodeLabel':
+        string_value = f'{label_type.value}::{label}' if label else label_type.value
+        return super().__new__(cls, string_value)  # type: ignore
 
     def __init__(self, label_type: NodeType, label: str = '') -> None:
         self.name = label
         self.type = label_type
 
-    def __reduce__(self):
+    def __reduce__(self) -> tuple[Callable[..., 'NodeLabel'], tuple[Any, ...]]:
         return NodeLabel, (self.type, self.name)
 
 
@@ -75,7 +76,7 @@ class Tree(ParentedTree):
     def __repr__(self) -> str:
         return f'{type(self)}(len={len(self)})'
 
-    def __reduce__(self):
+    def __reduce__(self) -> tuple[Callable[..., 'Tree'], tuple[Any, ...]]:
         return type(self), (self._label, tuple(self))
 
     @cache

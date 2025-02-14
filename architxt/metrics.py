@@ -1,4 +1,4 @@
-from collections.abc import Hashable
+from collections.abc import Collection
 from itertools import combinations
 
 import pandas as pd
@@ -13,7 +13,7 @@ from .tree import Forest, NodeType, Tree, has_type
 __all__ = ['Metrics', 'confidence', 'dependency_score', 'redundancy_score']
 
 
-def confidence(dataframe: pd.DataFrame, column: Hashable) -> float:
+def confidence(dataframe: pd.DataFrame, column: str) -> float:
     """
     Computes the confidence score of the functional dependency ``X -> column`` in a DataFrame.
 
@@ -46,7 +46,7 @@ def confidence(dataframe: pd.DataFrame, column: Hashable) -> float:
     return confidence_score.median() if not consequent_support.empty else 0.0
 
 
-def dependency_score(dataframe: pd.DataFrame, attributes: list[Hashable]) -> float:
+def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> float:
     """
     Computes the dependency score of a subset of attributes in a DataFrame.
 
@@ -65,7 +65,7 @@ def dependency_score(dataframe: pd.DataFrame, attributes: list[Hashable]) -> flo
     >>> dependency_score(data, ['A', 'B'])
     1.0
     """
-    return pd.Series(attributes).map(lambda x: confidence(dataframe[attributes], x)).max()
+    return pd.Series(list(attributes)).map(lambda x: confidence(dataframe[attributes], x)).max()
 
 
 def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
@@ -94,7 +94,6 @@ def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
     # mark the rows that are duplicates on that set.
     for i in range(2, len(attributes)):
         for attrs in combinations(attributes, i):
-            attrs = list(attrs)
             if dependency_score(dataframe, attrs) >= tau:
                 duplicates |= dataframe[attrs].dropna().duplicated(keep=False)
 
@@ -211,7 +210,7 @@ class Metrics:
         source_labels, destination_labels = self._clusters(tau, metric)
         return completeness_score(source_labels, destination_labels)
 
-    def redundancy(self, *, tau: float = 1.0):
+    def redundancy(self, *, tau: float = 1.0) -> float:
         """
         Computes the redundancy score for the entire instance.
 
@@ -223,7 +222,7 @@ class Metrics:
         """
         schema = Schema.from_forest(self._destination)
         datasets = schema.extract_datasets(self._destination)
-        group_redundancy = pd.Series(datasets.values()).map(lambda df: redundancy_score(df, tau=tau))
+        group_redundancy = pd.Series(list(datasets.values())).map(lambda df: redundancy_score(df, tau=tau))
         redundancy = group_redundancy[group_redundancy > 0].median()
 
         return redundancy if redundancy is not pd.NA else 0.0

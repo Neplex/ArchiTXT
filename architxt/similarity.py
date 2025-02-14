@@ -1,6 +1,6 @@
 import math
 from collections import defaultdict
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Iterable
 from itertools import combinations
 
 import numpy as np
@@ -13,11 +13,11 @@ from tqdm import tqdm
 
 from architxt.tree import Forest, NodeType, Tree, has_type
 
-METRIC_FUNC = Callable[[set[str], set[str]], float]
+METRIC_FUNC = Callable[[Collection[str], Collection[str]], float]
 TREE_CLUSTER = set[tuple[Tree, ...]]
 
 
-def jaccard(x: set[str], y: set[str]) -> float:
+def jaccard(x: Collection[str], y: Collection[str]) -> float:
     """
     Jaccard similarity
 
@@ -35,17 +35,19 @@ def jaccard(x: set[str], y: set[str]) -> float:
     >>> jaccard(set(), set())
     1.0
     """
-    return len(x & y) / len(x | y) if x or y else 1.0
+    x_set = set(x)
+    y_set = set(y)
+    return len(x_set & y_set) / len(x_set | y_set) if x_set or y_set else 1.0
 
 
-def levenshtein(x: set[str], y: set[str]) -> float:
+def levenshtein(x: Collection[str], y: Collection[str]) -> float:
     """
     Levenshtein similarity
     """
     return levenshtein_ratio(sorted(x), sorted(y))
 
 
-def jaro(x: set[str], y: set[str]) -> float:
+def jaro(x: Collection[str], y: Collection[str]) -> float:
     """
     Jaro winkler similarity
     """
@@ -263,9 +265,10 @@ def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DE
         for tree in forest
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
     ]
+    equiv_subtrees: Iterable[Iterable[Tree]]
 
     if metric is None:
-        equiv_subtrees_map = defaultdict(list)
+        equiv_subtrees_map: dict[str, list[Tree]] = defaultdict(list)
         for subtree in entity_parents:
             equiv_subtrees_map[subtree.label()].append(subtree)
         equiv_subtrees = equiv_subtrees_map.values()

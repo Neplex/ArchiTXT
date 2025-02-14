@@ -127,7 +127,10 @@ with input_tab:
         submitted = st.form_submit_button("Start")
 
 
-async def load_forest() -> Forest:
+async def load_forest() -> list[Tree]:
+    if not uploaded_file:
+        return []
+
     with Parser(corenlp_url=corenlp_url) as parser:
         resolver_ctx = (
             ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
@@ -161,12 +164,12 @@ if submitted and file_language:
             forest = asyncio.run(load_forest())
 
             if sample:
-                forest = random.sample(list(forest), sample)
+                forest = random.sample(forest, sample)
 
             if shuffle:
                 random.shuffle(forest)
 
-            forest = rewrite(
+            rewrite_forest = rewrite(
                 forest,
                 tau=tau,
                 epoch=epoch,
@@ -212,7 +215,7 @@ if submitted and file_language:
 
             st.bar_chart([x.value for x in client.get_metric_history(run_id, 'edit_op')])
 
-        schema = Schema.from_forest(forest, keep_unlabelled=False)
+        schema = Schema.from_forest(rewrite_forest, keep_unlabelled=False)
 
         # Display schema graph
         with schema_tab:
@@ -220,7 +223,7 @@ if submitted and file_language:
 
         # Display instance data
         with instance_tab:
-            clean_forest = schema.extract_valid_trees(forest)
+            clean_forest = schema.extract_valid_trees(rewrite_forest)
             dataframe(clean_forest)
 
     except Exception as e:

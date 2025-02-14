@@ -59,9 +59,9 @@ class Schema(CFG):
                 productions.add(Production(Nonterminal(group_label), sorted(entity_labels)))
 
         if rels:
-            for relation_name, groups in rels.items():
+            for relation_name, rel_groups in rels.items():
                 relation_label = NodeLabel(NodeType.REL, relation_name)
-                group_labels = [Nonterminal(NodeLabel(NodeType.GROUP, group)) for group in groups]
+                group_labels = [Nonterminal(NodeLabel(NodeType.GROUP, group)) for group in rel_groups]
                 productions.add(Production(Nonterminal(relation_label), sorted(group_labels)))
 
         if collections:

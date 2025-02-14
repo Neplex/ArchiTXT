@@ -219,7 +219,7 @@ def _post_process(
 
 
 def apply_operations(
-    edit_ops: Sequence[Operation] | Sequence[tuple[str, Operation]],
+    edit_ops: Sequence[Operation | tuple[str, Operation]],
     forest: Forest,
     *,
     equiv_subtrees: TREE_CLUSTER,
@@ -249,9 +249,7 @@ def apply_operations(
     if not edit_ops:
         return forest, None
 
-    if not isinstance(edit_ops[0], tuple):
-        edit_ops = [(op.name, op) for op in edit_ops]
-
+    edit_ops_names = [(op.name, op) if isinstance(op, Operation) else op for op in edit_ops]
     chunks = distribute_evenly(forest, executor._max_workers)
 
     with Manager() as manager:
@@ -263,7 +261,7 @@ def apply_operations(
             executor.submit(
                 apply_operations_worker,
                 idx,
-                edit_ops,
+                edit_ops_names,
                 tuple(chunk),
                 shared_equiv,
                 early_exit,

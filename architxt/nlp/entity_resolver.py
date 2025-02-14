@@ -1,6 +1,7 @@
 import contextlib
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from types import TracebackType
 from typing import cast
 
 import spacy
@@ -49,14 +50,16 @@ class ScispacyResolver(EntityResolver):
         linker = self.nlp.add_pipe("scispacy_linker", config=linker_config)
         self.linker = cast(EntityLinker, linker)
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'ScispacyResolver':
         if self.translate:
             translator = Translator(list_operation_max_concurrency=self.batch_size)
             self.translator = await self.exit_stack.enter_async_context(translator)
 
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(
+        self, exc_type: type[BaseException], exc_value: BaseException, traceback: TracebackType
+    ) -> None:
         await self.exit_stack.aclose()
 
     @property

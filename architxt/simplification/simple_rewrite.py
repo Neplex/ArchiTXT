@@ -1,11 +1,12 @@
 from copy import deepcopy
+from typing import Any
 
 from tqdm import tqdm
 
 from architxt.tree import Forest, NodeLabel, NodeType, Tree
 
 
-def simple_rewrite(forest: Forest, **kwargs) -> Forest:
+def simple_rewrite(forest: Forest, **_: Any) -> Forest:
     """
     Rewrites a given forest into a valid schema, treating each tree as a distinct group.
     Entities within a tree are grouped together, and duplicate entities are discarded.

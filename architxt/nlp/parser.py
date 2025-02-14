@@ -3,6 +3,7 @@ import uuid
 import warnings
 from collections.abc import AsyncGenerator, AsyncIterable, Iterable
 from copy import deepcopy
+from types import TracebackType
 
 import requests.exceptions
 from aiostream import stream
@@ -31,10 +32,10 @@ class Parser:
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.max_concurrency = max_concurrency
 
-    def __enter__(self):
+    def __enter__(self) -> 'Parser':
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: type[BaseException], exc_value: BaseException, traceback: TracebackType) -> None:
         self.corenlp.session.close()
 
     async def parse_batch(
@@ -75,10 +76,10 @@ class Parser:
         # Convert sync iterable to async for compatibility
         sentences = stream.iterate(sentences)
 
-        async def task(sent):
+        async def task(sent: AnnotatedSentence, *_: AnnotatedSentence) -> tuple[AnnotatedSentence, Tree | None]:
             return sent, await self.parse(sent, language=language, resolver=resolver)
 
-        async for sentence, tree in stream.map(
+        async for sentence, tree in stream.amap.raw(
             sentences, task, ordered=False, task_limit=batch_size or self.max_concurrency
         ):
             if tree:
@@ -186,7 +187,8 @@ class Parser:
 
         except requests.exceptions.ConnectionError as error:
             print(f'Cannot parse the following text due to {error.strerror} : "{sentence}"')
-            return None
+
+        return None
 
 
 def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:

@@ -181,7 +181,7 @@ async def load_corpus(
     language: str,
     parser: Parser,
     resolver: EntityResolver | None = None,
-):
+) -> Forest:
     with archive_path.open('rb') as corpus:
         return await load_or_cache_corpus(
             corpus,
@@ -205,12 +205,14 @@ async def load_corpus_batch(
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
     corenlp_url: str,
-    resolver: str | None = None,
+    resolver_name: str | None = None,
 ) -> Forest:
     try:
         with Parser(corenlp_url=corenlp_url) as parser:
             resolver_ctx = (
-                ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else nullcontext()
+                ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name)
+                if resolver_name
+                else nullcontext()
             )
 
             async with resolver_ctx as resolver:
@@ -270,7 +272,7 @@ def cli_run(
             entities_filter=ENTITIES_FILTER,
             relations_filter=RELATIONS_FILTER,
             entities_mapping=ENTITIES_MAPPING,
-            resolver=resolver,
+            resolver_name=resolver,
         )
     )
     forest = list(filter(lambda t: len(t.leaves()) < 30, forest))

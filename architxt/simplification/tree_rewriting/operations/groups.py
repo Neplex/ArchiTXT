@@ -117,7 +117,7 @@ class FindSubGroupsOperation(Operation):
                 len(subtree) - 1,
                 max(
                     (len(ent_group) for ent_group in entity_groups if entity_labels.issuperset(ent_group)),
-                    default=float('inf'),
+                    default=len(entity_trees),
                 ),
             )
 
@@ -241,7 +241,7 @@ class MergeGroupsOperation(Operation):
 
         return None
 
-    def apply(self, tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
         simplified = False
 
         for subtree in sorted(
@@ -266,9 +266,9 @@ class MergeGroupsOperation(Operation):
                 # Identify the best possible merge based on maximum support
                 max_subtree: Tree | None
                 max_subtree, max_support = max(
-                    filter(lambda x: x is not None, k_groups_support),
+                    filter(None, k_groups_support),
                     key=lambda x: x[1],
-                    default=(None, None),
+                    default=(None, 0),
                 )
 
                 # If no valid k-sized group was found, reduce k and continue

@@ -1,5 +1,6 @@
 from copy import deepcopy
 from itertools import groupby
+from typing import Any
 
 import more_itertools
 
@@ -23,7 +24,7 @@ class FindCollectionsOperation(Operation):
                                      the tree by creating collection nodes.
     """
 
-    def __init__(self, *args, naming_only: bool = False, **kwargs):
+    def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 

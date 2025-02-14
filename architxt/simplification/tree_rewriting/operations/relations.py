@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import Any
 
 from architxt.similarity import TREE_CLUSTER
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
@@ -23,7 +24,7 @@ class FindRelationsOperation(Operation):
     2. Structural modification mode: restructures the tree by creating relation nodes between groups and collections.
     """
 
-    def __init__(self, *args, naming_only: bool = False, **kwargs):
+    def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
