@@ -1,6 +1,15 @@
 version: "3.7"
 
 services:
+  architxt:
+    image: architxt
+    environment:
+      CORENLP_URL: http://corenlp:9000
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+
   corenlp:
     image: corenlp
     build:

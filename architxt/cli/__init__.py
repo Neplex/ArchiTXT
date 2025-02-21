@@ -362,14 +362,14 @@ def cli_run(
         console.print(Columns([metrics_table, grammar_metrics_table]))
 
 
-def cli_ui() -> None:
+def cli_ui(ctx: typer.Context) -> None:
     """
     Launch the web-based UI using Streamlit.
     """
     try:
         from architxt import ui
 
-        subprocess.run(['streamlit', 'run', ui.__file__], check=True)
+        subprocess.run(['streamlit', 'run', ui.__file__, *ctx.args], check=True)
 
     except FileNotFoundError as error:
         console.print(
@@ -478,8 +478,12 @@ def main() -> None:
         help="ArchiTXT is a tool for structuring textual data into a valid database model. "
         "It is guided by a meta-grammar and uses an iterative process of tree rewriting."
     )
-    app.command('run', help="Extract a database schema form a corpus.")(cli_run)
-    app.command('ui', help="Launch the web-based UI.")(cli_ui)
+    app.command('run', help="Extract a database schema form a corpus.", no_args_is_help=True)(cli_run)
+    app.command(
+        'ui',
+        help="Launch the web-based UI.",
+        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    )(cli_ui)
     app.command('stats', help="Display overall statistics for the corpus.")(cli_stats)
     app.command('largest-tree', help="Display details about the largest tree in the corpus.")(cli_largest_tree)
 
