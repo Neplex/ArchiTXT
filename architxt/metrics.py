@@ -65,7 +65,7 @@ def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> fl
     >>> dependency_score(data, ['A', 'B'])
     1.0
     """
-    return pd.Series(list(attributes)).map(lambda x: confidence(dataframe[attributes], x)).max()
+    return pd.Series(list(attributes)).map(lambda x: confidence(dataframe[list(attributes)], x)).max()
 
 
 def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
