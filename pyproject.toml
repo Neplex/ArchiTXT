@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "architxt"
-version = "0.1.0"
+version = "0.0.0"
 description = "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting."
 authors = [
     "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>",
@@ -33,7 +33,7 @@ spacy-alignments = "^0.9.1"
 numpy = "^1.16"
 levenshtein = "*"
 more-itertools = "*"
-bratlib = { git = "https://github.com/swfarnsworth/bratlib.git" }
+bratlib = { git = "https://github.com/swfarnsworth/bratlib.git", tag = "v0.1.0" }
 mlflow = "^2.6.0"
 psutil = "^7.0.0"
 typer = "^0.15.1"
@@ -46,12 +46,15 @@ aiostream = "^0.6.4"
 
 # SpaCy
 scispacy = "^0.5.5"
-en-core-sci-sm = {url = "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz", optional = true }
+en-core-sci-sm = { url = "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz", optional = true }
 
 # Optional UI dependencies
 streamlit = { version = ">=1.39.0", optional = true }
 streamlit-agraph = { version = "*", optional = true }
 streamlit-tags = { version = "*", optional = true }
+
+# Use a fixed version of nmslib
+nmslib = { git = "https://github.com/nmslib/nmslib.git", subdirectory = "python_bindings", optional = true }
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
@@ -78,10 +81,10 @@ types-cachetools = "*"
 antlr4-tools = "^0.2.1"
 
 # All packages in dev mode
-streamlit="*"
-streamlit-agraph="*"
-streamlit-tags="*"
-en-core-sci-sm="*"
+streamlit = "*"
+streamlit-agraph = "*"
+streamlit-tags = "*"
+en-core-sci-sm = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3"
