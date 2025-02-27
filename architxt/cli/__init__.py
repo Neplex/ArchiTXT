@@ -80,6 +80,7 @@ async def load_or_cache_corpus(
     language: str,
     name: str | None = None,
     resolver: EntityResolver | None = None,
+    cache: bool = True,
 ) -> Forest:
     """
     Load the corpus from disk or cache.
@@ -93,6 +94,7 @@ async def load_or_cache_corpus(
     :param language: The language to use for parsing.
     :param name: The corpus name.
     :param resolver: An optional entity resolver to use.
+    :param cache: Whether to cache the computed forest or not.
 
     :returns: A list of parsed trees representing the enriched corpus.
     """
@@ -133,7 +135,7 @@ async def load_or_cache_corpus(
         )
 
         # Attempt to load from cache if available
-        if corpus_cache_path.exists():
+        if cache and corpus_cache_path.exists():
             console.print(f'[green]Loading corpus from cache:[/] {corpus_cache_path.absolute()}')
             return await read_cache(corpus_cache_path)
 
@@ -161,8 +163,9 @@ async def load_or_cache_corpus(
             console.print(f'[green]Dataset loaded! {len(forest)} sentences found.[/]')
 
         # Save processed data to cache
-        console.print(f'[blue]Saving cache file to:[/] {corpus_cache_path.absolute()}')
-        await write_cache(forest, corpus_cache_path)
+        if cache:
+            console.print(f'[blue]Saving cache file to:[/] {corpus_cache_path.absolute()}')
+            await write_cache(forest, corpus_cache_path)
 
         return forest
 
@@ -181,6 +184,7 @@ async def load_corpus(
     language: str,
     parser: Parser,
     resolver: EntityResolver | None = None,
+    cache: bool = True,
 ) -> Forest:
     with archive_path.open('rb') as corpus:
         return await load_or_cache_corpus(
@@ -193,6 +197,7 @@ async def load_corpus(
             language=language,
             parser=parser,
             resolver=resolver,
+            cache=cache,
         )
 
 
@@ -206,6 +211,7 @@ async def load_corpus_batch(
     relations_mapping: dict[str, str] | None = None,
     corenlp_url: str,
     resolver_name: str | None = None,
+    cache: bool = True,
 ) -> Forest:
     try:
         with Parser(corenlp_url=corenlp_url) as parser:
@@ -227,6 +233,7 @@ async def load_corpus_batch(
                             parser=parser,
                             language=language,
                             resolver=resolver,
+                            cache=cache,
                         )
                         for path, language in zip(corpus_path, language, strict=True)
                     ]
@@ -244,22 +251,23 @@ def cli_run(
     *,
     language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
     corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
-    tau: float = typer.Option(0.7, help="The similarity threshold."),
-    epoch: int = typer.Option(100, help="Number of iteration for tree rewriting."),
-    min_support: int = typer.Option(20, help="Minimum support for tree patterns."),
-    gen_instances: int = typer.Option(0, help="Number of synthetic instances to generate."),
-    sample: int = typer.Option(0, help="Number of sentences to sample from the corpus."),
-    shuffle: bool = typer.Option(False, help="Shuffle the corpus data before processing to introduce randomness."),
+    tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    epoch: int = typer.Option(100, help="Number of iteration for tree rewriting.", min=1),
+    min_support: int = typer.Option(20, help="Minimum support for tree patterns.", min=1),
+    gen_instances: int = typer.Option(0, help="Number of synthetic instances to generate.", min=0),
+    sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
     workers: int | None = typer.Option(
-        None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores."
+        None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores.", min=1
     ),
     resolver: str | None = typer.Option(
         None,
         help="The entity resolver to use when loading the corpus.",
         click_type=click.Choice(['umls', 'mesh', 'rxnorm', 'go', 'hpo'], case_sensitive=False),
     ),
-    debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     output: Path | None = typer.Option(None, exists=False, writable=True, help="Path to save the result."),
+    cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
+    shuffle: bool = typer.Option(False, help="Shuffle the corpus data before processing to introduce randomness."),
+    debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
 ) -> None:
     """
     Automatically structure a corpus as a database instance and print the database schema as a CFG.
@@ -269,10 +277,11 @@ def cli_run(
             corpus_path,
             language,
             corenlp_url=corenlp_url,
+            resolver_name=resolver,
+            cache=cache,
             entities_filter=ENTITIES_FILTER,
             relations_filter=RELATIONS_FILTER,
             entities_mapping=ENTITIES_MAPPING,
-            resolver_name=resolver,
         )
     )
 
@@ -286,7 +295,13 @@ def cli_run(
     )
 
     if sample:
-        forest = random.sample(forest, sample)
+        if sample < len(forest):
+            forest = random.sample(list(forest), sample)
+        else:
+            console.print(
+                "[yellow] You have specified a sample size larger than the total population, "
+                "which may result in fewer results than expected."
+            )
 
     # Generate synthetic database instances
     if gen_instances:
@@ -381,7 +396,9 @@ def cli_ui(ctx: typer.Context) -> None:
 def cli_stats(
     corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
     language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
+    *,
     corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
+    cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
 ) -> None:
     """
     Display overall corpus statistics.
@@ -391,6 +408,7 @@ def cli_stats(
             corpus_path,
             language,
             corenlp_url=corenlp_url,
+            cache=cache,
             entities_filter=ENTITIES_FILTER,
             relations_filter=RELATIONS_FILTER,
             entities_mapping=ENTITIES_MAPPING,
@@ -437,8 +455,10 @@ def cli_stats(
 
 def cli_largest_tree(
     corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
-    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
     language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
+    *,
+    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
+    cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
 ) -> None:
     """
     Display the largest tree in the corpus along with its sentence and structure.
@@ -448,6 +468,7 @@ def cli_largest_tree(
             corpus_path,
             language,
             corenlp_url=corenlp_url,
+            cache=cache,
             entities_filter=ENTITIES_FILTER,
             relations_filter=RELATIONS_FILTER,
             entities_mapping=ENTITIES_MAPPING,
