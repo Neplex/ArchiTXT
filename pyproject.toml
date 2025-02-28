@@ -14,6 +14,7 @@ architxt = "architxt.cli:main"
 
 [tool.poetry-dynamic-versioning]
 enable = true
+metadata = false
 
 [build-system]
 requires = [
