@@ -33,7 +33,7 @@ spacy-alignments = "^0.9.1"
 numpy = "^1.16"
 levenshtein = "*"
 more-itertools = "*"
-bratlib = { git = "https://github.com/swfarnsworth/bratlib.git", tag = "v0.1.0" }
+pybrat = "^0.1.7"
 mlflow = "^2.6.0"
 psutil = "^7.0.0"
 typer = "^0.15.1"
