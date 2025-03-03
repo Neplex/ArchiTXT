@@ -5,9 +5,9 @@ Dataset loader for BRAT (BRAT Rapid Annotation Tool) format
 from collections.abc import Generator, Iterable
 from pathlib import Path
 
-from bratlib.data import BratDataset, BratFile
-from bratlib.data.annotation_types import Entity as BratEntity
-from bratlib.data.annotation_types import Relation as BratRelation
+from pybrat.parser import BratParser, Example
+from pybrat.parser import Entity as BratEntity
+from pybrat.parser import Relation as BratRelation
 from tqdm import tqdm
 
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation
@@ -49,11 +49,11 @@ def convert_brat_entities(
 
     for brat_entity in entities:
         # Start and end positions based on the spans of the entity
-        start = brat_entity.spans[0][0]
-        end = brat_entity.spans[-1][-1]
+        start = brat_entity.spans[0].start
+        end = brat_entity.spans[-1].end
 
         # Rename tag if needed
-        tag = brat_entity.tag.upper()
+        tag = brat_entity.type.upper()
         tag = mapping.get(tag, tag)
 
         # Generate the identity of the entity based on its spans
@@ -97,7 +97,7 @@ def convert_brat_relations(
         dst = str(tuple(brat_relation.arg2.spans))
 
         # Rename relation if needed
-        relation = brat_relation.relation.upper()
+        relation = brat_relation.type.upper()
         relation = mapping.get(relation, relation)
 
         # Filter out specific relation types
@@ -105,8 +105,8 @@ def convert_brat_relations(
             yield Relation(src=src, dst=dst, name=relation)
 
 
-def convert_brat_file(
-    brat_file: BratFile,
+def convert_brat_example(
+    example: Example,
     *,
     entities_filter: set[str] | None = None,
     relations_filter: set[str] | None = None,
@@ -114,31 +114,28 @@ def convert_brat_file(
     relations_mapping: dict[str, str] | None = None,
 ) -> Generator[AnnotatedSentence, None, None]:
     """
-    Converts a BratFile object into annotated sentences, filtering and mapping entities and relations as specified.
+    Converts a Brat example object into annotated sentences, filtering and mapping entities and relations as specified.
 
-    :param brat_file: A `BratFile` object containing the .txt and .ann file data.
+    :param example: An `Example` object containing the .txt and .ann file data.
     :param entities_filter: A set of entity types to exclude from the output. If None, no filtering is applied.
     :param relations_filter: A set of relation types to exclude from the output. If None, no filtering is applied.
     :param entities_mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
     :param relations_mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
     :return: A generator yielding `AnnotatedSentence` objects for each sentence in the text.
     """
-    file_path = Path(brat_file.txt_path)
-    text = file_path.read_text(encoding='utf-8')
-
     # Split the text into sentences
-    sentences = list(split_sentences(text))
+    sentences = list(split_sentences(example.text))
 
     # Convert and filter entities, split by sentences
     entities = list(
         split_entities(
-            convert_brat_entities(brat_file.entities, allow_list=entities_filter, mapping=entities_mapping), sentences
+            convert_brat_entities(example.entities, allow_list=entities_filter, mapping=entities_mapping), sentences
         )
     )
 
     # Convert and filter relations, split by entities
     relationships = split_relations(
-        convert_brat_relations(brat_file.relations, allow_list=relations_filter, mapping=relations_mapping), entities
+        convert_brat_relations(example.relations, allow_list=relations_filter, mapping=relations_mapping), entities
     )
 
     # Yield AnnotatedSentence objects for each sentence with its corresponding entities and relations
@@ -155,15 +152,13 @@ def load_brat_dataset(
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
 ) -> Generator[AnnotatedSentence, None, None]:
-    dataset: BratDataset = BratDataset.from_directory(path.absolute())
-    brat_file: BratFile
+    examples = BratParser().parse(path.absolute())
 
-    for brat_file in (pbar := tqdm(dataset, total=len(dataset.brat_files))):
-        file_path = Path(brat_file.txt_path)
-        pbar.set_description(f'Load {file_path.name}')
+    for example in (pbar := tqdm(examples)):
+        pbar.set_description(f'Load {example.id}')
 
-        yield from convert_brat_file(
-            brat_file,
+        yield from convert_brat_example(
+            example,
             entities_filter=entities_filter,
             relations_filter=relations_filter,
             entities_mapping=entities_mapping,
