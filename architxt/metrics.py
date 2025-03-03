@@ -65,7 +65,7 @@ def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> fl
     >>> dependency_score(data, ['A', 'B'])
     1.0
     """
-    return pd.Series(list(attributes)).map(lambda x: confidence(dataframe[attributes], x)).max()
+    return pd.Series(list(attributes)).map(lambda x: confidence(dataframe[list(attributes)], x)).max()
 
 
 def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
@@ -95,7 +95,7 @@ def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
     for i in range(2, len(attributes)):
         for attrs in combinations(attributes, i):
             if dependency_score(dataframe, attrs) >= tau:
-                duplicates |= dataframe[attrs].dropna().duplicated(keep=False)
+                duplicates |= dataframe[list(attrs)].dropna().duplicated(keep=False)
 
     # The table-level redundancy is the fraction of rows that are duplicates in at least one candidate set.
     return duplicates.sum() / dataframe.shape[0]

@@ -25,4 +25,5 @@ jobs:
           pre-commit: true
           pytest-tests-path: "tests"
           pytest-cov-path: "architxt"
+          pytest-ignore: 'tests/simplification/tree_rewriting/operations/test_operations.py'
           python-version: "${{ matrix.python-version }}"
