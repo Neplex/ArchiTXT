@@ -16,17 +16,18 @@ __all__ = [
 class ReduceOperation(Operation, ABC):
     """
     Base class for reduction operations.
+
     This class defines custom behavior for identifying subtrees to be reduced and applying the reduction operation.
     """
 
     @abstractmethod
-    def subtrees_to_reduce(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> Iterable[Tree]: ...
+    def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]: ...
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:  # noqa: ARG002
         reduced = False
 
         # Iterate through subtrees in reverse order to ensure bottom-up processing
-        for subtree in self.subtrees_to_reduce(tree, equiv_subtrees=equiv_subtrees):
+        for subtree in self.subtrees_to_reduce(tree):
             parent = subtree.parent()
             position = subtree.treeposition()
             label = subtree.label()
@@ -56,27 +57,27 @@ class ReduceOperation(Operation, ABC):
 
 class ReduceBottomOperation(ReduceOperation):
     """
-    Reduces the unlabelled nodes of a tree at the bottom-level
+    Reduces the unlabelled nodes of a tree at the bottom-level.
 
     This function identifies subtrees that do not have a specific type but contain children of type `ENT`.
     It then repositions these subtrees' children directly under their parent nodes, effectively "flattening"
     the tree structure at this level.
     """
 
-    def subtrees_to_reduce(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> Iterable[Tree]:
+    def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]:
         yield from tree.subtrees(lambda x: x.parent() and x.has_entity_child() and not has_type(x))
 
 
 class ReduceTopOperation(ReduceOperation):
     """
-    Reduces the unlabelled nodes of a tree at the top-level
+    Reduces the unlabelled nodes of a tree at the top-level.
 
     This function identifies subtrees that do not have a specific type but contain children of type `ENT`.
     It then repositions these subtrees' children directly under their parent nodes, effectively "flattening"
     the tree structure at this level.
     """
 
-    def subtrees_to_reduce(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> Iterable[Tree]:
+    def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]:
         for subtree in list(tree):
             if not has_type(subtree):
                 yield subtree

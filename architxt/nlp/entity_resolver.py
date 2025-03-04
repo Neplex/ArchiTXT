@@ -29,7 +29,7 @@ class ScispacyResolver(EntityResolver):
         resolve_text: bool = True,
     ) -> None:
         """
-        An entity resolver based on SciSpaCy entity linker.
+        Resolve entities using the SciSpaCy entity linker.
 
         :param kb_name: The name of the knowledge base to use: `umls`, `mesh`, `rxnorm`, `go`, or `hpo`.
         :param cleanup: True if the resolved text should be uniformized.
@@ -56,7 +56,7 @@ class ScispacyResolver(EntityResolver):
         return self
 
     async def __aexit__(
-        self, exc_type: type[BaseException], exc_value: BaseException, traceback: TracebackType
+        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
     ) -> None:
         await self.exit_stack.aclose()
 
@@ -67,7 +67,8 @@ class ScispacyResolver(EntityResolver):
     async def _translate(self, texts: list[str]) -> list[str]:
         """
         Translate texts in batch asynchronously.
-        Uses an existing translator if available, otherwise creates a temporary one.
+
+        Use an existing translator if available, otherwise creates a temporary one.
         """
         if not self.translator:
             async with Translator(list_operation_max_concurrency=self.batch_size) as temp_translator:
@@ -80,6 +81,7 @@ class ScispacyResolver(EntityResolver):
     def _cleanup_string(self, text: str) -> str:
         """
         Cleanup text to uniformize it.
+
         :param text: The text document to clean up.
         :return: The uniformized text.
         """
@@ -90,7 +92,7 @@ class ScispacyResolver(EntityResolver):
 
     def _resolve(self, mention_texts: list[str]) -> Iterable[str]:
         """Resolve entity names using SciSpaCy entity linker."""
-        for mention, candidates in zip(mention_texts, self.candidate_generator(mention_texts, 10)):
+        for mention, candidates in zip(mention_texts, self.candidate_generator(mention_texts, 10), strict=False):
             best_candidate = None
             best_candidate_score = 0
 

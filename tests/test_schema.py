@@ -14,13 +14,13 @@ from architxt.tree import Tree
         ('(GROUP::1 (ENT::A AAA) (ENT::B bbb))', True, True),
     ],
 )
-def test_schema_validity(tree_str: str, keep_unlabelled: bool, valid: bool):
+def test_schema_validity(tree_str: str, keep_unlabelled: bool, valid: bool) -> None:
     tree = Tree.fromstring(tree_str)
     schema = Schema.from_forest([tree], keep_unlabelled=keep_unlabelled)
     assert schema.verify() == valid
 
 
-def test_extract_valid_trees():
+def test_extract_valid_trees() -> None:
     tree1 = Tree.fromstring('(SENT (GROUP::1 (ENT::A AAA) (ENT::B bbb)) (GROUP::3 (ENT::D DDD)))')
     tree2 = Tree.fromstring(
         '(SENT (GROUP::1 (ENT::A AAA)) (COLL::1 (REL::1 (GROUP::1 (ENT::A AAA)) (GROUP::2 (ENT::C CCC)))))'

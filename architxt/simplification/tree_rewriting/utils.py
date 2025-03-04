@@ -20,8 +20,8 @@ __all__ = [
 def distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
     """
     Distribute a collection of trees into `n` sub-collections with approximately equal total complexity.
-    Complexity is determined by the number of leaves in each tree.
 
+    Complexity is determined by the number of leaves in each tree.
     The function attempts to create `n` chunks, but if there are fewer elements than `n`,
     it will create one chunk per element.
 
@@ -31,7 +31,8 @@ def distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
     :raises ValueError: If `n` is less than 1.
     """
     if n < 1:
-        raise ValueError("The number of sub-collections 'n' must be at least 1.")
+        msg = "The number of sub-collections 'n' must be at least 1."
+        raise ValueError(msg)
 
     n = min(n, len(trees))
 
@@ -54,7 +55,7 @@ def log_instance_comparison_metrics(
     iteration: int, old_forest: Forest, new_forest: Forest, tau: float, metric: METRIC_FUNC
 ) -> None:
     """
-    Logs comparison metrics to see the evolution of the rewriting for a specific iteration.
+    Log comparison metrics to see the evolution of the rewriting for a specific iteration.
 
     :param iteration: The current iteration number for logging.
     :param old_forest: The initial forest to compare against.
@@ -77,7 +78,7 @@ def log_instance_comparison_metrics(
 
 def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER | None = None) -> None:
     """
-    Logs various metrics related to a forest of trees and equivalent subtrees.
+    Log various metrics related to a forest of trees and equivalent subtrees.
 
     This function calculates and logs the metrics that provide insights into the forest's structure, including counts of
     production rules, labeled and unlabeled nodes, and entity/group/collection/relation statistics.
@@ -140,7 +141,7 @@ def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER | N
 
 def log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER) -> None:
     """
-    Logs information about the clusters of equivalent subtrees.
+    Log information about the clusters of equivalent subtrees.
 
     This function processes each cluster of subtrees, extracting the entity labels, count, and maximum label length,
     and then logs this information using MLFlow.
@@ -170,6 +171,7 @@ def log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER) -> None:
 def log_schema(iteration: int, forest: Forest) -> None:
     """
     Log the schema to MLFlow.
+
     :param iteration: The current iteration number for logging.
     :param forest: A forest of tree objects to analyze.
     """

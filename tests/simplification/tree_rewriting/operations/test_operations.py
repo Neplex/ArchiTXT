@@ -37,9 +37,12 @@ from tests.test_strategies import tree_st
     min_support=st.integers(min_value=1, max_value=20),
     metric=st.sampled_from([jaccard, levenshtein, jaro]),
 )
-def test_operation_behavior(tree: Tree, tau: float, min_support: int, metric: METRIC_FUNC, operation: type[Operation]):
+def test_operation_behavior(
+    tree: Tree, tau: float, min_support: int, metric: METRIC_FUNC, operation: type[Operation]
+) -> None:
     """
-    Test the behavior of operations:
+    Test the behavior of operations.
+
     1. Operations should construct valid labeled structures.
     2. Simplification flags should correctly indicate whether a simplification occurred.
     """

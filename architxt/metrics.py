@@ -15,7 +15,7 @@ __all__ = ['Metrics', 'confidence', 'dependency_score', 'redundancy_score']
 
 def confidence(dataframe: pd.DataFrame, column: str) -> float:
     """
-    Computes the confidence score of the functional dependency ``X -> column`` in a DataFrame.
+    Compute the confidence score of the functional dependency ``X -> column`` in a DataFrame.
 
     The confidence score quantifies the strength of the association rule ``X -> column``,
     where ``X`` represents the set of all other attributes in the DataFrame.
@@ -48,7 +48,7 @@ def confidence(dataframe: pd.DataFrame, column: str) -> float:
 
 def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> float:
     """
-    Computes the dependency score of a subset of attributes in a DataFrame.
+    Compute the dependency score of a subset of attributes in a DataFrame.
 
     The dependency score measures the strength of the functional dependency in the given subset of attributes.
     It is defined as the maximum confidence score among all attributes in the subset,
@@ -70,7 +70,7 @@ def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> fl
 
 def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
     """
-    Computes the redundancy score for an entire DataFrame.
+    Compute the redundancy score for an entire DataFrame.
 
     The overall redundancy score measures the fraction of rows that are redundant in at least one subset of attributes
     that satisfies a functional dependency above a given threshold tau.
@@ -112,7 +112,7 @@ class EditDistanceConfig(APTEDConfig):
 
 
 class Metrics:
-    def __init__(self, source: Forest, destination: Forest):
+    def __init__(self, source: Forest, destination: Forest) -> None:
         self._source = source
         self._destination = destination
         self._cluster_cache = {}
@@ -145,8 +145,9 @@ class Metrics:
 
     def similarity(self, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
         """
-        Calculates the similarity between the source and destination trees using the
-        specified metric function and returns the average similarity score.
+        Compute the similarity between the source and destination trees.
+
+        It uses the specified metric function to return the average similarity score.
 
         Higher is better.
 
@@ -160,7 +161,7 @@ class Metrics:
 
     def edit_distance(self) -> int:
         """
-        Computes the total edit distance between corresponding source and destination trees.
+        Compute the total edit distance between corresponding source and destination trees.
 
         The method calculates the edit distance for each pair of source and destination trees using the APTED algorithm.
         The total edit distance is obtained by summing up the individual distances across all pairs of trees.
@@ -177,9 +178,9 @@ class Metrics:
     def cluster_ami(self, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
         """
         Compute the Adjusted Mutual Information (AMI) score between source and destination clusters.
-        The AMI score measures agreement while adjusting for random chance.
 
-        Leverages the `adjusted_mutual_info_score` function from scikit-learn.
+        The AMI score measures agreement while adjusting for random chance.
+        It leverages the `adjusted_mutual_info_score` function from scikit-learn.
 
         Greater is better.
 
@@ -195,9 +196,9 @@ class Metrics:
     def cluster_completeness(self, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
         """
         Compute the completeness score between source and destination clusters.
-        The AMI score measures agreement while adjusting for random chance.
 
-        Leverages the `completeness_score` function from scikit-learn.
+        The AMI score measures agreement while adjusting for random chance.
+        It leverages the `completeness_score` function from scikit-learn.
 
         Greater is better.
 
@@ -212,7 +213,7 @@ class Metrics:
 
     def redundancy(self, *, tau: float = 1.0) -> float:
         """
-        Computes the redundancy score for the entire instance.
+        Compute the redundancy score for the entire instance.
 
         The overall redundancy score measures the fraction of rows that are redundant in at least
         one subset of attributes that satisfies a functional dependency above a given threshold tau.

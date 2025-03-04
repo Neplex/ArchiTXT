@@ -23,7 +23,7 @@ class Operation(ABC):
     :param metric: The metric function used to compute similarity between subtrees.
     """
 
-    def __init__(self, *, tau: float, min_support: int, metric: METRIC_FUNC):
+    def __init__(self, *, tau: float, min_support: int, metric: METRIC_FUNC) -> None:
         self.tau = tau
         self.min_support = min_support
         self.metric = metric
@@ -34,7 +34,8 @@ class Operation(ABC):
 
     def _log_to_mlflow(self, attributes: dict[str, Any]) -> None:
         """
-        Logs a custom operation event with specified attributes to the active MLflow span.
+        Log a custom operation event with specified attributes to the active MLflow span.
+
         If an active span is available, the function attaches a custom event to the span
         for tracking or monitoring in MLflow.
 

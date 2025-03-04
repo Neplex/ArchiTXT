@@ -24,11 +24,11 @@ class FindRelationsOperation(Operation):
     2. Structural modification mode: restructures the tree by creating relation nodes between groups and collections.
     """
 
-    def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any):
+    def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:  # noqa: ARG002
         simplified = False
 
         # Traverse subtrees, starting with the deepest, containing exactly 2 children

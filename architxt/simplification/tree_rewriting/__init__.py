@@ -51,7 +51,7 @@ def rewrite(
     max_workers: int | None = None,
 ) -> Forest:
     """
-    Iteratively rewrites a forest by applying edit operations.
+    Rewrite a forest by applying edit operations iteratively.
 
     :param forest: The forest to perform on.
     :param tau: Threshold for subtree similarity when clustering.
@@ -322,7 +322,7 @@ def apply_operations_worker(
 
 def create_group(subtree: Tree, group_index: int) -> None:
     """
-    Creates a group node from a subtree and inserts it into its parent node.
+    Create a group node from a subtree and inserts it into its parent node.
 
     :param subtree: The subtree to convert into a group.
     :param group_index: The index to use for naming the group.
@@ -340,7 +340,7 @@ def find_groups(
     min_support: int,
 ) -> bool:
     """
-    Finds and creates groups based on the given set of equivalent subtrees.
+    Find and create groups based on the given set of equivalent subtrees.
 
     :param equiv_subtrees: The set of equivalent subtrees.
     :param min_support: Minimum support of groups.

@@ -23,8 +23,10 @@ class Parser:
         *,
         corenlp_url: str,
         max_concurrency: int = 16,
-    ):
+    ) -> None:
         """
+        Create an NLP parser.
+
         :param corenlp_url: The URL of the CoreNLP server.
         :param max_concurrency: Maximum concurrent requests to CoreNLP.
         """
@@ -35,7 +37,9 @@ class Parser:
     def __enter__(self) -> 'Parser':
         return self
 
-    def __exit__(self, exc_type: type[BaseException], exc_value: BaseException, traceback: TracebackType) -> None:
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
+    ) -> None:
         self.corenlp.session.close()
 
     async def parse_batch(
@@ -72,6 +76,7 @@ class Parser:
                     async for sentence, tree in parser.parse_batch(sentences, language="English"):
                         print(sentence)
                         print(tree)
+
         """
         # Convert sync iterable to async for compatibility
         sentences = stream.iterate(sentences)
@@ -155,7 +160,7 @@ class Parser:
 
     async def raw_parse(self, sentence: str, language: str) -> Tree | None:
         """
-        Parses a sentences into syntax trees using CoreNLP server.
+        Parse a sentences into syntax trees using CoreNLP server.
 
         :param sentence: A sentence to parse.
         :param language: The language to use for parsing.
@@ -167,6 +172,7 @@ class Parser:
 
                 with Parser(corenlp_url="http://localhost:9000") as parser:
                     tree = parser.raw_parse(sentence, language='English')
+
         """
         try:
             async with self.semaphore:
@@ -218,6 +224,7 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
     >>> enrich_tree(t, "XXX YYY", [e1, e2, e3], [])
     >>> print(t.pformat(margin=255))
     (S (REL (ENT::overlap XXX YYY) (nested (ENT::nested1 XXX) (ENT::nested2 YYY))))
+
     """
     assert tree is not None
     assert sentence
@@ -264,7 +271,8 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
 
 def fix_coord(tree: Tree, pos: int) -> bool:
     """
-    Fixes the coordination structure in a tree at the specified position `pos`.
+    Fix the coordination structure in a tree at the specified position `pos`.
+
     This function modifies the tree to ensure that the conjunctions are structured correctly
     according to the grammar rules of coordination.
 
@@ -278,6 +286,7 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     True
     >>> print(t.pformat(margin=255))
     (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)))))
+
     """
     assert tree is not None
 
@@ -323,7 +332,8 @@ def fix_coord(tree: Tree, pos: int) -> bool:
 
 def fix_conj(tree: Tree, pos: int) -> bool:
     """
-    Fixes conjunction structures in a tree at the specified position `pos`.
+    Fix conjunction structures in a tree at the specified position `pos`.
+
     If the node at `pos` is labeled 'CONJ', the function flattens any nested conjunctions
     by replacing the node with a new tree that combines its children.
 
@@ -341,6 +351,7 @@ def fix_conj(tree: Tree, pos: int) -> bool:
     True
     >>> print(t.pformat(margin=255))
     (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)) (NP (NNS bananas)))))
+
     """
     assert tree is not None
 
@@ -371,7 +382,7 @@ def fix_conj(tree: Tree, pos: int) -> bool:
 
 def fix_all_coord(tree: Tree) -> None:
     """
-    Fixes all coordination structures in a tree.
+    Fix all coordination structures in a tree.
 
     This function iteratively applies `fix_coord` and `fix_conj` to the tree
     until no further modifications can be made. It ensures that the tree adheres
@@ -389,6 +400,7 @@ def fix_all_coord(tree: Tree) -> None:
     >>> fix_all_coord(t2)
     >>> print(t2.pformat(margin=255))
     (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)) (NP (NNS bananas)))))
+
     """
     assert tree is not None
 
@@ -421,8 +433,10 @@ def fix_all_coord(tree: Tree) -> None:
 
 def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     """
-    Inserts a tree entity into the appropriate position within a parented tree. The function modifies the tree
-    structure to insert an entity at the correct level based on its positions and root position.
+    Insert a tree entity into the appropriate position within a parented tree.
+
+    The function modifies the tree structure to insert an entity at the correct level
+    based on its positions and root position.
 
     :param tree: A tree representing the syntactic tree.
     :param tree_ent: A `TreeEntity` containing the entity name and its positions in the tree.
@@ -470,6 +484,7 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     >>> ent_tree = ins_ent(t, t_ent)
     >>> print(t.pformat(margin=255))
     (S (ENT::XY x y) (ENT::YZ y z))
+
     """
     assert tree is not None
 
@@ -539,7 +554,8 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
 
 def unnest_ent(tree: Tree, pos: int) -> None:
     """
-    Un-nests an entity in a tree at the specified position `pos`.
+    Un-nest an entity in a tree at the specified position `pos`.
+
     If the node at `pos` is labeled as an entity (ENT), the function converts
     the nested structure into a flat structure, creating a relationship (REL)
     between the entity and its nested entities.
@@ -555,6 +571,7 @@ def unnest_ent(tree: Tree, pos: int) -> None:
     >>> unnest_ent(t, 0)
     >>> print(t.pformat(margin=255))
     (S (REL (ENT::person Alice Bob Charlie) (nested (ENT::person Bob) (ENT::person Charlie))))
+
     """
     assert tree is not None
 
@@ -576,16 +593,14 @@ def unnest_ent(tree: Tree, pos: int) -> None:
     tree[pos] = new_tree
 
 
-def ins_rel(tree: Tree, tree_rel: TreeRel) -> None:
+def ins_rel(tree: Tree, _: TreeRel) -> None:
     assert tree is not None
 
 
 def is_conflicting_entity(
     entity: Entity, entity_span: tuple[int, ...], computed_spans: set[tuple[int, ...]], tree: Tree
 ) -> bool:
-    """
-    Checks for conflicts with other entities (overlapping or duplicate spans).
-    """
+    """Check for conflicts with other entities (overlapping or duplicate spans)."""
     if entity_span in computed_spans:
         warnings.warn(
             f"Entity {entity.name} with tokens {entity_span} ('{' '.join(tree.leaves()[i] for i in entity_span)}') "
@@ -606,9 +621,7 @@ def is_conflicting_entity(
 
 
 async def resolve_tree(tree: Tree, resolver: EntityResolver) -> None:
-    """
-    Resolve entities in a tree using the provided entity resolver.
-    """
+    """Resolve entities in a tree using the provided entity resolver."""
     ent_trees = list(tree.subtrees(lambda x: has_type(x, NodeType.ENT)))
     ent_texts = await resolver(' '.join(ent_tree.leaves()) for ent_tree in ent_trees)
 

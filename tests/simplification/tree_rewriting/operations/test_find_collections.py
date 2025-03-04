@@ -3,7 +3,7 @@ from architxt.simplification.tree_rewriting.operations import FindCollectionsOpe
 from architxt.tree import Tree
 
 
-def test_find_collections_simple():
+def test_find_collections_simple() -> None:
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::A y))')
 
     operation = FindCollectionsOperation(tau=0.0, min_support=0, metric=jaccard)
@@ -13,7 +13,7 @@ def test_find_collections_simple():
     assert tree == Tree.fromstring('(COLL::A (GROUP::A x) (GROUP::A y))')
 
 
-def test_find_collections_multi():
+def test_find_collections_multi() -> None:
     tree = Tree.fromstring(
         '(SENT (GROUP::A 1) (GROUP::A 2) (GROUP::B 3) (GROUP::B 4) (GROUP::A 5) (ENT 6) (GROUP::C 7) (GROUP::C 8))'
     )
@@ -27,7 +27,7 @@ def test_find_collections_multi():
     )
 
 
-def test_find_collections_merge():
+def test_find_collections_merge() -> None:
     tree = Tree.fromstring(
         '(SENT (GROUP::A 1) (COLL::A (GROUP::A 2) (GROUP::A 3)) (GROUP::A 4) (COLL::A (GROUP::A 5) (GROUP::A 6)))'
     )
@@ -41,7 +41,7 @@ def test_find_collections_merge():
     )
 
 
-def test_find_collections_naming_only():
+def test_find_collections_naming_only() -> None:
     operation = FindCollectionsOperation(tau=0.0, min_support=0, metric=jaccard, naming_only=True)
 
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::A y))')

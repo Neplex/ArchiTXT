@@ -32,7 +32,6 @@ def schema_st(
     :param collections: If `True`, includes collections in the generated schema.
     :return: A `Schema` object generated based on the provided parameters.
     """
-
     if entities is None:
         entities = draw(st.sets(LABEL_ST, min_size=4, max_size=16))
 
@@ -226,7 +225,7 @@ def tree_st(draw: st.DrawFn, *, schema: Schema | None = None, has_parent: bool |
 
 
 @given(schema=schema_st())
-def test_schema_generation(schema: Schema):
+def test_schema_generation(schema: Schema) -> None:
     """
     Property-based test for verifying generated schemas.
 
@@ -238,7 +237,7 @@ def test_schema_generation(schema: Schema):
 
 
 @given(schema=schema_st(), data=st.data())
-def test_entity_tree_generation(schema: Schema, data: st.DataObject):
+def test_entity_tree_generation(schema: Schema, data: st.DataObject) -> None:
     """
     Property-based test for verifying that `entity_tree_st` generates only entities from the schema.
 
@@ -251,7 +250,7 @@ def test_entity_tree_generation(schema: Schema, data: st.DataObject):
 
 
 @given(schema=schema_st(), data=st.data())
-def test_group_tree_generation(schema: Schema, data: st.DataObject):
+def test_group_tree_generation(schema: Schema, data: st.DataObject) -> None:
     """
     Property-based test for verifying that `group_tree_st` generates only groups and entities from the schema.
 
@@ -268,7 +267,7 @@ def test_group_tree_generation(schema: Schema, data: st.DataObject):
 
 
 @given(tree=tree_st(has_parent=False))
-def test_instance_generation(tree: Tree):
+def test_instance_generation(tree: Tree) -> None:
     """
     Property-based test for verifying generated trees.
 

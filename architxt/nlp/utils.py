@@ -9,9 +9,10 @@ __all__ = ['split_entities', 'split_relations', 'split_sentences']
 
 
 def split_sentences(text: str) -> list[str]:
-    """
-    Remove Unicode Splits the input text into sentences based on the line breaks
-    as it is common for brat annotation formats.
+    r"""
+    Remove Unicode and split the input text into sentences based on the line breaks.
+
+    It is common for brat annotation formats to have one sentence per line.
 
     :param text: The input text to be split into sentences.
     :return: A list of sentences split by line breaks with Unicode removed.
@@ -19,14 +20,14 @@ def split_sentences(text: str) -> list[str]:
     Example:
     >>> split_sentences("This is à test\\nAnothér-test here")
     ['This is a test', 'Another-test here']
-    """
 
+    """
     return unidecode(text).split('\n')
 
 
 def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Generator[list[Entity], None, None]:
     """
-    Splits a list of `Entity` objects based on their occurrence in different sentences.
+    Split a list of `Entity` objects based on their occurrence in different sentences.
 
     Entities are assigned to sentences based on their start and end positions. The function
     returns a generator of lists, where each list contains the entities corresponding to a
@@ -56,6 +57,7 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
     True
     >>> result[1][1].name == "Entity3"
     True
+
     """
     # Sort entities by their start position
     entities = sorted(entities, key=lambda ent: (ent.start, ent.end))
@@ -94,8 +96,9 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
 
 def split_relations(relations: Iterable[Relation], entities: Sequence[Sequence[Entity]]) -> list[list[Relation]]:
     """
-    Splits relations into sentence-specific relationships by mapping entity IDs to their indices
-    within the corresponding sentence's entities.
+    Split relations into sentence-specific relationships.
+
+    It maps the entity IDs to their indices within the corresponding sentence's entities.
 
     :param relations: An iterable of `Relation`.
     :param entities: A sequence of sequences, where each inner sequence contains `Entity` objects
@@ -118,6 +121,7 @@ def split_relations(relations: Iterable[Relation], entities: Sequence[Sequence[E
     True
     >>> result[1][0] == r2
     True
+
     """
     # Initialize an empty list of relationships for each sentence
     relationship: list[list[Relation]] = [[] for _ in range(len(entities))]

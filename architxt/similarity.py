@@ -19,7 +19,7 @@ TREE_CLUSTER = set[tuple[Tree, ...]]
 
 def jaccard(x: Collection[str], y: Collection[str]) -> float:
     """
-    Jaccard similarity
+    Jaccard similarity.
 
     :param x: The first sequence of strings.
     :param y: The second sequence of strings.
@@ -34,6 +34,7 @@ def jaccard(x: Collection[str], y: Collection[str]) -> float:
 
     >>> jaccard(set(), set())
     1.0
+
     """
     x_set = set(x)
     y_set = set(y)
@@ -41,16 +42,12 @@ def jaccard(x: Collection[str], y: Collection[str]) -> float:
 
 
 def levenshtein(x: Collection[str], y: Collection[str]) -> float:
-    """
-    Levenshtein similarity
-    """
+    """Levenshtein similarity."""
     return levenshtein_ratio(sorted(x), sorted(y))
 
 
 def jaro(x: Collection[str], y: Collection[str]) -> float:
-    """
-    Jaro winkler similarity
-    """
+    """Jaro winkler similarity."""
     return jaro_winkler(sorted(x), sorted(y))
 
 
@@ -59,7 +56,8 @@ DEFAULT_METRIC: METRIC_FUNC = jaro  # jaccard, levenshtein, jaro
 
 def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
     """
-    Computes the similarity between two tree objects based on their entity labels and context.
+    Compute the similarity between two tree objects based on their entity labels and context.
+
     The function uses a specified metric (such as Jaccard, Levenshtein, or Jaro-Winkler) to calculate the
     similarity between the labels of entities in the trees. The similarity is computed as recursive weighted
     mean for each tree anestor.
@@ -74,6 +72,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
     >>> similarity(t[0], t[1], metric=jaccard)
     0.5555555555555555
+
     """
     assert x is not None
     assert y is not None
@@ -109,7 +108,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
 
 def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> bool:
     """
-    Determines whether the similarity between two tree objects exceeds a given threshold `tau`.
+    Determine whether the similarity between two tree objects exceeds a given threshold `tau`.
 
     :param x: The first tree object to compare.
     :param y: The second tree object to compare.
@@ -122,6 +121,7 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
     >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
     >>> sim(t[0], t[1], tau=0.5, metric=jaccard)
     True
+
     """
     return similarity(x, y, metric=metric) >= tau
 
@@ -163,10 +163,12 @@ def equiv_cluster(
     trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC, _all_subtrees: bool = True
 ) -> TREE_CLUSTER:
     """
-    Clusters subtrees of a given tree based on their similarity. The clusters are created by applying
-    a distance threshold `tau` to the linkage matrix, which is derived from pairwise subtree similarity calculations.
-    Subtrees that are similar enough (based on `tau` and the `metric`) are grouped into clusters. Each cluster
-    is represented as a tuple of subtrees.
+    Cluster subtrees of a given tree based on their similarity.
+
+    The clusters are created by applying a distance threshold `tau` to the linkage matrix
+    which is derived from pairwise subtree similarity calculations.
+    Subtrees that are similar enough (based on `tau` and the `metric`) are grouped into clusters.
+    Each cluster is represented as a tuple of subtrees.
 
     :param trees: The forest from which to extract and cluster subtrees.
     :param tau: The similarity threshold for clustering.
@@ -221,9 +223,9 @@ def get_equiv_of(
     t: Tree, equiv_subtrees: TREE_CLUSTER, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC
 ) -> tuple[Tree, ...]:
     """
-    Returns the cluster containing the specified tree `t` based on similarity comparisons
-    with the given set of clusters. The clusters are assessed using the provided similarity
-    metric and threshold `tau`.
+    Get the cluster containing the specified tree `t` based on similarity comparisons with the given set of clusters.
+
+    The clusters are assessed using the provided similarity metric and threshold `tau`.
 
     :param t: The tree from which to extract and cluster subtrees.
     :param equiv_subtrees: The set of equivalent subtrees.
