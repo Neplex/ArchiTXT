@@ -43,7 +43,7 @@ class Schema(CFG):
         collections: bool = True,
     ) -> 'Schema':
         """
-        Creates a Schema from a description of groups, relations, and collections.
+        Create a Schema from a description of groups, relations, and collections.
 
         :param groups: A dictionary mapping groups names to sets of entities.
         :param rels: A dictionary mapping relation names to tuples of group names.
@@ -78,7 +78,7 @@ class Schema(CFG):
     @classmethod
     def from_forest(cls, forest: Forest, *, keep_unlabelled: bool = True) -> 'Schema':
         """
-        Creates a Schema from a given forest of trees.
+        Create a Schema from a given forest of trees.
 
         :param forest: The input forest from which to derive the schema.
         :param keep_unlabelled: Whether to keep uncategorized nodes in the schema.
@@ -131,7 +131,8 @@ class Schema(CFG):
 
     def verify(self) -> bool:
         """
-        Verifies the schema against the meta-grammar.
+        Verify the schema against the meta-grammar.
+
         :returns: True if the schema is valid, False otherwise.
         """
         input_text = self.as_cfg()
@@ -157,6 +158,7 @@ class Schema(CFG):
     def group_overlap(self) -> float:
         """
         Get the group overlap ratio as a combined Jaccard index.
+
         The group overlap ratio is computed as the mean of all pairwise Jaccard indices for each pair of groups.
 
         :return: The group overlap ratio as a float value between 0 and 1.
@@ -169,7 +171,7 @@ class Schema(CFG):
 
     @property
     def group_balance_score(self) -> float:
-        """
+        r"""
         Get the balance score of attributes across groups.
 
         The balance metric (B) measures the dispersion of attributes (coefficient of variation),
@@ -178,12 +180,12 @@ class Schema(CFG):
         a lower balance metric suggests that some groups may be too large (wide) or too small (fragmented).
 
         .. math::
-            B = 1 - \frac{\sigma(A)}{\mu(A)}
+            B = 1 - \\frac{\\sigma(A)}{\\mu(A)}
 
         Where:
             - :math:`A`: The set of attribute counts for all groups.
-            - :math:`\mu(A)`: The mean number of attributes per group.
-            - :math:`\sigma(A)`: The standard deviation of attribute counts across groups.
+            - :math:`\\mu(A)`: The mean number of attributes per group.
+            - :math:`\\sigma(A)`: The standard deviation of attribute counts across groups.
 
         returns: Balance metric (B), a measure of attribute dispersion.
            - :math:`B \approx 1`: Attributes are evenly distributed.
@@ -205,14 +207,16 @@ class Schema(CFG):
 
     def as_cfg(self) -> str:
         """
-        Converts the schema to a CFG representation.
+        Convert the schema to a CFG representation.
+
         :returns: The schema as a list of production rules, each terminated by a semicolon.
         """
         return '\n'.join(f"{prod};" for prod in self.productions())
 
     def as_sql(self) -> str:
         """
-        Converts the schema to an SQL representation.
+        Convert the schema to an SQL representation.
+
         TODO: Implement this method.
         :returns: The schema as an SQL creation script.
         """
@@ -220,7 +224,8 @@ class Schema(CFG):
 
     def as_cypher(self) -> str:
         """
-        Converts the schema to a Cypher representation.
+        Convert the schema to a Cypher representation.
+
         It only define indexes and constraints as properties graph database do not have fixed schema.
         TODO: Implement this method.
         :returns: The schema as a Cypher creation script defining constraints and indexes.
@@ -229,9 +234,9 @@ class Schema(CFG):
 
     def extract_valid_trees(self, forest: Forest) -> Forest:
         """
-        Filters and returns a valid instance (according to the schema) of the provided forest by removing any subtrees
-        with labels that do not match valid labels.
-        This method also gets rid of redundant collections.
+        Filter and return a valid instance (according to the schema) of the provided forest.
+
+        It removes any subtrees with labels that do not match valid labels and gets rid of redundant collections.
 
         :param forest: The input forest to be cleaned.
         :return: A list of valid trees according to the schema.

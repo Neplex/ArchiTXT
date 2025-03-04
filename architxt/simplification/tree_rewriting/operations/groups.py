@@ -16,16 +16,18 @@ __all__ = [
 
 class FindSubGroupsOperation(Operation):
     """
-    Identifies and create subgroup of entities for each subtree if the support of the newly created subgroup is greater
-    that the support of the subtree.
+    Identifies and create subgroup of entities for each subtree.
+
+    It creates a group only if the support of the newly created subgroup is greater than the support of the subtree.
     """
 
     def _create_and_evaluate_subgroup(
         self, subtree: Tree, sub_group: tuple[Tree, ...], min_support: int, equiv_subtrees: TREE_CLUSTER
     ) -> tuple[Tree, int] | None:
         """
-        Attempts to add a new subtree by creating a new `GROUP` for a given `sub_group` of entities, and evaluates its
-        support within the `equiv_subtrees` equivalence class.
+        Attempt to add a new subtree by creating a new `GROUP` for a given `sub_group` of entities.
+
+        It also evaluates the new group support within the `equiv_subtrees` equivalence class.
 
         :param subtree: The tree structure within which a potential subgroup will be created.
         :param sub_group: A tuple of `Tree` entities to be grouped into a new `GROUP` node.
@@ -170,8 +172,9 @@ class FindSubGroupsOperation(Operation):
 
 class MergeGroupsOperation(Operation):
     """
-    Attempts to add `ENT` to existing `GROUP` within a tree by forming new `GROUP` nodes that does not reduce the
-    support of the given group.
+    Attempt to add `ENT` to existing `GROUP` within a tree.
+
+    It tries to form a new `GROUP` nodes that does not reduce the support of the given group.
     """
 
     def _merge_groups_inner(
@@ -181,8 +184,10 @@ class MergeGroupsOperation(Operation):
         equiv_subtrees: TREE_CLUSTER,
     ) -> tuple[Tree, int] | None:
         """
-        Attempts to merge specified `GROUP` and `ENT` nodes within a subtree by replacing them with
-        a single `GROUP` node, given that it meets minimum support and subtree similarity requirements.
+        Attempt to merge specified `GROUP` and `ENT` nodes within a subtree.
+
+        It tries to replace them with a single `GROUP` node,
+        given that it meets minimum support and subtree similarity requirements.
 
         :param subtree: The subtree to be modified during the merging process.
         :param combined_groups: A tuple containing subtrees or groups of subtrees to combine.

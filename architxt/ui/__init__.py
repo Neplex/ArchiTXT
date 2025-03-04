@@ -54,7 +54,7 @@ class Edge(_Edge):
 
 @st.fragment()
 def graph(schema: Schema) -> None:
-    """Function to render schema graph visualization"""
+    """Render schema graph visualization."""
     nodes = set()
     edges = set()
 
@@ -75,7 +75,7 @@ def graph(schema: Schema) -> None:
 
 @st.fragment()
 def dataframe(forest: Forest) -> None:
-    """Function to render instance DataFrames"""
+    """Render instance DataFrames."""
     final_tree = Tree('ROOT', deepcopy(forest))
     group_name = st.selectbox('Group', sorted(final_tree.groups()))
     st.dataframe(final_tree.group_instances(group_name), use_container_width=True)

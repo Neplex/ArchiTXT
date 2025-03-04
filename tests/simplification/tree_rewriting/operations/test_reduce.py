@@ -3,7 +3,7 @@ from architxt.simplification.tree_rewriting.operations import ReduceBottomOperat
 from architxt.tree import Tree
 
 
-def test_reduce_bottom_simple():
+def test_reduce_bottom_simple() -> None:
     tree = Tree.fromstring('(SENT (1 (2 (ENT::A aaa) (ENT::B bbb))))')
 
     operation = ReduceBottomOperation(tau=0.7, min_support=0, metric=jaccard)
@@ -13,7 +13,7 @@ def test_reduce_bottom_simple():
     assert tree == Tree.fromstring('(SENT (1 (ENT::A aaa) (ENT::B bbb)))')
 
 
-def test_reduce_bottom_nested():
+def test_reduce_bottom_nested() -> None:
     tree = Tree.fromstring('(SENT (1 (2 (ENT::A aaa) (ENT::B bbb)) (3 (ENT::C ccc))))')
 
     operation = ReduceBottomOperation(tau=0.7, min_support=0, metric=jaccard)
@@ -23,7 +23,7 @@ def test_reduce_bottom_nested():
     assert tree == Tree.fromstring('(SENT (1 (ENT::A aaa) (ENT::B bbb) (ENT::C ccc)))')
 
 
-def test_reduce_bottom_no_reduction():
+def test_reduce_bottom_no_reduction() -> None:
     tree = Tree.fromstring('(SENT (ENT::A aaa) (ENT::B bbb))')
 
     operation = ReduceBottomOperation(tau=0.7, min_support=0, metric=jaccard)
@@ -33,7 +33,7 @@ def test_reduce_bottom_no_reduction():
     assert tree == Tree.fromstring('(SENT (ENT::A aaa) (ENT::B bbb))')
 
 
-def test_reduce_top_simple():
+def test_reduce_top_simple() -> None:
     tree = Tree.fromstring('(SENT (1 (2 (ENT::A aaa) (ENT::B bbb))))')
 
     operation = ReduceTopOperation(tau=0.7, min_support=0, metric=jaccard)
@@ -43,7 +43,7 @@ def test_reduce_top_simple():
     assert tree == Tree.fromstring('(SENT (2 (ENT::A aaa) (ENT::B bbb)))')
 
 
-def test_reduce_top_nested():
+def test_reduce_top_nested() -> None:
     tree = Tree.fromstring('(SENT (1 (2 (ENT::A aaa) (ENT::B bbb)) (3 (ENT::C ccc))))')
 
     operation = ReduceTopOperation(tau=0.7, min_support=0, metric=jaccard)
@@ -53,7 +53,7 @@ def test_reduce_top_nested():
     assert tree == Tree.fromstring('(SENT (2 (ENT::A aaa) (ENT::B bbb)) (3 (ENT::C ccc)))')
 
 
-def test_reduce_top_no_reduction():
+def test_reduce_top_no_reduction() -> None:
     tree = Tree.fromstring('(SENT (ENT::A aaa) (ENT::B bbb))')
 
     operation = ReduceTopOperation(tau=0.7, min_support=0, metric=jaccard)

@@ -11,5 +11,5 @@ from architxt.tree import NodeLabel, NodeType
         ((NodeLabel(NodeType.ENT, 'label1'), NodeLabel(NodeType.ENT, 'label2')), 2),
     ],
 )
-def test_label_hash(labels: list[NodeLabel], count: int):
+def test_label_hash(labels: list[NodeLabel], count: int) -> None:
     assert len(set(labels)) == count

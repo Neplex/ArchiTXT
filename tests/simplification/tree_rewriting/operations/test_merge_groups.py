@@ -3,7 +3,7 @@ from architxt.simplification.tree_rewriting.operations import MergeGroupsOperati
 from architxt.tree import Tree
 
 
-def test_merge_groups_simple():
+def test_merge_groups_simple() -> None:
     tree = Tree.fromstring('(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2)) (GROUP::3 (ENT::C 3) (ENT::D 4))))')
 
     operation = MergeGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
@@ -18,7 +18,7 @@ def test_merge_groups_simple():
     assert tree == Tree.fromstring('(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4))))')
 
 
-def test_merge_groups_extend():
+def test_merge_groups_extend() -> None:
     tree = Tree.fromstring('(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3) (GROUP::3 (ENT::D 4) (ENT::E 5))))')
 
     operation = MergeGroupsOperation(tau=0.8, min_support=0, metric=jaccard)

@@ -120,20 +120,24 @@ exclude_also = [
 target-version = "py310"
 line-length = 120
 src = ["architxt", "tests"]
-exclude = ["architxt/grammar"]
+exclude = ["architxt/grammar", "dev"]
 
 [tool.ruff.lint]
 select = [
     "E4", # Pycodestyle error codes that are safe to auto-fix
     "E7",
     "E9",
+    "A", # builtins
+    "ARG", # Unused arguments
     "C4", # Comprehensions
+    "C90", # mccabe complexity
+    "D", # Documentation check
     "F", # Flake8 rules
+    "N", # pep8 naming
     "I", # isort rules for import ordering
     "ICN", # Import conventions
     "TID", # Tidy imports
     "UP", # pyupgrade (for safe code modernization)
-    "C4", # Comprehension simplifications
     "SIM", # Code simplifications
     "LOG", # Logger usage
     "PIE", # Miscellaneous
@@ -142,11 +146,23 @@ select = [
     "NPY", # NumPy checks
     "PERF", # Performance anti-pattern checks
     "FURB", # Old Python code
-    "PT", # Pytesst checks
+    "PT", # Pytest checks
     "RET", # Returns
     "PTH", # Prefer Pathlib
     "TC", # Type checking
+    "ANN", # Type annotations
+    "EM", # Error messages
+    "TD", # Todos format
+    "FLY", # Prefer f-string
+    "TRY", # Exceptions anti-pattern checks
     "SLOT",
+    "PYI",
+]
+ignore = [
+    "ANN401", # Any typing
+    "D1", # Undocumented
+    "D203", # Incorrect blank line before class
+    "D212", # Multi line summary first line
 ]
 
 [tool.ruff.format]

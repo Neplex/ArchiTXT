@@ -1,6 +1,4 @@
-"""
-Dataset loader for BRAT (BRAT Rapid Annotation Tool) format
-"""
+"""Dataset loader for BRAT (BRAT Rapid Annotation Tool) format."""
 
 from collections.abc import Generator, Iterable
 from pathlib import Path
@@ -23,7 +21,7 @@ def convert_brat_entities(
     mapping: dict[str, str] | None = None,
 ) -> Generator[Entity, None, None]:
     """
-    Converts a list of `BratEntity` objects into `Entity` objects, while filtering out certain types of tags.
+    Convert a list of `BratEntity` objects into `Entity` objects, while filtering out certain types of tags.
 
     :param entities: An iterable of `BratEntity` objects to convert.
     :param allow_list: A set of entity types to exclude from the output. If None, no filtering is applied.
@@ -43,6 +41,7 @@ def convert_brat_entities(
     PERSON
     >>> print(ents[1].name)
     FREQUENCE
+
     """
     allow_list = allow_list or set()
     mapping = mapping or {}
@@ -71,7 +70,7 @@ def convert_brat_relations(
     mapping: dict[str, str] | None = None,
 ) -> Generator[Relation, None, None]:
     """
-    Converts a list of `BratRelation` objects into `Relation` objects while filtering out certain types of relations.
+    Convert a list of `BratRelation` objects into `Relation` objects while filtering out certain types of relations.
 
     :param relations: An iterable of `BratRelation` objects to convert.
     :param allow_list: A set of relation types to exclude from the output. If None, no filtering is applied.
@@ -88,6 +87,7 @@ def convert_brat_relations(
     1
     >>> print(rels[0].name)
     PART-OF
+
     """
     allow_list = allow_list or set()
     mapping = mapping or {}
@@ -114,7 +114,7 @@ def convert_brat_example(
     relations_mapping: dict[str, str] | None = None,
 ) -> Generator[AnnotatedSentence, None, None]:
     """
-    Converts a Brat example object into annotated sentences, filtering and mapping entities and relations as specified.
+    Convert a Brat example into annotated sentences, filtering and mapping entities and relations as specified.
 
     :param example: An `Example` object containing the .txt and .ann file data.
     :param entities_filter: A set of entity types to exclude from the output. If None, no filtering is applied.

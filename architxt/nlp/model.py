@@ -8,7 +8,7 @@ __all__ = ['AnnotatedSentence', 'Entity', 'Relation', 'TreeEntity', 'TreeRel']
 
 @dataclass(slots=True)
 class Entity:
-    """A named entity"""
+    """A named entity."""
 
     name: str
     start: int

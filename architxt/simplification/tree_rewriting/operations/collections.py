@@ -1,3 +1,4 @@
+# noqa: A005
 from copy import deepcopy
 from itertools import groupby
 from typing import Any
@@ -24,11 +25,11 @@ class FindCollectionsOperation(Operation):
                                      the tree by creating collection nodes.
     """
 
-    def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any):
+    def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:  # noqa: ARG002
         simplified = False
 
         for subtree in sorted(

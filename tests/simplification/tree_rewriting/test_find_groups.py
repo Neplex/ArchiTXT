@@ -2,7 +2,7 @@ from architxt.simplification.tree_rewriting import create_group, find_groups
 from architxt.tree import Tree
 
 
-def test_create_group_with_parent():
+def test_create_group_with_parent() -> None:
     tree = Tree.fromstring('(parent (1 (ENT::X xxx) (ENT::Y yyy)))')
 
     create_group(tree[0], 0)
@@ -10,7 +10,7 @@ def test_create_group_with_parent():
     assert tree == Tree.fromstring('(parent (GROUP::0 (ENT::X xxx) (ENT::Y yyy)))')
 
 
-def test_create_group_without_parent():
+def test_create_group_without_parent() -> None:
     tree = Tree.fromstring('(1 (ENT::X xxx) (ENT::Y yyy))')
 
     create_group(tree, 0)
@@ -18,7 +18,7 @@ def test_create_group_without_parent():
     assert tree == Tree.fromstring('(GROUP::0 (ENT::X xxx) (ENT::Y yyy))')
 
 
-def test_create_group_recursive():
+def test_create_group_recursive() -> None:
     tree = Tree.fromstring('(parent (1 (ENT::X xxx) (2 (ENT::Y yyy) (3 (ENT::Z zzz)))))')
 
     create_group(tree[0], 0)
@@ -26,13 +26,13 @@ def test_create_group_recursive():
     assert tree == Tree.fromstring('(parent (GROUP::0 (ENT::X xxx) (ENT::Y yyy) (ENT::Z zzz)))')
 
 
-def test_find_groups_no_simplification():
+def test_find_groups_no_simplification() -> None:
     has_simplified = find_groups(equiv_subtrees=set(), min_support=3)
 
     assert not has_simplified
 
 
-def test_find_groups_with_parent():
+def test_find_groups_with_parent() -> None:
     tree = Tree.fromstring('(parent (1 (ENT::X xxx) (ENT::Y yyy)))')
 
     has_simplified = find_groups(
@@ -46,7 +46,7 @@ def test_find_groups_with_parent():
     assert tree == Tree.fromstring('(parent (GROUP::0 (ENT::X xxx) (ENT::Y yyy)))')
 
 
-def test_find_group_without_parent():
+def test_find_group_without_parent() -> None:
     tree = Tree.fromstring('(SENT (ENT::X xxx) (ENT::Y yyy))')
 
     has_simplified = find_groups(
@@ -60,7 +60,7 @@ def test_find_group_without_parent():
     assert tree == Tree.fromstring('(GROUP::0 (ENT::X xxx) (ENT::Y yyy))')
 
 
-def test_find_group_largest():
+def test_find_group_largest() -> None:
     tree = Tree.fromstring('(1 (2 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
     has_simplified = find_groups(
@@ -75,7 +75,7 @@ def test_find_group_largest():
     assert tree == Tree.fromstring('(1 (GROUP::1 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
 
-def test_find_group_frequent():
+def test_find_group_frequent() -> None:
     tree = Tree.fromstring('(1 (2 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
     has_simplified = find_groups(
@@ -90,7 +90,7 @@ def test_find_group_frequent():
     assert tree == Tree.fromstring('(1 (GROUP::0 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
 
-def test_find_groups_multi():
+def test_find_groups_multi() -> None:
     tree = Tree.fromstring(
         '(SENT (1 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz) (2 (ENT::A aaa) (ENT::B bbb) (ENT::C ccc)))'
     )

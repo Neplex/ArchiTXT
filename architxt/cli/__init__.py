@@ -167,11 +167,12 @@ async def load_or_cache_corpus(
             console.print(f'[blue]Saving cache file to:[/] {corpus_cache_path.absolute()}')
             await write_cache(forest, corpus_cache_path)
 
-        return forest
-
     except Exception as e:
         console.print(f'[red]Error while processing corpus:[/] {e}')
         raise
+
+    else:
+        return forest
 
 
 async def load_corpus(
@@ -269,9 +270,7 @@ def cli_run(
     shuffle: bool = typer.Option(False, help="Shuffle the corpus data before processing to introduce randomness."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
 ) -> None:
-    """
-    Automatically structure a corpus as a database instance and print the database schema as a CFG.
-    """
+    """Automatically structure a corpus as a database instance and print the database schema as a CFG."""
     forest = asyncio.run(
         load_corpus_batch(
             corpus_path,
@@ -378,9 +377,7 @@ def cli_run(
 
 
 def cli_ui(ctx: typer.Context) -> None:
-    """
-    Launch the web-based UI using Streamlit.
-    """
+    """Launch the web-based UI using Streamlit."""
     try:
         from architxt import ui
 
@@ -400,9 +397,7 @@ def cli_stats(
     corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
     cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
 ) -> None:
-    """
-    Display overall corpus statistics.
-    """
+    """Display overall corpus statistics."""
     forest = asyncio.run(
         load_corpus_batch(
             corpus_path,
@@ -460,9 +455,7 @@ def cli_largest_tree(
     corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
     cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
 ) -> None:
-    """
-    Display the largest tree in the corpus along with its sentence and structure.
-    """
+    """Display the largest tree in the corpus along with its sentence and structure."""
     forest = asyncio.run(
         load_corpus_batch(
             corpus_path,
@@ -490,9 +483,7 @@ def cli_largest_tree(
 
 
 def main() -> None:
-    """
-    Main entry point for the CLI.
-    """
+    """Run the CLI."""
     mlflow.set_experiment('ArchiTXT')
 
     app = typer.Typer(

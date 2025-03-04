@@ -82,7 +82,7 @@ class Tree(ParentedTree):
     @cache
     def height(self) -> int:
         """
-        Return the height of the tree.
+        Get the height of the tree.
 
         Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
@@ -92,13 +92,14 @@ class Tree(ParentedTree):
         3
         >>> t[0, 0].height()
         2
+
         """
         return super().height()
 
     @cache
     def depth(self) -> int:
         """
-        Returns the depth of the tree.
+        Get the depth of the tree.
 
         Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
@@ -108,13 +109,14 @@ class Tree(ParentedTree):
         2
         >>> t[0, 0].depth()
         3
+
         """
         return len(self.treeposition()) + 1
 
     @cache
     def groups(self) -> set[str]:
         """
-        Returns a set of group names found within the tree.
+        Get the set of group names present within the tree.
 
         :return: A set of unique group names within the tree.
 
@@ -122,6 +124,7 @@ class Tree(ParentedTree):
         >>> t = Tree.fromstring('(S (GROUP::A x) (GROUP::B y) (X (GROUP::C z)))')
         >>> sorted(t.groups())
         ['A', 'B', 'C']
+
         """
         result = set()
 
@@ -137,7 +140,7 @@ class Tree(ParentedTree):
     @cache
     def group_instances(self, group_name: str) -> pd.DataFrame:
         """
-        Returns a DataFrame containing all instances of a specified group within the tree.
+        Get a DataFrame containing all instances of a specified group within the tree.
 
         Each row in the DataFrame represents an instance of the group, and each column represents an entity in that group, with the value being a concatenated string of that entity's leaves.
 
@@ -156,6 +159,7 @@ class Tree(ParentedTree):
         >>> t.group_instances("B")
             person animal
         0  Charlie    dog
+
         """
         dataframes = []
         records = []
@@ -178,7 +182,7 @@ class Tree(ParentedTree):
     @cache
     def entities(self) -> tuple['Tree', ...]:
         """
-        Returns a tuple of subtrees that are entities.
+        Get a tuple of subtrees that are entities.
 
         Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
@@ -187,6 +191,7 @@ class Tree(ParentedTree):
         >>> del t[0]
         >>> list(t.entities()) == [t[0, 0], t[0, 1]]
         True
+
         """
         result = []
         for child in self:
@@ -201,7 +206,7 @@ class Tree(ParentedTree):
     @cache
     def entity_labels(self) -> set[str]:
         """
-        Return a set of entity labels present in the tree.
+        Get the set of entity labels present in the tree.
 
         Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
@@ -212,25 +217,27 @@ class Tree(ParentedTree):
         >>> del t[0]
         >>> sorted(t.entity_labels())
         ['animal', 'person']
+
         """
         return {node.label().name for node in self.entities()}
 
     @cache
     def entity_label_count(self) -> Counter[NodeLabel]:
         """
-        Returns a Counter object that counts the labels of entity subtrees.
+        Return a Counter object that counts the labels of entity subtrees.
 
         Example:
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
         >>> t.entity_label_count()
         Counter({'person': 2, 'fruit': 1, 'animal': 1})
+
         """
         return Counter(ent.label().name for ent in self.entities())
 
     @cache
     def has_duplicate_entity(self) -> bool:
         """
-        Checks if there are duplicate entity labels.
+        Check if there are duplicate entity labels.
 
         Example:
         >>> from architxt.tree import Tree
@@ -239,13 +246,14 @@ class Tree(ParentedTree):
         True
         >>> t[0].has_duplicate_entity()
         False
+
         """
         return any(v > 1 for v in self.entity_label_count().values())
 
     @cache
     def has_entity_child(self) -> bool:
         """
-        Checks if there is at least one entity as direct children.
+        Check if there is at least one entity as direct children.
 
         Example:
         >>> from architxt.tree import Tree
@@ -254,6 +262,7 @@ class Tree(ParentedTree):
         False
         >>> t[0].has_entity_child()
         True
+
         """
         return any(has_type(child, NodeType.ENT) for child in self)
 
@@ -263,12 +272,13 @@ class Tree(ParentedTree):
     def merge(self, tree: 'Tree') -> 'Tree':
         """
         Merge two trees into one.
+
         The root of both trees becomes one while maintaining the level of each subtree.
         """
         return type(self)('SENT', deepcopy([*self, *tree]))
 
     def __reset_cache(self) -> None:
-        """Reset cached properties"""
+        """Reset cached properties."""
         self.height.cache_clear()
         self.depth.cache_clear()
         self.groups.cache_clear()
@@ -325,7 +335,8 @@ class Tree(ParentedTree):
 
     def pop(self, pos: int = -1, *, recursive: bool = True) -> 'Tree | str':
         """
-        Deletes an element from the treeat the specified position `pos`.
+        Delete an element from the tree at the specified position `pos`.
+
         If the parent tree becomes empty after the deletion, recursively deletes the parent node.
 
         :param pos: The position (index) of the element to delete in the tree.
@@ -345,6 +356,7 @@ class Tree(ParentedTree):
         >>> subtree = t[0].pop(0, recursive=False)
         >>> print(t.pformat(margin=255))
         (S (VP ))
+
         """
         child = super().pop(pos)
         self.__reset_cache()
@@ -378,6 +390,7 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
     False
     >>> has_type(tree[1], {NodeType.ENT, NodeType.REL})
     True
+
     """
     assert t is not None
 
@@ -406,8 +419,10 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
 
 def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bool:
     """
-    Reduces a subtree within a tree at the specified position `pos`. The reduction occurs only
-    if the subtree at `pos` has exactly one child, or if it does not match a specific set of node types.
+    Reduces a subtree within a tree at the specified position `pos`.
+
+    The reduction occurs only if the subtree at `pos` has exactly one child,
+    or if it does not match a specific set of node types.
     If the subtree can be reduced, its children are lifted into the parent node at `pos`.
 
     :param tree: The tree in which the reduction will take place.
@@ -425,6 +440,7 @@ def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bo
     True
     >>> print(t.pformat(margin=255))
     (S Alice (VP (VB like) (NNS apples)))
+
     """
     assert tree is not None
 
@@ -444,8 +460,10 @@ def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bo
 
 def reduce_all(tree: Tree, skip_types: set[str | NodeType] | None = None) -> None:
     """
-    Recursively attempts to reduce all eligible subtrees in a tree. The reduction process continues
-    until no further reductions are possible. Subtrees can be skipped if their types are listed in `skip_types`.
+    Recursively attempts to reduce all eligible subtrees in a tree.
+
+    The reduction process continues until no further reductions are possible.
+    Subtrees can be skipped if their types are listed in `skip_types`.
 
     :param tree: The tree in which reductions will be attempted.
     :param skip_types: A set of `NodeType` or string labels that should be kept, or `None` to reduce based on length.
@@ -456,6 +474,7 @@ def reduce_all(tree: Tree, skip_types: set[str | NodeType] | None = None) -> Non
     >>> reduce_all(t)
     >>> print(t.pformat(margin=255))
     (S Alice (VP likes apples))
+
     """
     assert tree is not None
 

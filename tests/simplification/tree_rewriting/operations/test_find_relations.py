@@ -3,7 +3,7 @@ from architxt.simplification.tree_rewriting.operations import FindRelationsOpera
 from architxt.tree import Tree
 
 
-def test_find_relations_simple():
+def test_find_relations_simple() -> None:
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::B y))')
 
     operation = FindRelationsOperation(tau=0.0, min_support=0, metric=jaccard)
@@ -13,7 +13,7 @@ def test_find_relations_simple():
     assert tree == Tree.fromstring('(REL::A<->B (GROUP::A x) (GROUP::B y))')
 
 
-def test_find_relations_collection():
+def test_find_relations_collection() -> None:
     tree = Tree.fromstring('(SENT (GROUP::A x) (COLL::B (GROUP::B 1) (GROUP::B 2)))')
 
     operation = FindRelationsOperation(tau=0.0, min_support=0, metric=jaccard)
@@ -25,7 +25,7 @@ def test_find_relations_collection():
     )
 
 
-def test_find_relations_collection_same_group():
+def test_find_relations_collection_same_group() -> None:
     tree = Tree.fromstring('(SENT (GROUP::A x) (COLL::A (GROUP::A 1) (GROUP::A 2)))')
 
     operation = FindRelationsOperation(tau=0.0, min_support=0, metric=jaccard)
@@ -35,7 +35,7 @@ def test_find_relations_collection_same_group():
     assert tree == Tree.fromstring('(SENT (GROUP::A x) (COLL::A (GROUP::A 1) (GROUP::A 2)))')
 
 
-def test_find_relations_naming_only():
+def test_find_relations_naming_only() -> None:
     operation = FindRelationsOperation(tau=0.0, min_support=0, metric=jaccard, naming_only=True)
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::B y))')
 
