@@ -9,7 +9,7 @@ ENV POETRY_NO_INTERACTION=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml ./
 
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --extras all --without dev --no-root
 
@@ -19,7 +19,7 @@ WORKDIR /app
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH="/app:${PYTHONPATH}" \
+    PYTHONPATH="/app" \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONOPTIMIZE=1 \
