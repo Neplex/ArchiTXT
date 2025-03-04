@@ -8,8 +8,8 @@ from multiprocessing.managers import ValueProxy
 from multiprocessing.synchronize import Barrier
 
 import mlflow
-from mlflow.entities import LiveSpan, SpanEvent, Trace
-from mlflow.tracing.trace_manager import _Trace
+from mlflow.entities import LiveSpan, Span, SpanEvent
+from mlflow.tracing.trace_manager import InMemoryTraceManager
 from nltk import TreePrettyPrinter
 from opentelemetry import context, propagate
 from tqdm import tqdm, trange
@@ -270,29 +270,34 @@ def apply_operations(
                 early_exit,
                 simplification_operation,
                 barrier,
-                mlflow_run_id=mlflow.active_run().info.run_id,
-                span_context=span_context,
-                trace={},
+                {
+                    'span_context': span_context,
+                    'mlflow_run_id': mlflow.active_run().info.run_id,
+                },
             )
             for idx, chunk in enumerate(chunks)
         ]
 
-        # Flatten the results and extract the simplification operation ID if any
-        forest = [tree for future in as_completed(futures) for tree in future.result()[0]]
+        forest = []
+        trace_manager = InMemoryTraceManager.get_instance()
+
         for future in as_completed(futures):
-            trace = future.result()[1]
+            trees, spans = future.result()
+            forest.extend(trees)
+
+            # Register spans from sub-process in the main process cause the spans are stored in the sub-process memory
+            for span in spans:
+                new_span = Span.from_dict(span)
+                trace_manager.register_span(
+                    LiveSpan.from_immutable_span(
+                        new_span,
+                        new_span.parent_id,
+                        new_span.attributes["mlflow.traceRequestId"],
+                        span["context"]["trace_id"],
+                    )
+                )
+
         op_id = simplification_operation.get()
-
-    trace_id = mlflow.get_current_active_span()._trace_id
-    request_id = mlflow.get_current_active_span().request_id
-    trace = Trace(info=trace["info"], data=trace["data"]).from_dict(trace)
-    instance_mlflow_manager = mlflow.tracing.utils.mlflow.tracing.trace_manager.InMemoryTraceManager.get_instance()
-    span_dict = {}
-    for span in trace.data.spans:
-        span_dict[span.span_id] = LiveSpan.from_immutable_span(span, span.parent_id, request_id, trace_id)
-
-    new_trace = _Trace(info=trace.info, span_dict=span_dict)
-    instance_mlflow_manager._traces[request_id] = new_trace
 
     return forest, op_id if op_id >= 0 else None
 
@@ -305,9 +310,7 @@ def apply_operations_worker(
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
-    mlflow_run_id: str,
-    span_context: dict[str, str],
-    trace: dict[str, dict[str, str]],
+    _context: dict[str, str | int | list[dict[str, str]]],
 ) -> Forest:
     """
     Apply the given operation to the forest.
@@ -320,11 +323,13 @@ def apply_operations_worker(
                        If `False`, all operations are applied.
     :param simplification_operation: A shared integer value to store the index of the operation that simplified a tree.
     :param barrier: A barrier to synchronize the workers before starting the next operation.
+    :param _context: The Mlflow context information to pass to the workers.
     :return: The rewritten forest and the tuple of flags for each tree indicating if simplifications occurred.
     """
     equiv_subtrees = shared_equiv_subtrees.get()
-    span = propagate.extract(span_context)
-    with mlflow.start_run(run_id=mlflow_run_id, nested=True):
+    span = propagate.extract(_context["span_context"])
+    new_spans = []
+    with mlflow.start_run(run_id=_context["mlflow_run_id"], nested=True):
         for op_id, (name, operation) in enumerate(edit_ops):
             op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees)
             context.attach(span)
@@ -341,14 +346,12 @@ def apply_operations_worker(
                 # If simplification has occurred in any worker, stop processing further operations.
                 if early_exit and simplification_operation.value != -1:
                     break
-                mlflow.log_metric('simplified', sum(simplified), step=idx)
 
-        manager_instance = mlflow.tracing.utils.mlflow.tracing.trace_manager.InMemoryTraceManager.get_instance()
-        current_span = context.get_current()
-        trace_id = current_span[next(iter(current_span.keys()))].get_span_context().trace_id
-        request_id = manager_instance.get_request_id_from_trace_id(trace_id)
-        trace = manager_instance._traces[request_id].to_mlflow_trace().to_dict()
-    return forest, trace
+                # Get the current span and convert it to a dictionary to add it to the context
+                current_span = mlflow.get_current_active_span().to_immutable_span().to_dict()
+                new_spans.append(current_span)
+
+    return forest, new_spans
 
 
 def create_group(subtree: Tree, group_index: int) -> None:
