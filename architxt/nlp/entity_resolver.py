@@ -2,12 +2,9 @@ import contextlib
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from types import TracebackType
-from typing import cast
 
-import spacy
 from googletrans import Translator
-from scispacy.linking import EntityLinker
-from spacy.language import Doc, Language
+from scispacy.candidate_generation import CandidateGenerator
 from unidecode import unidecode
 
 
@@ -23,32 +20,33 @@ class EntityResolver(ABC):
 class ScispacyResolver(EntityResolver):
     def __init__(
         self,
-        model: Language | str = 'en_core_sci_sm',
         *,
         kb_name: str = 'umls',
         cleanup: bool = False,
         translate: bool = False,
         batch_size: int = 8,
+        threshold: float = 0.7,
+        resolve_text: bool = True,
     ) -> None:
         """
         An entity resolver based on SciSpaCy entity linker.
 
-        :param model: The SpaCy model to use.
         :param kb_name: The name of the knowledge base to use: `umls`, `mesh`, `rxnorm`, `go`, or `hpo`.
         :param cleanup: True if the resolved text should be uniformized.
         :param translate: True if the text should be translated if it does not correspond to the model language.
         :param batch_size: Number of texts to process in parallel (useful for large corpora).
+        :param threshold : The threshold that an entity candidate must reach to be considered.
+        :param resolve_text: True if the resolver should return the canonical name instead of the identifier
         """
-        self.nlp = spacy.load(model) if isinstance(model, str) else model
         self.translate = translate
         self.cleanup = cleanup
         self.batch_size = batch_size
-        self.exit_stack = contextlib.AsyncExitStack()
+        self.threshold = threshold
         self.kb_name = kb_name
+        self.resolve_text = resolve_text
 
-        linker_config = {"resolve_abbreviations": True, "linker_name": self.kb_name}
-        linker = self.nlp.add_pipe("scispacy_linker", config=linker_config)
-        self.linker = cast(EntityLinker, linker)
+        self.exit_stack = contextlib.AsyncExitStack()
+        self.candidate_generator = CandidateGenerator(name=self.kb_name)
 
     async def __aenter__(self) -> 'ScispacyResolver':
         if self.translate:
@@ -63,10 +61,6 @@ class ScispacyResolver(EntityResolver):
         await self.exit_stack.aclose()
 
     @property
-    def language(self) -> str:
-        return self.nlp.lang
-
-    @property
     def name(self) -> str:
         return self.kb_name
 
@@ -77,39 +71,47 @@ class ScispacyResolver(EntityResolver):
         """
         if not self.translator:
             async with Translator(list_operation_max_concurrency=self.batch_size) as temp_translator:
-                translations = await temp_translator.translate(texts, dest=self.language)
+                translations = await temp_translator.translate(texts, dest="en")
         else:
-            translations = await self.translator.translate(texts, dest=self.language)
+            translations = await self.translator.translate(texts, dest="en")
 
         return [t.text for t in translations]
 
-    def _resolve(self, document: Doc) -> Doc:
-        """Resolve entity names using SciSpaCy entity linker."""
-        for entity in document.ents:
-            if entity._.kb_ents:
-                cui = entity._.kb_ents[0][0]
-                resolved_text = self.linker.kb.cui_to_entity[cui].canonical_name
-                return self.nlp(resolved_text, disable=['ner'])
-
-        return document
-
-    def _cleanup_string(self, document: Doc) -> str:
+    def _cleanup_string(self, text: str) -> str:
         """
         Cleanup text to uniformize it.
-        :param document: The text document to clean up.
+        :param text: The text document to clean up.
         :return: The uniformized text.
         """
-        if not self.cleanup:
-            return document.text
+        if text and self.cleanup:
+            text = unidecode(text.lower())
 
-        text = ' '.join(
-            token.lemma_.lower() for token in document if (token.is_alpha or token.is_digit) and not token.is_stop
-        )
+        return text
 
-        return unidecode(text) if text else ""
+    def _resolve(self, mention_texts: list[str]) -> Iterable[str]:
+        """Resolve entity names using SciSpaCy entity linker."""
+        for mention, candidates in zip(mention_texts, self.candidate_generator(mention_texts, 10)):
+            best_candidate = None
+            best_candidate_score = 0
+
+            for candidate in candidates:
+                if (score := max(candidate.similarities, default=0)) > self.threshold and score > best_candidate_score:
+                    best_candidate = candidate
+                    best_candidate_score = score
+
+            if not best_candidate:
+                yield mention
+
+            elif self.resolve_text:
+                yield self.candidate_generator.kb.cui_to_entity[best_candidate.concept_id].canonical_name
+
+            else:
+                yield best_candidate.concept_id
 
     async def __call__(self, texts: Iterable[str]) -> Iterable[str]:
-        if self.translate:
-            texts = await self._translate(list(texts))
+        texts = list(texts)
 
-        return (self._cleanup_string(self._resolve(doc)) for doc in self.nlp.pipe(texts, batch_size=self.batch_size))
+        if self.translate:
+            texts = await self._translate(texts)
+
+        return map(self._cleanup_string, self._resolve(texts))
