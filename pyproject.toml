@@ -88,7 +88,8 @@ mypy = ">=0.910,<1.16"
 ruff = "^0.9.1"
 
 # Documentation
-sphinx = { version = "^8.1.3" }
+sphinx = "^8.1.3"
+sphinx_rtd_theme = "*"
 
 # Typing stubs
 pandas-stubs = "*"
