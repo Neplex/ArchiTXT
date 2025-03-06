@@ -1,7 +1,10 @@
 # ArchiTXT: Text-to-Database Structuring Tool
 
+![PyPI - Status](https://img.shields.io/pypi/status/architxt)
+[![PyPI - Version](https://img.shields.io/pypi/v/architxt)](https://pypi.org/project/architxt/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/architxt)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/neplex/architxt/python-build.yml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/neplex/architxt/python-build.yml)](https://github.com/Neplex/ArchiTXT/actions)
+[![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/Neplex/ArchiTXT/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/Neplex/ArchiTXT)
 
 **ArchiTXT** is a robust tool designed to convert unstructured textual data into structured formats that are ready for
 database storage. It automates the generation of database schemas and creates corresponding data instances, simplifying
