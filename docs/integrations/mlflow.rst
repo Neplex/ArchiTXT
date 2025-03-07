@@ -25,7 +25,7 @@ To connect ArchiTXT to a remote MLFlow tracking server, set the environment vari
 
    export MLFLOW_TRACKING_URI=http://127.0.0.1:5000  # Replace with your remote host
 
-Alternatively, you can set the tracking URI directly in your Python code:
+You can also set the tracking URI in your Python code:
 
 .. code-block:: python
 
@@ -36,19 +36,22 @@ Alternatively, you can set the tracking URI directly in your Python code:
 Run Experiments
 ^^^^^^^^^^^^^^^
 
-ArchiTXT automatically logs experiments to MLFlow as you run them.
-Simply execute your experiments as usual, and ArchiTXT will handle the logging of runs and metrics.
+ArchiTXT logs experiments to MLFlow as you run them.
+Execute your experiments as usual, and ArchiTXT will handle the logging of metrics.
 
 Explore Data
 ^^^^^^^^^^^^
 
 Visualize your logged data using the MLFlow web interface.
-To start the MLFlow UI locally, run:
+If running locally, you can start the MLFlow UI by running:
 
 .. code-block:: sh
 
     mlflow ui
 
-Open your browser and navigate to the default URL (usually `<http://127.0.0.1:5000>`_) to review your experiment details and performance metrics.
+Open your browser and navigate to the default URL (usually `<http://127.0.0.1:5000>`_).
+In the web UI, you can review your experiment details and performance metrics.
 
-For more details on MLFlow and its capabilities, please refer to the `MLFlow Documentation <https://www.mlflow.org/docs/latest/index.html>`_.
+.. seealso::
+
+    `MLFlow Documentation <https://www.mlflow.org/docs/latest/index.html>`_ for more details on MLFlow and its capabilities.

@@ -48,16 +48,21 @@ ArchiTXT Documentation
 What is ArchiTXT ?
 ------------------
 
-**ArchiTXT** is an advanced tool that transforms unstructured text into structured formats, making it easy to integrate textual data into databases.
-By automating **schema generation** and **data instance creation**, ArchiTXT simplifies the process of working with text-based information.
+ArchiTXT is a tool and library to converts unstructured text to structured formats.
+Making a valuable, searchable, AI-ready data and simplifying integration into databases.
 
-- Extract structured data from raw text effortlessly.
-- Automatically generate database schemas and populate them with extracted data.
-- Streamline the storage and querying of unstructured text in databases.
+With ArchiTXT, you can:
+
+- Discover the best way to organise your text data in a database.
+- Automatically produce a database from a collection of texts.
+- Make it easier and quicker to store and search unstructured text.
+- Turn raw text into machine-learning-ready data.
 
 ----
 
-Need help? Check out the **Getting Started** guide or explore the **Examples** section to see ArchiTXT in action.
+.. highlight::
+
+    Need help? Check out the **Getting Started** guide or take a look at the **Examples** section to see ArchiTXT in action.
 
 Explore the Documentation
 -------------------------

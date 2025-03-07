@@ -16,7 +16,8 @@ Python Installation
 
    -- Woody, *Toy Story*
 
-ArchiTXT is available as a python package on **PyPI** (`pypi.org/project/architxt <https://pypi.org/project/architxt>`_), so you can install it using any Python package manager of your choice.
+ArchiTXT is available as a python package on **PyPI** (`pypi.org/project/architxt <https://pypi.org/project/architxt>`_).
+You can install it using any Python package manager of your choice.
 It requires **Python 3.10+**, to check your Python version, run:
 
 .. tab-set::
@@ -33,7 +34,7 @@ It requires **Python 3.10+**, to check your Python version, run:
 
             py --version
 
-If you're unfamiliar with Python packaging, we recommend following the `official Python packaging guide <https://packaging.python.org/en/latest/tutorials/installing-packages/>`_ and to use pip.
+If you don't know about Python packaging, you can read the `official guide <https://packaging.python.org/en/latest/tutorials/installing-packages/>`_.
 
 
 Stable Release (Recommended)
@@ -133,7 +134,7 @@ ArchiTXT is also available as a pre-built container image.
 
         .. code-block:: sh
 
-            docker run \
+            docker run --rm \
                 -e CORENLP_URL=http://corenlp-uri:9000 \
                 --name architxt \
                 ghcr.io/neplex/architxt:latest \
@@ -161,7 +162,7 @@ ArchiTXT is also available as a pre-built container image.
 
         .. code-block:: sh
 
-            podman run \
+            podman run --rm \
                 -e CORENLP_URL=http://corenlp-uri:9000 \
                 --name architxt \
                 ghcr.io/neplex/architxt:latest \
