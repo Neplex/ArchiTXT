@@ -1,8 +1,27 @@
-Preparing a Textual Corpora for ArchiTXT
-=========================================
+Preparing a Text Corpora
+========================
 
-ArchiTXT requires your textual corpora to be prepared using a format based on the BRAT Rapid Annotation Tool.
-In particular, each sentence should be placed on a separate line and entity annotations must not overlap.
+ArchiTXT requires your text corpora to be in a Gzipped Tar archive using the BRAT annotation format.
+In this format, the text and annotations are stored in two files with the same name but different extensions (.txt for text and .ann for annotations).
+For example, `doc-123.txt` contains the text, while `doc-123.ann` holds the annotations (named entities, relations, events, etc.).
+Your archive should look similar to this :
+
+.. code-block:: text
+
+    corpus.tar.gz
+    ├── doc-123.txt
+    ├── doc-123.ann
+    ├── doc-124.txt
+    ├── doc-124.ann
+    ├── doc-125.txt
+    ├── doc-125.ann
+    └── ...
+
+.. important::
+
+    1. **One Sentence per Line:** You should have one sentence per line in your text file.
+    2. **Non-Overlapping Annotations:** The start and end offsets for each annotated entity should not overlap with any other entity in the same sentence. Overlapping spans are not yet handle and will be ignored by ArchiTXT.
+
 
 BRAT Annotation Format
 ----------------------
@@ -18,9 +37,6 @@ Each annotation line follows this structure:
 - **Entity_Type:** The category or type of the entity (e.g., `Person`, `Location`, `Animal`).
 - **Start_Offset and End_Offset:** The character positions in the sentence where the entity begins and ends.
 - **Entity_Text:** The exact text span that has been annotated.
-
-Example
--------
 
 Consider the following sentence in your text file (`document.txt`):
 
@@ -41,16 +57,6 @@ In this example:
 - **T2** annotates the entity "dog" starting at position 35 and ending at 39.
 - Both annotations are non-overlapping and correspond to entities in the sentence.
 
-Guidelines for Annotation
--------------------------
+.. seealso::
 
-1. **One Sentence per Line:**
-   Ensure that every sentence is isolated on its own line in your text file. This avoids multi-line sentence complications and makes processing straightforward.
-
-2. **Distinct, Non-Overlapping Annotations:**
-   Make sure that the start and end offsets for each annotated entity do not overlap with any other entity in the same sentence. Overlapping spans are not yet handle and will be ignored by ArchiTXT.
-
-Additional Resources
---------------------
-
-For more information on the BRAT Rapid Annotation Tool and its annotation format, please visit the `BRAT Rapid Annotation Tool website <http://brat.nlplab.org/>`_.
+    `BRAT Rapid Annotation Tool website <https://brat.nlplab.org/standoff.html>`_ for more information about the standoff format
