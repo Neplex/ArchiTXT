@@ -22,7 +22,7 @@ class FindCollectionsOperation(Operation):
     The operation can operate in two modes:
     1. Naming-only mode: Simply assigns labels to valid collections without altering the tree's structure.
     2. Structural modification mode: Groups nodes into collection sets, updates their labels, and restructures
-                                     the tree by creating collection nodes.
+    the tree by creating collection nodes.
     """
 
     def __init__(self, *args: Any, naming_only: bool = False, **kwargs: Any) -> None:

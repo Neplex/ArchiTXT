@@ -17,7 +17,6 @@ def split_sentences(text: str) -> list[str]:
     :param text: The input text to be split into sentences.
     :return: A list of sentences split by line breaks with Unicode removed.
 
-    Example:
     >>> split_sentences("This is à test\\nAnothér-test here")
     ['This is a test', 'Another-test here']
 
@@ -40,7 +39,6 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
     :yield: A list of `Entity` objects for each sentence, with entity positions relative to
             that sentence.
 
-    Example:
     >>> e1 = Entity(name="Entity1", start=0, end=5, id="E1")
     >>> e2 = Entity(name="Entity2", start=6, end=15, id="E2")
     >>> e3 = Entity(name="Entity3", start=21, end=25, id="E3")
@@ -107,7 +105,6 @@ def split_relations(relations: Iterable[Relation], entities: Sequence[Sequence[E
     :return: A list of lists. Each inner list corresponds to a sentence and contains `Relation` objects
              for that sentence.
 
-    Example:
     >>> e1 = Entity(name="Entity1", start=0, end=1, id="E1")
     >>> e2 = Entity(name="Entity2", start=2, end=3, id="E2")
     >>> e3 = Entity(name="Entity3", start=4, end=5, id="E3")

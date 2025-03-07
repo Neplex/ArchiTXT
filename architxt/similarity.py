@@ -25,7 +25,6 @@ def jaccard(x: Collection[str], y: Collection[str]) -> float:
     :param y: The second sequence of strings.
     :return: The Jaccard similarity as a float between 0 and 1, where 1 means identical sequences.
 
-    Example:
     >>> jaccard({"A", "B"}, {"A", "B", "C"})
     0.6666666666666666
 
@@ -67,7 +66,6 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     :param metric: A metric function to compute the similarity between the entity labels of the two trees.
     :return: A similarity score between 0 and 1, where 1 indicates maximum similarity.
 
-    Example:
     >>> from architxt.tree import Tree
     >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
     >>> similarity(t[0], t[1], metric=jaccard)
@@ -116,7 +114,6 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
     :param metric: A callable similarity metric to compute the similarity between the two trees.
     :return: `True` if the similarity between `x` and `y` is greater than or equal to `tau`, otherwise `False`.
 
-    Example:
     >>> from architxt.tree import Tree
     >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
     >>> sim(t[0], t[1], tau=0.5, metric=jaccard)
