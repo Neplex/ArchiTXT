@@ -121,14 +121,16 @@ class Tree(ParentedTree):
         >>> t = Tree.fromstring('(S (GROUP::A x) (GROUP::B y) (X (GROUP::C z)))')
         >>> sorted(t.groups())
         ['A', 'B', 'C']
+        >>> sorted(t[0].groups())
+        ['A']
 
         """
         result = set()
 
-        for child in self:
-            if has_type(child, NodeType.GROUP):
-                result.add(child.label().name)
+        if has_type(self, NodeType.GROUP):
+            result.add(self.label().name)
 
+        for child in self:
             if isinstance(child, Tree):
                 result.update(child.groups())
 
@@ -139,7 +141,8 @@ class Tree(ParentedTree):
         """
         Get a DataFrame containing all instances of a specified group within the tree.
 
-        Each row in the DataFrame represents an instance of the group, and each column represents an entity in that group, with the value being a concatenated string of that entity's leaves.
+        Each row in the DataFrame represents an instance of the group, and each column represents an entity in that
+        group, with the value being a concatenated string of that entity's leaves.
 
         :param group_name: The name of the group to search for.
         :return: A pandas DataFrame containing instances of the specified group.
@@ -154,25 +157,33 @@ class Tree(ParentedTree):
         >>> t.group_instances("B")
             person animal
         0  Charlie    dog
+        >>> t.group_instances("C")
+        Empty DataFrame
+        Columns: []
+        Index: []
+        >>> t[0].group_instances("A")
+          person  fruit
+        0  Alice  apple
 
         """
-        dataframes = []
-        records = []
+        dataframes = [child.group_instances(group_name) for child in self if isinstance(child, Tree)]
 
-        for child in self:
-            if has_type(child, NodeType.GROUP) and child.label().name == group_name:
-                records.append(
+        if has_type(self, NodeType.GROUP) and self.label().name == group_name:
+            root_dataframe = pd.DataFrame(
+                [
                     {
                         sub_child.label().name: ' '.join(sub_child.leaves())
-                        for sub_child in child
+                        for sub_child in self
                         if has_type(sub_child, NodeType.ENT)
                     }
-                )
+                ]
+            )
+            dataframes.append(root_dataframe)
 
-            if isinstance(child, Tree):
-                dataframes.append(child.group_instances(group_name))
+        if not dataframes:
+            return pd.DataFrame()
 
-        return pd.concat([pd.DataFrame.from_records(records), *dataframes], ignore_index=True).drop_duplicates()
+        return pd.concat(dataframes, ignore_index=True).drop_duplicates()
 
     @cache
     def entities(self) -> tuple['Tree', ...]:
@@ -185,13 +196,16 @@ class Tree(ParentedTree):
         >>> del t[0]
         >>> list(t.entities()) == [t[0, 0], t[0, 1]]
         True
+        >>> list(t[0, 0].entities()) == [t[0, 0]]
+        True
 
         """
         result = []
-        for child in self:
-            if has_type(child, NodeType.ENT):
-                result.append(child)
 
+        if has_type(self, NodeType.ENT):
+            result.append(self)
+
+        for child in self:
             if isinstance(child, Tree):
                 result.extend(child.entities())
 
