@@ -17,7 +17,7 @@ def split_sentences(text: str) -> list[str]:
     :param text: The input text to be split into sentences.
     :return: A list of sentences split by line breaks with Unicode removed.
 
-    >>> split_sentences("This is à test\\nAnothér-test here")
+    >>> split_sentences("This is à test\nAnothér-test here")
     ['This is a test', 'Another-test here']
 
     """
