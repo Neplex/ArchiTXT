@@ -20,10 +20,12 @@ jobs:
       - uses: rcmdnk/python-action@v1
         with:
           pre-commit: true
-          pytest-tests-path: "tests"
+          pytest-tests-path: "."
           pytest-cov-path: "architxt"
-          pytest-ignore: 'tests/simplification/tree_rewriting/operations/test_operations.py'
+          pytest-ignore: 'tests/simplification/tree_rewriting/operations/test_operations.py,dev/maccrobat.py'
           python-version: "${{ matrix.python-version }}"
+        env:
+          PYTEST_ADDOPTS: "--doctest-modules --beartype-skip-packages=architxt/grammar"
 
   build:
     name: Build package

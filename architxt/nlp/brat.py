@@ -28,10 +28,11 @@ def convert_brat_entities(
     :param mapping: A dictionary mapping entity names to new values. If None, no mapping is applied.
     :return: A generator yielding `Entity` objects.
 
+    >>> from pybrat.parser import Entity, Relation, Span
     >>> ents = [
-    ...     BratEntity(spans=[(0, 5)], tag="person", mention="E1"),
-    ...     BratEntity(spans=[(10, 15)], tag="FREQ", mention="E2"),
-    ...     BratEntity(spans=[(20, 25)], tag="MOMENT", mention="E3")
+    ...     Entity(spans=[Span(start=0, end=5)], type="person", mention="E1"),
+    ...     Entity(spans=[Span(start=10, end=15)], type="FREQ", mention="E2"),
+    ...     Entity(spans=[Span(start=20, end=25)], type="MOMENT", mention="E3")
     ... ]
     >>> ents = list(convert_brat_entities(ents, allow_list={"MOMENT"}, mapping={"FREQ": "FREQUENCE"}))
     >>> len(ents)
@@ -76,9 +77,10 @@ def convert_brat_relations(
     :param mapping: A dictionary mapping relation names to new values. If None, no mapping is applied.
     :return: A generator yielding `Relation` objects.
 
+    >>> from pybrat.parser import Entity, Relation, Span
     >>> rels = [
-    ...     BratRelation(arg1=BratEntity(spans=[(0, 5)], tag='X', mention='E1'), arg2=BratEntity(spans=[(10, 15)], tag='Y', mention='E2'), relation="part-of"),
-    ...     BratRelation(arg1=BratEntity(spans=[(20, 25)], tag='X', mention='E3'), arg2=BratEntity(spans=[(30, 35)], tag='Z', mention='E3'), relation="TEMPORALITY")
+    ...     Relation(arg1=Entity(spans=[Span(start=0, end=5)], type='X', mention='E1'), arg2=Entity(spans=[Span(start=10, end=15)], type='Y', mention='E2'), type="part-of"),
+    ...     Relation(arg1=Entity(spans=[Span(start=20, end=25)], type='X', mention='E3'), arg2=Entity(spans=[Span(start=30, end=35)], type='Z', mention='E3'), type="TEMPORALITY")
     ... ]
     >>> rels = list(convert_brat_relations(rels, allow_list={"TEMPORALITY"}))
     >>> len(rels)
