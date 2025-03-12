@@ -27,7 +27,7 @@ from .operations import (
 )
 from .utils import distribute_evenly, log_clusters, log_instance_comparison_metrics, log_metrics, log_schema
 
-__all__ = ['create_group', 'find_groups', 'rewrite']
+__all__ = ['apply_operations', 'create_group', 'find_groups', 'rewrite']
 
 DEFAULT_OPERATIONS: Sequence[type[Operation]] = (
     FindSubGroupsOperation,
@@ -261,7 +261,7 @@ def apply_operations(
 
         futures = [
             executor.submit(
-                apply_operations_worker,
+                _apply_operations_worker,
                 idx,
                 edit_ops_names,
                 tuple(chunk),
@@ -287,7 +287,7 @@ def apply_operations(
     return forest, op_id if op_id >= 0 else None
 
 
-def apply_operations_worker(
+def _apply_operations_worker(
     idx: int,
     edit_ops: Sequence[tuple[str, Operation]],
     forest: Forest,
@@ -295,7 +295,7 @@ def apply_operations_worker(
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
-    _run_id: str,
+    run_id: str,
 ) -> tuple[Forest, str]:
     """
     Apply the given operation to the forest.
@@ -317,14 +317,13 @@ def apply_operations_worker(
                        If `False`, all operations are applied.
     :param simplification_operation: A shared integer value to store the index of the operation that simplified a tree.
     :param barrier: A barrier to synchronize the workers before starting the next operation.
-    :param _run_id: The Mlflow run_id to link to.
+    :param run_id: The Mlflow run_id to link to.
     :return: The rewritten forest and the execution trace.
-    :meta private:
     """
     equiv_subtrees = shared_equiv_subtrees.get()
 
     with (
-        mlflow.start_run(run_id=_run_id),
+        mlflow.start_run(run_id=run_id),
         mlflow.start_span(
             "worker",
             attributes={

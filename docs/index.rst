@@ -58,9 +58,7 @@ With ArchiTXT, you can:
 - Make it easier and quicker to store and search unstructured text.
 - Turn raw text into machine-learning-ready data.
 
-----
-
-.. highlight::
+.. tip::
 
     Need help? Check out the **Getting Started** guide or take a look at the **Examples** section to see ArchiTXT in action.
 

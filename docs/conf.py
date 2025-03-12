@@ -65,7 +65,11 @@ autodoc_default_options = {
     'member-order': 'groupwise',
     'undoc-members': True,
     'show-inheritance': True,
+    'ignore-module-all': True,
 }
+
+autodoc_preserve_defaults = True
+autodoc_inherit_docstrings = True
 
 # -- Options for autosummary extension ---------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
@@ -82,4 +86,8 @@ todo_include_todos = True
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'sklearn': ('https://scikit-learn.org/stable/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
+    'nltk': ('https://www.nltk.org/', None),
 }

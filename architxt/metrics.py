@@ -149,7 +149,7 @@ class Metrics:
 
         It uses the specified metric function to return the average similarity score.
 
-        Higher is better.
+            Higher is better.
 
         :param metric: The similarity metric function used to compute the similarity between subtrees.
         :return: The average similarity score for all tree pairs in source and destination forests.
@@ -166,7 +166,7 @@ class Metrics:
         The method calculates the edit distance for each pair of source and destination trees using the APTED algorithm.
         The total edit distance is obtained by summing up the individual distances across all pairs of trees.
 
-        Lower is better.
+            Lower is better.
 
         :return: The total edit distance computed across all source and destination tree pairs.
         """
@@ -180,9 +180,9 @@ class Metrics:
         Compute the Adjusted Mutual Information (AMI) score between source and destination clusters.
 
         The AMI score measures agreement while adjusting for random chance.
-        It leverages the `adjusted_mutual_info_score` function from scikit-learn.
+        It use :py:func:`sklearn.metrics.adjusted_mutual_info_score` under the hood.
 
-        Greater is better.
+            Greater is better.
 
         :param tau: The similarity threshold for clustering.
         :param metric: The similarity metric function used to compute the similarity between subtrees.
@@ -198,9 +198,9 @@ class Metrics:
         Compute the completeness score between source and destination clusters.
 
         The AMI score measures agreement while adjusting for random chance.
-        It leverages the `completeness_score` function from scikit-learn.
+        It use :py:func:`sklearn.metrics.completeness_score` under the hood.
 
-        Greater is better.
+            Greater is better.
 
         :param tau: The similarity threshold for clustering.
         :param metric: The similarity metric function used to compute the similarity between subtrees.
@@ -217,6 +217,8 @@ class Metrics:
 
         The overall redundancy score measures the fraction of rows that are redundant in at least
         one subset of attributes that satisfies a functional dependency above a given threshold tau.
+
+            Lower is better.
 
         :param tau: The dependency threshold to determine redundancy (default is 1.0).
         :return: The proportion of redundant rows in the dataset.

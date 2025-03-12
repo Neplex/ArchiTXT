@@ -18,7 +18,7 @@ from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type
 
 __all__ = ['Schema']
 
-NODE_TYPE_RANK = {
+_NODE_TYPE_RANK = {
     NodeType.COLL: 1,
     NodeType.REL: 2,
     NodeType.GROUP: 3,
@@ -26,9 +26,9 @@ NODE_TYPE_RANK = {
 }
 
 
-def get_rank(nt: Nonterminal) -> int:
-    if isinstance(nt.symbol(), NodeLabel) and nt.symbol().type in NODE_TYPE_RANK:
-        return NODE_TYPE_RANK[nt.symbol().type]
+def _get_rank(nt: Nonterminal) -> int:
+    if isinstance(nt.symbol(), NodeLabel) and nt.symbol().type in _NODE_TYPE_RANK:
+        return _NODE_TYPE_RANK[nt.symbol().type]
 
     return 0
 
@@ -73,7 +73,7 @@ class Schema(CFG):
 
         root_prod = Production(Nonterminal('ROOT'), sorted(prod.lhs() for prod in productions))
 
-        return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: get_rank(p.lhs()))])
+        return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: _get_rank(p.lhs()))])
 
     @classmethod
     def from_forest(cls, forest: Forest, *, keep_unlabelled: bool = True) -> 'Schema':
@@ -100,7 +100,7 @@ class Schema(CFG):
 
         # Create productions for the schema
         productions = [Production(lhs, sorted(rhs)) for lhs, rhs in schema.items()]
-        productions = sorted(productions, key=lambda p: get_rank(p.lhs()))
+        productions = sorted(productions, key=lambda p: _get_rank(p.lhs()))
 
         return cls(Nonterminal('ROOT'), [Production(Nonterminal('ROOT'), sorted(schema.keys())), *productions])
 
@@ -218,6 +218,7 @@ class Schema(CFG):
         Convert the schema to an SQL representation.
 
         TODO: Implement this method.
+
         :returns: The schema as an SQL creation script.
         """
         raise NotImplementedError
@@ -227,7 +228,9 @@ class Schema(CFG):
         Convert the schema to a Cypher representation.
 
         It only define indexes and constraints as properties graph database do not have fixed schema.
+
         TODO: Implement this method.
+
         :returns: The schema as a Cypher creation script defining constraints and indexes.
         """
         raise NotImplementedError
