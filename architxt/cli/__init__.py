@@ -21,6 +21,7 @@ from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from typer.main import get_command
 
 from architxt.generator import gen_instance
 from architxt.metrics import Metrics
@@ -30,8 +31,6 @@ from architxt.nlp.parser import Parser
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Forest
-
-console = Console()
 
 ENTITIES_FILTER = {'TIME', 'MOMENT', 'DUREE', 'DURATION', 'DATE', 'OTHER_ENTITY', 'OTHER_EVENT', 'COREFERENCE'}
 RELATIONS_FILTER = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
@@ -57,6 +56,12 @@ ENTITIES_MAPPING = {
     'PATHOLOGIE': 'DISEASE_DISORDER',
     'MODE': 'ADMINISTRATION',
 }
+
+console = Console()
+app = typer.Typer(
+    help="ArchiTXT is a tool for structuring textual data into a valid database model. "
+    "It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
+)
 
 
 async def write_cache(forest: Forest, path: Path) -> None:
@@ -247,7 +252,8 @@ async def load_corpus_batch(
         raise typer.Exit(code=1) from error
 
 
-def cli_run(
+@app.command(help="Extract a database schema form a corpus.", no_args_is_help=True)
+def run(
     corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
     *,
     language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
@@ -376,7 +382,11 @@ def cli_run(
         console.print(Columns([metrics_table, grammar_metrics_table]))
 
 
-def cli_ui(ctx: typer.Context) -> None:
+@app.command(
+    help="Launch the web-based UI.",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def ui(ctx: typer.Context) -> None:
     """Launch the web-based UI using Streamlit."""
     try:
         from architxt import ui
@@ -390,7 +400,8 @@ def cli_ui(ctx: typer.Context) -> None:
         raise typer.Exit(code=1) from error
 
 
-def cli_stats(
+@app.command(help="Display overall statistics for the corpus.")
+def stats(
     corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
     language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
     *,
@@ -448,7 +459,8 @@ def cli_stats(
     console.print(Columns([*tables, stats_table], equal=True))
 
 
-def cli_largest_tree(
+@app.command(help="Display details about the largest tree in the corpus.")
+def largest_tree(
     corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
     language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
     *,
@@ -469,34 +481,18 @@ def cli_largest_tree(
     )
 
     # Find the largest tree
-    largest_tree = max(forest, key=lambda t: len(t.leaves()), default=None)
+    tree = max(forest, key=lambda t: len(t.leaves()), default=None)
 
-    if largest_tree:
-        sentence = " ".join(largest_tree.leaves())
-        largest_tree_display = largest_tree.pformat(margin=255)
+    if tree:
+        sentence = " ".join(tree.leaves())
+        tree_display = tree.pformat(margin=255)
 
         console.print(Panel(sentence, title="Sentence"))
-        console.print(Panel(largest_tree_display, title="Tree"))
+        console.print(Panel(tree_display, title="Tree"))
 
     else:
         console.print("[yellow]No trees found in the corpus.[/]")
 
 
-def main() -> None:
-    """Run the CLI."""
-    mlflow.set_experiment('ArchiTXT')
-
-    app = typer.Typer(
-        help="ArchiTXT is a tool for structuring textual data into a valid database model. "
-        "It is guided by a meta-grammar and uses an iterative process of tree rewriting."
-    )
-    app.command('run', help="Extract a database schema form a corpus.", no_args_is_help=True)(cli_run)
-    app.command(
-        'ui',
-        help="Launch the web-based UI.",
-        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-    )(cli_ui)
-    app.command('stats', help="Display overall statistics for the corpus.")(cli_stats)
-    app.command('largest-tree', help="Display details about the largest tree in the corpus.")(cli_largest_tree)
-
-    app()
+# Click command used for Sphinx documentation
+_click_command = get_command(app)

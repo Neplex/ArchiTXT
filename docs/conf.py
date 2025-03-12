@@ -41,6 +41,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosectionlabel',
+    'sphinxcontrib.typer',
 ]
 
 templates_path = ['_templates']

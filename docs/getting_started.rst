@@ -5,6 +5,7 @@ Getting Started
     :hidden:
 
     getting_started/corpus
+    getting_started/cli
     getting_started/ui
 
 Prepare Your Text Corpus
@@ -28,18 +29,3 @@ You need to have a CoreNLP server up and running with the needed language model 
     A Docker configuration for a CoreNLP server, which includes both English and French models, is available in the GitHub repository.
     However, this setup is intended for development purposes only and is not recommended for production use.
     For proper deployment, please refer to the `official documentation <https://stanfordnlp.github.io/CoreNLP/corenlp-server.html>`_ for guidance on setting it up on your system.
-
-
-Use the Command-Line Interface
-------------------------------
-
-Using the CLI is straightforward, it processes your corpus and automatically extracts a structured database schema.
-
-Show statistics about the corpora
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: sh
-
-    architxt stats corpus.tar.gz
-
-This command will get you a set of metrics about your corpora
