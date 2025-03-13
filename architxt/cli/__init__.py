@@ -23,6 +23,7 @@ from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
+from architxt.database import read_database
 from architxt.generator import gen_instance
 from architxt.metrics import Metrics
 from architxt.nlp.brat import load_brat_dataset
@@ -492,6 +493,15 @@ def largest_tree(
 
     else:
         console.print("[yellow]No trees found in the corpus.[/]")
+
+
+@app.command(help="Extract the database information into a formatted tree.")
+def database(
+    db_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the SQLite database."),
+    db_type: str = typer.Option("sqlite", help="Type of the database."),
+) -> None:
+    """Extract the database schema and relations to a tree format."""
+    read_database(db_path, db_type)
 
 
 # Click command used for Sphinx documentation
