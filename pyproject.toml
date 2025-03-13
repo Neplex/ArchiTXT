@@ -33,6 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Database",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -41,7 +42,7 @@ classifiers = [
 
 dynamic = ["version"]
 
-requires-python = '>=3.10,<3.13'
+requires-python = '>=3.10,<3.14'
 dependencies = [
     'tqdm>=4.60',
     'nltk>=3.9,<4.0',
