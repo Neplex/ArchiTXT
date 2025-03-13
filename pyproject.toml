@@ -94,6 +94,7 @@ sphinx-book-theme = "*"
 sphinx-toolbox = "*"
 sphinx-design = "*"
 sphinxcontrib-typer = "*"
+sphinxcontrib-mermaid = "*"
 
 # Typing stubs
 pandas-stubs = "*"

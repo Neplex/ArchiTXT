@@ -42,10 +42,13 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.typer',
+    'sphinxcontrib.mermaid',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+autosectionlabel_prefix_document = True
 
 language = 'en'
 

@@ -21,8 +21,11 @@ ArchiTXT Documentation
 
     installation
     getting_started
-    examples
+    fundamentals
     architecture
+    load_data
+    transform_data
+    examples
     integrations
 
 .. raw:: html
@@ -50,6 +53,7 @@ What is ArchiTXT ?
 
 ArchiTXT is a tool and library to converts unstructured text to structured formats.
 Making a valuable, searchable, AI-ready data and simplifying integration into databases.
+It ensures transparency, interoperability, and trust by offering a fully auditable, fair, and unbiased data modeling process.
 
 With ArchiTXT, you can:
 
@@ -58,9 +62,9 @@ With ArchiTXT, you can:
 - Make it easier and quicker to store and search unstructured text.
 - Turn raw text into machine-learning-ready data.
 
-.. tip::
+.. admonition:: Need help?
 
-    Need help? Check out the **Getting Started** guide or take a look at the **Examples** section to see ArchiTXT in action.
+    Check out the :doc:`getting_started` guide or take a look at the :doc:`examples` section to see ArchiTXT in action.
 
 Explore the Documentation
 -------------------------
@@ -68,7 +72,7 @@ Explore the Documentation
 .. grid:: 1 1 2 4
     :gutter: 2
 
-    .. grid-item-card:: :octicon:`package;3em`
+    .. grid-item-card:: :octicon:`download;3em`
         :link: installation
         :link-type: doc
         :text-align: center
@@ -96,8 +100,16 @@ Explore the Documentation
 
         **Integrations**
 
+    .. grid-item-card:: :octicon:`package;3em`
+        :columns: 12 12 6 6
+        :link: fundamentals
+        :link-type: doc
+        :text-align: center
+
+        **Fundamentals**
+
     .. grid-item-card:: :octicon:`book;3em`
-        :columns: 12
+        :columns: 12 12 6 6
         :link: _api_reference/architxt
         :link-type: doc
         :text-align: center

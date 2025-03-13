@@ -3,9 +3,9 @@ Installation
 
 There are multiple ways to install ArchiTXT:
 
-- :ref:`Using a Python package manager (Recommended) <Stable Release (Recommended)>` – Use pip, Poetry, PDM, uv, or another tool.
-- :ref:`Installing the development version <Development Version>` – Get the latest updates from GitHub.
-- :ref:`Using a container <Container Installation>` – Run ArchiTXT in a Docker or Podman container.
+- :ref:`Using a Python package manager (Recommended) <installation:Stable Release (Recommended)>` – Use pip, Poetry, PDM, uv, or another tool.
+- :ref:`Installing the development version <installation:Development Version>` – Get the latest updates from GitHub.
+- :ref:`Using a container <installation:Container Installation>` – Run ArchiTXT in a Docker or Podman container.
 
 Python Installation
 -------------------
