@@ -497,11 +497,11 @@ def largest_tree(
 
 @app.command(help="Extract the database information into a formatted tree.")
 def database(
-    db_path: Path = typer.Argument(..., exists=True, readable=True, help="Path to the SQLite database."),
-    db_type: str = typer.Option("sqlite", help="Type of the database."),
+    db_connection: str = typer.Argument(..., help="Database connection string."),
+    remove_many_to_many: bool = typer.Option(True, help="Remove many-to-many relations."),
 ) -> None:
     """Extract the database schema and relations to a tree format."""
-    read_database(db_path, db_type)
+    read_database(db_connection, remove_many_to_many)
 
 
 # Click command used for Sphinx documentation

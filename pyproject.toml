@@ -71,6 +71,7 @@ streamlit-tags = { version = "*", optional = true }
 
 # Use a fixed version of nmslib
 nmslib = { git = "https://github.com/nmslib/nmslib.git", subdirectory = "python_bindings", optional = true }
+sqlalchemy = "^2.0.39"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
