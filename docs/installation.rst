@@ -10,11 +10,13 @@ There are multiple ways to install ArchiTXT:
 Python Installation
 -------------------
 
-.. epigraph::
+.. margin::
 
-   "There's a snake in my boot!"
+    .. epigraph::
 
-   -- Woody, *Toy Story*
+       "There's a snake in my boot!"
+
+       -- Woody, *Toy Story*
 
 ArchiTXT is available as a python package on **PyPI** (`pypi.org/project/architxt <https://pypi.org/project/architxt>`_).
 You can install it using any Python package manager of your choice.
@@ -26,13 +28,13 @@ It requires **Python 3.10+**, to check your Python version, run:
 
         .. code-block:: sh
 
-            python3 --version
+            $ python3 --version
 
     .. tab-item:: Windows
 
         .. code-block:: sh
 
-            py --version
+            $ py --version
 
 If you don't know about Python packaging, you can read the `official guide <https://packaging.python.org/en/latest/tutorials/installing-packages/>`_.
 
@@ -48,49 +50,49 @@ To install the latest stable release of ArchiTXT, use one of the following metho
 
         .. code-block:: sh
 
-            pip install "architxt"
+            $ pip install "architxt"
 
         To install a specific version
 
         .. code-block:: sh
 
-            pip install "architxt==<version>"
+            $ pip install "architxt==<version>"
 
     .. tab-item:: Poetry
 
         .. code-block:: sh
 
-            poetry add "architxt"
+            $ poetry add "architxt"
 
         To install a specific version
 
         .. code-block:: sh
 
-            poetry add "architxt==<version>"
+            $ poetry add "architxt==<version>"
 
     .. tab-item:: PDM
 
         .. code-block:: sh
 
-            pdm add "architxt"
+            $ pdm add "architxt"
 
         To install a specific version
 
         .. code-block:: sh
 
-            pdm add "architxt==<version>"
+            $ pdm add "architxt==<version>"
 
     .. tab-item:: uv
 
         .. code-block:: sh
 
-            uv add "architxt"
+            $ uv add "architxt"
 
         To install a specific version
 
         .. code-block:: sh
 
-            uv add "architxt==<version>"
+            $ uv add "architxt==<version>"
 
 
 Development Version
@@ -100,7 +102,7 @@ To install the latest development version directly from GitHub:
 
 .. code-block:: sh
 
-    pip install git+https://github.com/Neplex/ArchiTXT.git
+    $ pip install git+https://github.com/Neplex/ArchiTXT.git
 
 This version may include new features and bug fixes that have not yet been released.
 
@@ -118,13 +120,13 @@ ArchiTXT is also available as a pre-built container image.
 
         .. code-block:: sh
 
-            docker pull ghcr.io/neplex/architxt:latest
+            $ docker pull ghcr.io/neplex/architxt:latest
 
         Start the UI:
 
         .. code-block:: sh
 
-            docker run -d \
+            $ docker run -d \
                 -e CORENLP_URL=http://corenlp-uri:9000 \
                 -p 8080:8080 \
                 --name architxt \
@@ -134,7 +136,7 @@ ArchiTXT is also available as a pre-built container image.
 
         .. code-block:: sh
 
-            docker run --rm \
+            $ docker run --rm \
                 -e CORENLP_URL=http://corenlp-uri:9000 \
                 --name architxt \
                 ghcr.io/neplex/architxt:latest \
@@ -146,13 +148,13 @@ ArchiTXT is also available as a pre-built container image.
 
         .. code-block:: sh
 
-            podman pull ghcr.io/neplex/architxt:latest
+            $ podman pull ghcr.io/neplex/architxt:latest
 
         Start the UI:
 
         .. code-block:: sh
 
-            podman run -d \
+            $ podman run -d \
                 -e CORENLP_URL=http://corenlp-uri:9000 \
                 -p 8080:8080 \
                 --name architxt \
@@ -162,7 +164,7 @@ ArchiTXT is also available as a pre-built container image.
 
         .. code-block:: sh
 
-            podman run --rm \
+            $ podman run --rm \
                 -e CORENLP_URL=http://corenlp-uri:9000 \
                 --name architxt \
                 ghcr.io/neplex/architxt:latest \

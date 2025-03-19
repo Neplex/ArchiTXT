@@ -101,7 +101,7 @@ def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
     return duplicates.sum() / dataframe.shape[0]
 
 
-class EditDistanceConfig(APTEDConfig):
+class _EditDistanceConfig(APTEDConfig):
     def rename(self, node1: Tree | str, node2: Tree | str) -> int:
         name1 = node1.label if isinstance(node1, Tree) else node1
         name2 = node2.label if isinstance(node2, Tree) else node2
@@ -171,7 +171,7 @@ class Metrics:
         :return: The total edit distance computed across all source and destination tree pairs.
         """
         return sum(
-            APTED(src_tree, dst_tree, config=EditDistanceConfig()).compute_edit_distance()
+            APTED(src_tree, dst_tree, config=_EditDistanceConfig()).compute_edit_distance()
             for src_tree, dst_tree in zip(self._source, self._destination, strict=True)
         )
 

@@ -27,6 +27,7 @@ github_repository = 'architxt'
 
 extensions = [
     'sphinx_design',
+    'sphinx_copybutton',
     'sphinx_toolbox.more_autodoc',
     'sphinx_toolbox.more_autosummary',
     'sphinx_toolbox.sidebar_links',
@@ -55,11 +56,20 @@ language = 'en'
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
 html_css_files = [
     'custom.css',
 ]
+
+html_theme = 'sphinx_book_theme'
+html_theme_options = {
+    'path_to_docs': 'docs',
+    'repository_url': f'https://github.com/{github_username}/{github_repository}',
+    'use_edit_page_button': True,
+    'use_source_button': True,
+    'use_issues_button': True,
+    'announcement': 'This project is currently in active development. Features may change, and some sections might be incomplete.',
+}
 
 # -- Options for autodoc extension -------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
@@ -95,3 +105,9 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/docs/', None),
     'nltk': ('https://www.nltk.org/', None),
 }
+
+# -- Options for copybutton extension ----------------------------------------
+# https://sphinx-copybutton.readthedocs.io/en/latest/use.html
+
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
