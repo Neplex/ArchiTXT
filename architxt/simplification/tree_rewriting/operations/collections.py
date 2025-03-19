@@ -1,4 +1,3 @@
-# noqa: A005
 from copy import deepcopy
 from itertools import groupby
 from typing import Any
