@@ -39,7 +39,7 @@ class NodeLabel(str):
 
     __slots__ = ('data', 'name', 'type')
 
-    def __new__(cls, label_type: NodeType, label: str = '', data: dict[str, Any] | None = None) -> 'NodeLabel':
+    def __new__(cls, label_type: NodeType, label: str = '', _data: dict[str, Any] | None = None) -> 'NodeLabel':
         string_value = f'{label_type.value}::{label}' if label else label_type.value
         return super().__new__(cls, string_value)  # type: ignore
 

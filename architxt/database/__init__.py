@@ -1,318 +1,303 @@
+import warnings
 from collections.abc import Generator
 from typing import Any
 
-from sqlalchemy import MetaData, create_engine, inspect, select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, create_engine
+from tqdm import tqdm
 
-from architxt.tree import Forest, NodeLabel, NodeType, Tree
+from architxt.tree import NodeLabel, NodeType, Tree
 
 
 def read_database(
     db_connection: str,
-    remove_many_to_many: bool = True,
-) -> Forest:
+    *,
+    simplify_association: bool = True,
+    sample: int = 0,
+) -> Generator[Tree, None, None]:
     """
-    Read the database, retrieve table information, process table relations, and print the results in a tree format.
+    Read the database instance as a tree.
 
     :param db_connection: Connection string for the database.
-    :param remove_many_to_many: Flag to remove many-to-many tables.
+    :param simplify_association: Flag to simplify non attributed association tables.
+    :param sample: Number of samples for each table to get.
     :return: A list of trees representing the database.
     """
-    # Create a connection to the SQLite database
     engine = create_engine(db_connection)
-    inspector = inspect(engine)
-    session_maker = sessionmaker(bind=engine)
+
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
-    with session_maker() as session:
-        tables = inspector.get_table_names()
+    root_tables = _get_root_tables(set(metadata.tables.values()))
 
-        table_info = read_info_database(metadata)
-        primary_keys = table_info.get("Primary keys", {})
-        table_relations = table_info.get("Foreign keys", {})
-        parent_tables = get_parent_tables(table_relations, tables)
-
-        if remove_many_to_many:
-            parent_tables, table_relations = remove_many_to_many_tables(parent_tables, table_relations, inspector)
-
-        final_forest = []
-        for table in parent_tables:
-            final_forest.extend(
-                process_table_relations(table, table_relations, session, inspector, metadata, primary_keys)
-            )
-
-        for tree in final_forest:
-            print(tree.pformat(margin=255), end="\n\n\n")
-            print(tree)
+    with engine.begin() as conn:
+        for table in root_tables:
+            yield from read_table(table, conn=conn, simplify_association=simplify_association, sample=sample)
 
 
-def read_info_database(
-    meta: MetaData,
-) -> dict[str, dict[str, str]]:
+def _get_root_tables(tables: set[Table]) -> set[Table]:
     """
-    Retrieve information about the database tables, including primary and foreign keys.
+    Retrieve the root tables in the database by identifying tables that are not referenced as foreign keys.
 
-    :param meta: SQLAlchemy MetaData object.
-    :return: A dictionary containing primary keys and foreign keys for each table.
+    :param tables: A collection of tables to analyze.
+    :return: A set of root table.
     """
-    table_info = {"Primary keys": {}, "Foreign keys": {}}
+    referenced_tables = {fk.column.table for table in tables for fk in table.foreign_keys}
 
-    for table_name, table in meta.tables.items():
-        table_info["Primary keys"][table_name] = [pk.name for pk in table.primary_key.columns]
+    if not referenced_tables:
+        return tables
 
-        foreign_keys = [
-            {
-                "column": fk.parent.name,
-                "referred_table": fk.column.table.name,
-                "referred_column": fk.column.name,
-            }
-            for fk in table.foreign_keys
-        ]
-        if foreign_keys:
-            table_info["Foreign keys"][table_name] = foreign_keys
-    return table_info
+    root_tables = tables - referenced_tables
+    root_tables |= get_cycle_tables(referenced_tables)
+
+    return root_tables
 
 
-def get_parent_tables(relations: dict[str, list[dict[str, str]]], tables: list[str]) -> set[str]:
-    """
-    Retrieve the parent tables in the database by identifying tables that are not referenced as foreign keys.
-
-    :param relations: A dictionary of foreign key relations.
-    :param tables: A list of table names.
-    :return: A set of parent table names.
-    """
-    childrens = {value["referred_table"] for info in relations.values() for value in info}
-
-    if not childrens:
-        return set(tables)
-
-    parents = set(relations.keys()) - childrens
-    cycle_tables = get_cycle_tables(relations)
-    if cycle_tables:
-        parents.add(cycle_tables.pop())
-
-    return parents
-
-
-def get_cycle_tables(
-    relations: dict[str, list[dict[str, str]]],
-) -> set[str]:
+def get_cycle_tables(tables: set[Table]) -> set[Table]:
     """
     Retrieve tables that are part of a cycle in the database relations.
 
-    :param relations: A dictionary of foreign key relations.
-    :return: A set of table names that are part of a cycle.
+    If multiple tables are in a cycle, only the one with the maximum foreign keys is returned.
+
+    :param tables: A collection of tables to analyze.
+    :return: A set of tables that are part of a cycle but should be considered as root.
     """
-    cycle_tables = set()
-    for table, info in relations.items():
-        for value in info:
-            if value['referred_table'] == table:
-                continue
-            if value['referred_table'] in relations and table in [
-                x['referred_table'] for x in relations[value['referred_table']]
-            ]:
-                cycle_tables.add(table)
-                cycle_tables.add(value['referred_table'])
-    return cycle_tables
+
+    def get_cycle(table: Table, cycle: set[Table] | None = None) -> set[Table] | None:
+        cycle = cycle or set()
+
+        if table in cycle:
+            return cycle
+
+        for fk in table.foreign_keys:
+            if cycle := get_cycle(fk.column.table, cycle | {table}):
+                return cycle
+
+        return None
+
+    cycle_roots: set[Table] = set()
+    referenced_tables = {fk.column.table for table in tables for fk in table.foreign_keys}
+
+    while referenced_tables:
+        table = referenced_tables.pop()
+
+        if table_cycle := get_cycle(table):
+            referenced_tables -= table_cycle
+            selected_table = max(table_cycle, key=lambda x: len(x.foreign_keys))
+            cycle_roots.add(selected_table)
+
+    return cycle_roots
 
 
-def remove_many_to_many_tables(
-    parent_tables: set[str],
-    relations: dict[str, list[dict[str, str]]],
-    inspector: inspect,
-) -> tuple[set[str], dict[str, list[dict[str, str]]]]:
+def is_association_table(table: Table) -> bool:
     """
-    Remove many-to-many tables from the relations.
+    Check if a table is a many-to-many association table.
 
-    :param parent_tables: Set of parent table names.
-    :param relations: A dictionary of foreign key relations.
-    :param inspector: SQLAlchemy inspector object.
-    :return: Updated parent_tables and relations.
+    :param table: The table to check.
+    :return: True if the tale is a relation else False.
     """
-    for table in identify_many_to_many_tables(parent_tables, relations, inspector):
-        parent_tables.remove(table)
-        for relation in relations[table]:
-            for relation2 in relations[table]:
-                if relation["referred_table"] == relation2["referred_table"]:
-                    continue
-                if relation["referred_table"] not in relations:
-                    relations[relation["referred_table"]] = []
-                new_relation = {
-                    "column": relation["column"],
-                    "referred_table": relation2["referred_table"],
-                    "referred_column": relation["column"],
-                    "table_to_many": table,
-                }
-                relations[relation["referred_table"]].append(new_relation)
-        relations.pop(table)
-    return parent_tables, relations
+    return len(table.foreign_keys) == len(table.primary_key.columns) == 2
 
 
-def identify_many_to_many_tables(
-    parent_tables: set[str], relations: dict[str, list[dict[str, str]]], inspector: inspect
-) -> set[str]:
-    """
-    Identify many-to-many tables from the parent tables.
-
-    :param parent_tables: Set of parent table names.
-    :param relations: A dictionary of foreign key relations.
-    :param inspector: SQLAlchemy inspector object.
-    :return: A set of many-to-many table names.
-    """
-    table_to_remove = set()
-    for table in parent_tables:
-        if len(relations.get(table, [])) == len(inspector.get_columns(table)):
-            table_to_remove.add(table)
-    return table_to_remove
-
-
-def process_table_relations(
-    table: str,
-    relations: dict[str, list[dict[str, str]]],
-    session: sessionmaker,
-    inspector: inspect,
-    metadata: MetaData,
-    primary_keys: dict[str, list[str]],
-) -> Generator[Tree, Any, None]:
+def read_table(
+    table: Table, *, conn: Connection, simplify_association: bool = False, sample: int = 0
+) -> Generator[Tree, None, None]:
     """
     Process the relations of a given table, retrieve data, and construct tree representations.
 
-    :param table: Name of the table to process.
-    :param relations: Dictionary of foreign key relations.
-    :param session: SQLAlchemy session object.
-    :param inspector: SQLAlchemy inspector object.
-    :param metadata: SQLAlchemy MetaData object.
-    :param primary_keys: Dictionary of primary keys for tables.
+    :param table: The table to process.
+    :param conn: SQLAlchemy connection.
+    :param simplify_association: Flag to simplify non attributed association tables.
+    :param sample: Number of samples for each table to get.
     :return: A list of trees representing the relations and data for the table.
     """
-    meta_table = metadata.tables.get(table)
-    info = session.execute(select(meta_table).limit(10)).fetchall()
+    association_table = simplify_association and is_association_table(table)
+    query = table.select()
 
-    for data in info:
-        root = Tree("ROOT", [])
-        for tree in write_parse_relations(table, relations, data, primary_keys, session, inspector, metadata, set()):
-            root.append(tree)
-        yield root
+    if sample > 0:
+        query = query.limit(sample)
+
+    for row in tqdm(conn.execute(query), desc=table.name):
+        if association_table:
+            children = parse_association_table(table, row, conn=conn)
+        else:
+            children = parse_table(table, row, conn=conn)
+
+        yield Tree("ROOT", children)
 
 
-def write_group_table(
-    table: str,
-    columns: list[dict[str, Any]],
-    data: list[tuple],
-    primary_keys: dict[str, list[str]] | None,
-) -> Tree:
+def parse_association_table(
+    table: Table,
+    row: Row,
+    *,
+    conn: Connection,
+) -> Generator[Tree, None, None]:
     """
-    Create a tree representation for a table with its columns and data.
+    Parse a row of an association table into trees.
 
-    :param table: Name of the table.
-    :param columns: List of column dictionaries.
-    :param data: Data for each row in the table.
-    :param primary_keys: Dictionary of primary keys for tables.
-    :return: A tree representing the table's structure and data.
+    The table is discarded and represented only as a relation between the two linked tables.
+
+    :param table: The table to process.
+    :param row: A row of the table.
+    :param conn: SQLAlchemy connection.
+    :yield: Trees representing the relations and data for the table.
     """
-    node = NodeLabel(NodeType.GROUP, table, {"primary_keys": primary_keys})
-    root = Tree(node, [])
+    left_fk, right_fk = table.foreign_keys
+    left_row = conn.execute(
+        left_fk.column.table.select().where(left_fk.column == row._mapping[left_fk.parent.name])
+    ).fetchone()
+    right_row = conn.execute(
+        right_fk.column.table.select().where(right_fk.column == row._mapping[right_fk.parent.name])
+    ).fetchone()
 
-    for i, column in enumerate(columns):
-        node_data = {"type": column['type'], "nullable": column['nullable'], "default": column['default']}
-        root.append(Tree(NodeLabel(NodeType.ENT, column['name'], node_data), [data[i]]))
-    return root
+    if not left_row or not right_row:
+        warnings.warn("Database have broken foreign keys!")
+        return
+
+    yield build_relation(
+        left_table=left_fk.column.table,
+        right_table=right_fk.column.table,
+        left_row=left_row,
+        right_row=right_row,
+        name=table.name,
+    )
+
+    visited_links: set[ForeignKey] = set()
+    yield from parse_table(left_fk.column.table, left_row, conn=conn, _visited_links=visited_links)
+    yield from parse_table(right_fk.column.table, right_row, conn=conn, _visited_links=visited_links)
 
 
-def write_parse_relations(
-    table: str,
-    relations: dict[str, list[dict[str, str]]],
-    data: list[tuple],
-    primary_keys: dict[str, list[str]],
-    session: sessionmaker,
-    inspector: inspect,
-    metadata: MetaData,
-    visited_relations: set[str],
-) -> Generator[Tree, Any, None]:
+def parse_table(
+    table: Table,
+    row: Row,
+    *,
+    conn: Connection,
+    _visited_links: set[ForeignKey] | None = None,
+) -> Generator[Tree, None, None]:
+    """
+    Parse a row of a table into trees.
+
+    :param table: The table to process.
+    :param row: A row of the table.
+    :param conn: SQLAlchemy connection.
+    :param _visited_links: Set of visited relations to avoid cycles.
+    :yield: Trees representing the relations and data for the table.
+    """
+    if _visited_links is None:
+        _visited_links = set()
+
+    group = build_group(table, row)
+    yield Tree("ROOT", [group])
+
+    for fk in table.foreign_keys:
+        if fk in _visited_links:
+            continue
+
+        _visited_links.add(fk)
+
+        yield from _parse_relation(table, row, fk, conn=conn, visited_links=_visited_links)
+
+
+def _parse_relation(
+    table: Table,
+    row: Row,
+    fk: ForeignKey,
+    *,
+    conn: Connection,
+    visited_links: set[ForeignKey],
+) -> Generator[Tree, None, None]:
     """
     Parse the relations for a table and construct a tree with the related data.
 
-    :param table: Name of the table.
-    :param relations: Dictionary of foreign key relations.
-    :param data: Data for the current row.
-    :param primary_keys: Dictionary of primary keys for tables.
-    :param session: SQLAlchemy session object.
-    :param inspector: SQLAlchemy inspector object.
-    :param metadata: SQLAlchemy MetaData object.
-    :param visited_relations: Set of visited relations to avoid cycles.
+    :param table: The table to process.
+    :param row: A row of the table.
+    :param conn: SQLAlchemy connection.
+    :param visited_links: Set of visited relations to avoid cycles.
     :return: A list of trees representing the relations and data for the table.
     """
-    if table not in relations:
-        return
-    if table in visited_relations:
-        return
-    visited_relations.add(table)
-    columns = inspector.get_columns(table)
-    for value in relations[table]:
-        referred_table = value['referred_table']
-        if referred_table == table:
+    node_data = {"source": fk.parent.table.name, "target": fk.column.table.name, "source_column": fk.parent.name}
+    linked_rows = fk.column.table.select().where(fk.column == row._mapping[fk.parent.name])
+
+    for linked_row in conn.execute(linked_rows):
+        yield build_relation(
+            left_table=table,
+            right_table=fk.column.table,
+            left_row=row,
+            right_row=linked_row,
+            node_data=node_data,
+        )
+
+        yield from parse_table(
+            fk.column.table,
+            linked_row,
+            conn=conn,
+            _visited_links=visited_links,
+        )
+
+
+def build_group(table: Table, row: Row) -> Tree:
+    """
+    Create a tree representation for a table with its columns and data.
+
+    :param table: The table to process.
+    :param row: A row of the table.
+    :return: A tree representing the table's structure and data.
+    """
+    primary_keys = {column.name for column in table.primary_key.columns}
+    group_name = table.name.replace(' ', '')
+    node_label = NodeLabel(NodeType.GROUP, group_name, {'primary_keys': primary_keys})
+
+    entities = []
+    for column in table.columns.values():
+        if not (entity_data := row._mapping[column.name]):
             continue
 
-        index_column = next((i for i, column in enumerate(columns) if column["name"] == value["column"]), None)
-        node_data = {"relation": {"source": table, "target": referred_table, "source_column": value['column']}}
-        related_table = metadata.tables.get(referred_table)
-        if "table_to_many" not in value:
-            table_select = select(related_table).where(related_table.c[value["referred_column"]] == data[index_column])
-        else:
-            join_table = metadata.tables.get(value["table_to_many"])
-            table_select = (
-                select(related_table).join(join_table).where(join_table.c[value["column"]] == data[index_column])
-            )
+        entity_name = column.name.replace(' ', '')
+        entity_label = NodeLabel(
+            NodeType.ENT,
+            entity_name,
+            {
+                'type': column.type,
+                'nullable': column.nullable,
+                'default': column.default,
+            },
+        )
+        entity_tree = Tree(entity_label, [str(entity_data)])
+        entities.append(entity_tree)
 
-        data_related = session.execute(table_select).fetchall()
-        for row in data_related:
-            yield handle_current_data(
-                table,
-                referred_table,
-                node_data,
-                data,
-                columns,
-                row,
-                primary_keys,
-                inspector.get_columns(referred_table),
-            )
-            yield from write_parse_relations(
-                referred_table, relations, row, primary_keys, session, inspector, metadata, visited_relations
-            )
+    return Tree(node_label, entities)
 
 
-def handle_current_data(
-    table: str,
-    referred_table: str,
-    node_data: dict,
-    data: list[tuple],
-    columns: list[dict],
-    current_data: list[tuple],
-    primary_keys: dict[str, list[str]],
-    referred_columns: list[dict],
+def build_relation(
+    left_table: Table,
+    right_table: Table,
+    left_row: Row,
+    right_row: Row,
+    node_data: dict[str, Any] | None = None,
+    name: str = '',
 ) -> Tree:
     """
     Handle the current data for a table and its referred table.
 
-    :param table: Name of the table.
-    :param referred_table: Name of the referred table.
+    :param left_table: The left table of the relation.
+    :param right_table: The right table of the relation.
+    :param left_row: The left table row of the relation.
+    :param right_row: The right table row of the relation.
     :param node_data: Dictionary containing relation data.
-    :param data: Data for the current table.
-    :param columns: List of the table's columns.
-    :param current_data: Data for the referred table.
-    :param primary_keys: Dictionary of primary keys for tables.
-    :param referred_columns: List of the referred table's columns.
-    :return: The tree of the relation of the table and the referred_table
+    :param name: Name of the relation, if not set, it will be automatically generated.
+    :return: The tree of the relation.
     """
-    root = Tree(NodeLabel(NodeType.REL, f"{table} -> {referred_table}", node_data), [])
-    root.append(write_group_table(table, columns, data, primary_keys.get(table)))
-    root.append(
-        write_group_table(
-            referred_table,
-            referred_columns,
-            current_data,
-            primary_keys.get(referred_table),
-        )
+    if name:
+        rel_name = name.replace(' ', '')
+
+    else:
+        left_name = left_table.name.replace(' ', '')
+        right_name = right_table.name.replace(' ', '')
+        rel_name = f"{left_name}<->{right_name}"
+
+    return Tree(
+        NodeLabel(NodeType.REL, rel_name, node_data),
+        [
+            build_group(left_table, left_row),
+            build_group(right_table, right_row),
+        ],
     )
-    return root

@@ -498,10 +498,21 @@ def largest_tree(
 @app.command(help="Extract the database information into a formatted tree.")
 def database(
     db_connection: str = typer.Argument(..., help="Database connection string."),
-    remove_many_to_many: bool = typer.Option(True, help="Remove many-to-many relations."),
+    simplify_association: bool = typer.Option(True, help="Simplify association tables."),
+    sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
 ) -> None:
     """Extract the database schema and relations to a tree format."""
-    read_database(db_connection, remove_many_to_many)
+    forest = list(read_database(db_connection, simplify_association=simplify_association, sample=sample or 0))
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
+    schema_str = schema.as_cfg()
+
+    console.print(
+        Panel(
+            schema_str,
+            title="Schema as CFG (labelled nodes only)",
+            subtitle='[green]Valid Schema[/]' if schema.verify() else '[red]Invalid Schema[/]',
+        )
+    )
 
 
 # Click command used for Sphinx documentation
