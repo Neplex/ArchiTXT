@@ -35,19 +35,21 @@ class NodeType(str, Enum):
 class NodeLabel(str):
     type: NodeType
     name: str
+    data: dict[str, Any] | None
 
-    __slots__ = ('name', 'type')
+    __slots__ = ('data', 'name', 'type')
 
-    def __new__(cls, label_type: NodeType, label: str = '') -> 'NodeLabel':
+    def __new__(cls, label_type: NodeType, label: str = '', _data: dict[str, Any] | None = None) -> 'NodeLabel':
         string_value = f'{label_type.value}::{label}' if label else label_type.value
         return super().__new__(cls, string_value)  # type: ignore
 
-    def __init__(self, label_type: NodeType, label: str = '') -> None:
+    def __init__(self, label_type: NodeType, label: str = '', data: dict[str, Any] | None = None) -> None:
         self.name = label
         self.type = label_type
+        self.data = data
 
     def __reduce__(self) -> tuple[Callable[..., 'NodeLabel'], tuple[Any, ...]]:
-        return NodeLabel, (self.type, self.name)
+        return NodeLabel, (self.type, self.name, self.data)
 
 
 class Tree(ParentedTree):

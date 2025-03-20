@@ -1,6 +1,7 @@
 import math
 import warnings
 from collections import defaultdict
+from collections.abc import Iterable
 from copy import deepcopy
 from functools import cached_property
 from itertools import combinations
@@ -76,7 +77,7 @@ class Schema(CFG):
         return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: _get_rank(p.lhs()))])
 
     @classmethod
-    def from_forest(cls, forest: Forest, *, keep_unlabelled: bool = True) -> 'Schema':
+    def from_forest(cls, forest: Forest | Iterable[Tree], *, keep_unlabelled: bool = True) -> 'Schema':
         """
         Create a Schema from a given forest of trees.
 

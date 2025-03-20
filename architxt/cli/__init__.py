@@ -23,6 +23,7 @@ from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
+from architxt.database import read_database
 from architxt.generator import gen_instance
 from architxt.metrics import Metrics
 from architxt.nlp.brat import load_brat_dataset
@@ -492,6 +493,26 @@ def largest_tree(
 
     else:
         console.print("[yellow]No trees found in the corpus.[/]")
+
+
+@app.command(help="Extract the database information into a formatted tree.")
+def database(
+    db_connection: str = typer.Argument(..., help="Database connection string."),
+    simplify_association: bool = typer.Option(True, help="Simplify association tables."),
+    sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
+) -> None:
+    """Extract the database schema and relations to a tree format."""
+    forest = list(read_database(db_connection, simplify_association=simplify_association, sample=sample or 0))
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
+    schema_str = schema.as_cfg()
+
+    console.print(
+        Panel(
+            schema_str,
+            title="Schema as CFG (labelled nodes only)",
+            subtitle='[green]Valid Schema[/]' if schema.verify() else '[red]Invalid Schema[/]',
+        )
+    )
 
 
 # Click command used for Sphinx documentation
