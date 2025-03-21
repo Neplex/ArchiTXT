@@ -7,6 +7,8 @@ from tqdm import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
 
+__all__ = ['read_database']
+
 
 def read_database(
     db_connection: str,
@@ -27,14 +29,14 @@ def read_database(
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
-    root_tables = _get_root_tables(set(metadata.tables.values()))
+    root_tables = get_root_tables(set(metadata.tables.values()))
 
     with engine.begin() as conn:
         for table in root_tables:
             yield from read_table(table, conn=conn, simplify_association=simplify_association, sample=sample)
 
 
-def _get_root_tables(tables: set[Table]) -> set[Table]:
+def get_root_tables(tables: set[Table]) -> set[Table]:
     """
     Retrieve the root tables in the database by identifying tables that are not referenced as foreign keys.
 
@@ -95,7 +97,7 @@ def is_association_table(table: Table) -> bool:
     :param table: The table to check.
     :return: True if the tale is a relation else False.
     """
-    return len(table.foreign_keys) == len(table.primary_key.columns) == 2
+    return len(table.foreign_keys) == len(table.primary_key.columns) == len(table.columns) == 2
 
 
 def read_table(
