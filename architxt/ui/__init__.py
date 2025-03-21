@@ -1,6 +1,5 @@
 import asyncio
 import random
-from contextlib import nullcontext
 from copy import deepcopy
 
 import mlflow
@@ -11,9 +10,8 @@ from streamlit_agraph import Edge as _Edge
 from streamlit_agraph import Node as _Node
 from streamlit_tags import st_tags
 
-from architxt.cli import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER, load_or_cache_corpus
-from architxt.nlp.entity_resolver import ScispacyResolver
-from architxt.nlp.parser import Parser
+from architxt.cli import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
+from architxt.nlp import raw_load_corpus
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Forest, Tree
@@ -94,11 +92,11 @@ with st.sidebar:
 input_tab, stats_tab, schema_tab, instance_tab = st.tabs(['📖 Corpus', '📊 Metrics', '📐 Schema', '🗄️ Instance'])
 
 with input_tab:
-    uploaded_file = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=True)
+    uploaded_files = st.file_uploader('Corpora', ['.tar.gz', '.tar.xz'], accept_multiple_files=True)
 
-    if uploaded_file:
+    if uploaded_files:
         file_language_table = st.data_editor(
-            pd.DataFrame([{'Corpora': file.name, 'Language': 'English'} for file in uploaded_file]),
+            pd.DataFrame([{'Corpora': file.name, 'Language': 'English'} for file in uploaded_files]),
             column_config={
                 'Corpora': st.column_config.TextColumn(disabled=True),
                 'Language': st.column_config.SelectboxColumn(options=['English', 'French'], required=True),
@@ -128,31 +126,20 @@ with input_tab:
 
 
 async def load_forest() -> list[Tree]:
-    if not uploaded_file:
+    if not uploaded_files:
         return []
 
-    with Parser(corenlp_url=corenlp_url) as parser:
-        resolver_ctx = (
-            ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
-        )
+    languages = [file_language[file.name] for file in uploaded_files]
 
-        async with resolver_ctx as resolver:
-            forests = await asyncio.gather(
-                *[
-                    load_or_cache_corpus(
-                        file,
-                        entities_filter=set(entities_filter),
-                        relations_filter=set(relations_filter),
-                        entities_mapping=entity_mapping,
-                        parser=parser,
-                        language=file_language[file.name],
-                        resolver=resolver,
-                    )
-                    for file in uploaded_file
-                ]
-            )
-
-            return [tree for forest in forests for tree in forest]
+    return await raw_load_corpus(
+        uploaded_files,
+        languages,
+        entities_filter=set(entities_filter),
+        relations_filter=set(relations_filter),
+        entities_mapping=entity_mapping,
+        corenlp_url=corenlp_url,
+        resolver_name=resolver_name,
+    )
 
 
 if submitted and file_language:
