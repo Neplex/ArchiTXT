@@ -36,8 +36,19 @@ You can also set the tracking URI in your Python code:
 Run Experiments
 ^^^^^^^^^^^^^^^
 
-ArchiTXT logs experiments to MLFlow as you run them.
-Execute your experiments as usual, and ArchiTXT will handle the logging of metrics.
+ArchiTXT can log experiments to MLFlow if it is executed within an active MLFlow run.
+In Python, you can create a run as follows:
+
+.. code-block:: python
+
+   import mlflow
+
+   with mlflow.start_run():
+       ... # <- Your code here
+
+Once the run is started, execute your experiments as usual, and ArchiTXT will automatically handle the logging.
+
+You can also enable MLFlow logging whe using the :doc:`CLI </getting_started/cli>` by using the `--log` option.
 
 Explore Data
 ^^^^^^^^^^^^

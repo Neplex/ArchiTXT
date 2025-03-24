@@ -102,21 +102,22 @@ async def _load_or_cache_corpus(
         )
         corpus_cache_path = Path(f'{key}.pkl')
 
-        mlflow.log_input(
-            MetaDataset(
-                CodeDatasetSource(
-                    {
-                        'entities_filter': sorted(entities_filter or []),
-                        'relations_filter': sorted(relations_filter or []),
-                        'entities_mapping': entities_mapping,
-                        'relations_mapping': relations_mapping,
-                        'cache_file': str(corpus_cache_path.absolute()),
-                    }
-                ),
-                name=name or archive_file.name,
-                digest=key,
+        if mlflow.active_run():
+            mlflow.log_input(
+                MetaDataset(
+                    CodeDatasetSource(
+                        {
+                            'entities_filter': sorted(entities_filter or []),
+                            'relations_filter': sorted(relations_filter or []),
+                            'entities_mapping': entities_mapping,
+                            'relations_mapping': relations_mapping,
+                            'cache_file': str(corpus_cache_path.absolute()),
+                        }
+                    ),
+                    name=name or archive_file.name,
+                    digest=key,
+                )
             )
-        )
 
         # Attempt to load from cache if available
         if cache and corpus_cache_path.exists():

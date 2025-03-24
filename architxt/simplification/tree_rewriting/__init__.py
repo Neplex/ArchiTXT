@@ -3,6 +3,7 @@ import functools
 import multiprocessing
 from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from contextlib import nullcontext
 from copy import deepcopy
 from multiprocessing import Manager, cpu_count
 from multiprocessing.managers import ValueProxy
@@ -71,27 +72,28 @@ def rewrite(
     min_support = min_support or max((len(forest) // 10), 2)
     max_workers = min(len(forest) // 100, max_workers or cpu_count()) or 1  # Cannot have less than 100 trees
 
-    mlflow.log_params(
-        {
-            'nb_sentences': len(forest),
-            'tau': tau,
-            'epoch': epoch,
-            'min_support': min_support,
-            'metric': metric.__name__,
-            'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)),
-        }
-    )
+    if mlflow.active_run():
+        mlflow.log_params(
+            {
+                'nb_sentences': len(forest),
+                'tau': tau,
+                'epoch': epoch,
+                'min_support': min_support,
+                'metric': metric.__name__,
+                'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)),
+            }
+        )
 
-    equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
-    log_metrics(0, forest, equiv_subtrees)
-    log_schema(0, forest)
-    log_clusters(0, equiv_subtrees)
-    log_instance_comparison_metrics(0, forest, forest, tau, metric)
+        equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
+        log_metrics(0, forest, equiv_subtrees)
+        log_schema(0, forest)
+        log_clusters(0, equiv_subtrees)
+        log_instance_comparison_metrics(0, forest, forest, tau, metric)
 
-    if debug:
-        # Log the forest as SVG
-        rooted_forest = Tree('ROOT', deepcopy(forest))
-        mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), 'debug/0/tree.html')
+        if debug:
+            # Log the forest as SVG
+            rooted_forest = Tree('ROOT', deepcopy(forest))
+            mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), 'debug/0/tree.html')
 
     new_forest = deepcopy(forest)
     mp_ctx = multiprocessing.get_context('spawn')
@@ -147,7 +149,7 @@ def _rewrite_step(
 
     :return: The updated forest and a flag indicating if simplifications occurred.
     """
-    if debug:
+    if mlflow.active_run() and debug:
         # Log the forest as SVG
         rooted_forest = Tree('ROOT', deepcopy(forest))
         mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), f'debug/{iteration}/tree.html')
@@ -174,9 +176,10 @@ def _rewrite_step(
     if op_id is not None:
         mlflow.log_metric('edit_op', op_id, step=iteration)
 
-    renamed_forest, equiv_subtrees = _post_process(forest, tau=tau, metric=metric, executor=executor)
-    log_schema(iteration, renamed_forest)
-    log_metrics(iteration, renamed_forest, equiv_subtrees)
+    if mlflow.active_run():
+        renamed_forest, equiv_subtrees = _post_process(forest, tau=tau, metric=metric, executor=executor)
+        log_schema(iteration, renamed_forest)
+        log_metrics(iteration, renamed_forest, equiv_subtrees)
 
     return forest, op_id is not None
 
@@ -254,6 +257,8 @@ def apply_operations(
     edit_ops_names = [(op.name, op) if isinstance(op, Operation) else op for op in edit_ops]
     chunks = distribute_evenly(forest, executor._max_workers)
 
+    run_id = mlflow.active_run().info.run_id if mlflow.active_run() else None
+
     with Manager() as manager:
         shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees, lock=False)
         simplification_operation = manager.Value(ctypes.c_int, -1, lock=False)
@@ -269,7 +274,7 @@ def apply_operations(
                 early_exit,
                 simplification_operation,
                 barrier,
-                mlflow.active_run().info.run_id,
+                run_id,
             )
             for idx, chunk in enumerate(chunks)
         ]
@@ -295,7 +300,7 @@ def _apply_operations_worker(
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
-    run_id: str,
+    run_id: str | None,
 ) -> tuple[Forest, str]:
     """
     Apply the given operation to the forest.
@@ -323,7 +328,7 @@ def _apply_operations_worker(
     equiv_subtrees = shared_equiv_subtrees.get()
 
     with (
-        mlflow.start_run(run_id=run_id),
+        mlflow.start_run(run_id=run_id) if run_id else nullcontext(),
         mlflow.start_span(
             "worker",
             attributes={

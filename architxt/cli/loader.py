@@ -88,8 +88,19 @@ def load_corpus(
     shuffle: bool = typer.Option(False, help="Shuffle the corpus data before processing to introduce randomness."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
+    log: bool = typer.Option(False, help="Enable logging to MLFlow."),
 ) -> None:
     """Automatically structure a corpus as a database instance and print the database schema as a CFG."""
+    if log:
+        console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
+        mlflow.start_run(description='corpus_processing')
+        mlflow.log_params(
+            {
+                'has_corpus': True,
+                'has_instance': bool(gen_instances),
+            }
+        )
+
     try:
         forest = asyncio.run(
             raw_load_corpus(
@@ -106,14 +117,6 @@ def load_corpus(
     except Exception as error:
         console.print_exception()
         raise typer.Exit(code=1) from error
-
-    # Rewrite the trees
-    mlflow.log_params(
-        {
-            'has_corpus': True,
-            'has_instance': bool(gen_instances),
-        }
-    )
 
     if sample:
         if sample < len(forest):

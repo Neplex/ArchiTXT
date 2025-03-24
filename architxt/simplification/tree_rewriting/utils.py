@@ -63,6 +63,9 @@ def log_instance_comparison_metrics(
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
     """
+    if not mlflow.active_run():
+        return
+
     metrics = Metrics(old_forest, new_forest)
     mlflow.log_metrics(
         {
@@ -88,6 +91,9 @@ def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER | N
     :param equiv_subtrees: A set of clusters representing equivalent subtrees.
     :return: None
     """
+    if not mlflow.active_run():
+        return
+
     # Count labels for all nodes in the forest
     label_counts = Counter(subtree.label() for tree in forest for subtree in tree.subtrees())
 
@@ -149,6 +155,9 @@ def log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER) -> None:
     :param iteration: The current iteration number.
     :param equiv_subtrees: The set of equivalent subtrees to process.
     """
+    if not mlflow.active_run():
+        return
+
     elems = []
     count = []
     max_len = []
@@ -175,6 +184,9 @@ def log_schema(iteration: int, forest: Forest) -> None:
     :param iteration: The current iteration number for logging.
     :param forest: A forest of tree objects to analyze.
     """
+    if not mlflow.active_run():
+        return
+
     schema = Schema.from_forest(forest, keep_unlabelled=True)
 
     mlflow.log_metrics(

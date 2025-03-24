@@ -6,6 +6,8 @@ from pathlib import Path
 import mlflow
 import more_itertools
 import typer
+from mlflow.data.code_dataset_source import CodeDatasetSource
+from mlflow.data.meta_dataset import MetaDataset
 from rich.columns import Columns
 from rich.panel import Panel
 from rich.table import Table
@@ -66,12 +68,18 @@ def simplify(
     shuffle: bool = typer.Option(False, help="Shuffle the data before processing to introduce randomness."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
+    log: bool = typer.Option(False, help="Enable logging to MLFlow."),
 ) -> None:
+    if log:
+        console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
+        mlflow.start_run(description='simplification')
+        for file in files:
+            mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
+
     forest = load_forest(files, sample=sample, shuffle=shuffle)
 
     console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
-    with mlflow.start_run():
-        new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+    new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
     if output:
         save_forest(new_forest, output)

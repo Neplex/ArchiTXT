@@ -16,8 +16,6 @@ from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Forest, Tree
 
-mlflow.set_experiment('ArchiTXT')
-
 RESOLVER_NAMES = {
     None: 'No resolution',
     'umls': 'Unified Medical Language System (UMLS)',
@@ -147,7 +145,7 @@ if submitted and file_language:
         if mlflow.active_run():
             mlflow.end_run()
 
-        with st.spinner('Computing...'), mlflow.start_run(run_name='UI run', log_system_metrics=True) as mlflow_run:
+        with st.spinner('Computing...'), mlflow.start_run(description='UI run', log_system_metrics=True) as mlflow_run:
             forest = asyncio.run(load_forest())
 
             if sample:
