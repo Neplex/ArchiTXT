@@ -7,17 +7,18 @@ import mlflow
 import more_itertools
 import typer
 from rich.columns import Columns
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
 from architxt.nlp import raw_load_corpus
+from architxt.schema import Schema
+from architxt.simplification.tree_rewriting import rewrite
 
 from .loader import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
 from .loader import app as loader_app
+from .utils import console, load_forest, save_forest, show_metrics, show_schema
 
-console = Console()
 app = typer.Typer(
     help="ArchiTXT is a tool for structuring textual data into a valid database model. "
     "It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
@@ -48,6 +49,39 @@ def ui(ctx: typer.Context) -> None:
             "[red]Streamlit is not installed or not found. Please install it with `pip install architxt[ui]` to use the UI.[/]"
         )
         raise typer.Exit(code=1) from error
+
+
+@app.command(help="Simplify a bunch of databased together.", no_args_is_help=True)
+def simplify(
+    files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
+    *,
+    tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    epoch: int = typer.Option(100, help="Number of iteration for tree rewriting.", min=1),
+    min_support: int = typer.Option(20, help="Minimum support for tree patterns.", min=1),
+    sample: int | None = typer.Option(None, help="Number of tree to use from the simplification.", min=1),
+    workers: int | None = typer.Option(
+        None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores.", min=1
+    ),
+    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+    shuffle: bool = typer.Option(False, help="Shuffle the data before processing to introduce randomness."),
+    debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
+    metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
+) -> None:
+    forest = load_forest(files, sample=sample, shuffle=shuffle)
+
+    console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
+    with mlflow.start_run():
+        new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+
+    if output:
+        save_forest(new_forest, output)
+
+    # Generate schema
+    schema = Schema.from_forest(new_forest, keep_unlabelled=False)
+    show_schema(schema)
+
+    if metrics:
+        show_metrics(forest, new_forest, schema, tau)
 
 
 @app.command(help="Display overall statistics for the corpus.")

@@ -1,26 +1,20 @@
 import asyncio
 import random
-from pathlib import Path
 
 import click
-import cloudpickle
 import mlflow
 import typer
-from rich.columns import Columns
-from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
 
 from architxt.database import read_database
 from architxt.generator import gen_instance
-from architxt.metrics import Metrics
 from architxt.nlp import raw_load_corpus
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 
-__all__ = ['app']
+from .utils import console, save_forest, show_metrics, show_schema
 
-from architxt.tree import Forest
+__all__ = ['app']
 
 ENTITIES_FILTER = {'TIME', 'MOMENT', 'DUREE', 'DURATION', 'DATE', 'OTHER_ENTITY', 'OTHER_EVENT', 'COREFERENCE'}
 RELATIONS_FILTER = {'TEMPORALITE', 'CAUSE-CONSEQUENCE'}
@@ -47,7 +41,6 @@ ENTITIES_MAPPING = {
     'MODE': 'ADMINISTRATION',
 }
 
-console = Console()
 app = typer.Typer(no_args_is_help=True)
 
 
@@ -57,17 +50,16 @@ def load_database(
     *,
     simplify_association: bool = typer.Option(True, help="Simplify association tables."),
     sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
-    output: Path | None = typer.Option(None, exists=False, writable=True, help="Path to save the result."),
+    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
 ) -> None:
     """Extract the database schema and relations to a tree format."""
     forest = list(read_database(db_connection, simplify_association=simplify_association, sample=sample or 0))
+
+    if output is not None:
+        save_forest(forest, output)
+
     schema = Schema.from_forest(forest, keep_unlabelled=False)
-
     show_schema(schema)
-
-    if output:
-        with console.status(f"[cyan]Saving instance to {output}..."), output.open('wb') as output_file:
-            cloudpickle.dump(forest, output_file)
 
 
 @app.command(name='corpus', help="Extract a database schema form a corpus.", no_args_is_help=True)
@@ -91,7 +83,7 @@ def load_corpus(
         help="The entity resolver to use when loading the corpus.",
         click_type=click.Choice(['umls', 'mesh', 'rxnorm', 'go', 'hpo'], case_sensitive=False),
     ),
-    output: Path | None = typer.Option(None, exists=False, writable=True, help="Path to save the result."),
+    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
     cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
     shuffle: bool = typer.Option(False, help="Shuffle the corpus data before processing to introduce randomness."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
@@ -156,9 +148,8 @@ def load_corpus(
     console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
     new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
-    if output:
-        with console.status(f"[cyan]Saving instance to {output}..."), output.open('wb') as output_file:
-            cloudpickle.dump(new_forest, output_file)
+    if output is not None:
+        save_forest(new_forest, output)
 
     # Generate schema
     schema = Schema.from_forest(new_forest, keep_unlabelled=False)
@@ -166,50 +157,3 @@ def load_corpus(
 
     if metrics:
         show_metrics(forest, new_forest, schema, tau)
-
-
-def show_schema(schema: Schema) -> None:
-    schema_str = schema.as_cfg()
-    mlflow.log_text(schema_str, 'schema.txt')
-
-    console.print(
-        Panel(
-            schema_str,
-            title="Schema as CFG (labelled nodes only)",
-            subtitle='[green]Valid Schema[/]' if schema.verify() else '[red]Invalid Schema[/]',
-        )
-    )
-
-
-def show_metrics(forest: Forest, new_forest: Forest, schema: Schema, tau: float) -> None:
-    with console.status("[cyan]Computing metrics. This may take a while. Please wait..."):
-        valid_instance = schema.extract_valid_trees(new_forest)
-        metrics = Metrics(forest, valid_instance)
-
-        metrics_table = Table("Metric", "Value", title="Valid instance")
-
-        metrics_table.add_row("Coverage ▲", f"{metrics.coverage():.3f}")
-        metrics_table.add_row("Similarity ▲", f"{metrics.similarity():.3f}")
-        metrics_table.add_row("Edit distance ▼", str(metrics.edit_distance()))
-        metrics_table.add_row("Redundancy (1.0) ▼", f"{metrics.redundancy(tau=1.0):.3f}")
-        metrics_table.add_row("Redundancy (0.7) ▼", f"{metrics.redundancy(tau=0.7):.3f}")
-        metrics_table.add_row("Redundancy (0.5) ▼", f"{metrics.redundancy(tau=0.5):.3f}")
-
-        metrics_table.add_section()
-
-        metrics_table.add_row("Cluster Mutual Information ▲", f"{metrics.cluster_ami(tau=tau):.3f}")
-        metrics_table.add_row("Cluster Completeness ▲", f"{metrics.cluster_completeness(tau=tau):.3f}")
-
-        schema_old = Schema.from_forest(forest, keep_unlabelled=True)
-        grammar_metrics_table = Table("Metric", "Before Value", "After Value", title="Schema grammar")
-        grammar_metrics_table.add_row(
-            "Productions ▼",
-            str(len(schema_old.productions())),
-            f"{len(schema.productions())} ({len(schema.productions()) / len(schema_old.productions()) * 100:.3f}%)",
-        )
-        grammar_metrics_table.add_row("Overlap ▼", f"{schema_old.group_overlap:.3f}", f"{schema.group_overlap:.3f}")
-        grammar_metrics_table.add_row(
-            "Balance ▲", f"{schema_old.group_balance_score:.3f}", f"{schema.group_balance_score:.3f}"
-        )
-
-        console.print(Columns([metrics_table, grammar_metrics_table]))

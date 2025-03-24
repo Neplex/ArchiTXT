@@ -113,7 +113,7 @@ async def _load_or_cache_corpus(
                         'cache_file': str(corpus_cache_path.absolute()),
                     }
                 ),
-                name=name,
+                name=name or archive_file.name,
                 digest=key,
             )
         )
