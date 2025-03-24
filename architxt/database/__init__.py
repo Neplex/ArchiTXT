@@ -14,6 +14,7 @@ def read_database(
     db_connection: str,
     *,
     simplify_association: bool = True,
+    search_all_instances: bool = False,
     sample: int = 0,
 ) -> Generator[Tree, None, None]:
     """
@@ -21,6 +22,7 @@ def read_database(
 
     :param db_connection: Connection string for the database.
     :param simplify_association: Flag to simplify non attributed association tables.
+    :param search_all_instances: Flag to search for all instances of database.
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the database.
     """
@@ -34,6 +36,11 @@ def read_database(
     with engine.begin() as conn:
         for table in root_tables:
             yield from read_table(table, conn=conn, simplify_association=simplify_association, sample=sample)
+            if search_all_instances:
+                for foreign_table in table.foreign_keys:
+                    if foreign_table.column.table not in root_tables:
+                        yield from read_unreferenced_table(table, foreign_table, conn=conn, sample=sample, visited_links=set())
+
 
 
 def get_root_tables(tables: set[Table]) -> set[Table]:
@@ -125,6 +132,35 @@ def read_table(
             children = parse_table(table, row, conn=conn)
 
         yield Tree("ROOT", children)
+
+
+def read_unreferenced_table(parent_table: Table, foreign_table: ForeignKey, *, conn: Connection, sample: int = 0, visited_links: set[ForeignKey] = set()) -> Generator[Tree, None, None]:
+    """
+    Process the relations of a table that is not referenced by any other tables.
+
+    :param parent_table: The table that refers to the foreign table.
+    :param foreign_table: The table to process.
+    :param conn: SQLAlchemy connection.
+    :param sample: Number of samples for each table to get.
+    :param visited_links: Set of visited relations to avoid cycles.
+    :return: A list of trees representing the relations and data for the table.
+    """
+    table = foreign_table.column.table
+
+    query = table.select().outerjoin(
+        parent_table,
+        parent_table.c[foreign_table.parent.name] == table.c[foreign_table.column.name],
+        ).where(parent_table.c[foreign_table.parent.name] == None)
+    if sample > 0:
+        query = query.limit(sample)
+
+    for row in tqdm(conn.execute(query), desc=table.name):
+        yield from parse_table(table, row, conn=conn)
+
+    visited_links.add(foreign_table)
+    for fk in table.foreign_keys:
+        if fk.column.table != table:
+            yield from read_unreferenced_table(table, fk, conn=conn, sample=sample, visited_links=visited_links)
 
 
 def parse_association_table(
