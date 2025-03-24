@@ -10,9 +10,9 @@ Usage examples
 
 .. grid:: 1 1 1 2
 
-    .. grid-item-card:: *Exploring a Textual Corpora*
+    .. grid-item-card:: *Exploring a Textual Corpus with ArchiTXT*
         :link: examples/corpus_exploration
         :link-type: doc
 
-        A step-by-step guide on how to explore and analyze your textual corpus using ArchiTXT.
-        This example shows how to load a corpus and generate a database instance.
+        A step-by-step guide on using ArchiTXT to process and analyze textual corpora.
+        This tutorial covers loading a corpus, parsing text, resolving named entities, and structuring data for efficient exploration and analysis.

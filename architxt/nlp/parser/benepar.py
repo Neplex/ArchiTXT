@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Iterator
+from types import TracebackType
 
 import benepar  # noqa: F401
 import spacy
@@ -41,6 +42,11 @@ class BeneparParser(Parser):
         self.spacy_models = spacy_models
         self.benepar_models = benepar_models or DEFAULT_BENEPAR_MODELS
         self.__models: dict[str, Language] = {}
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        self.__models.clear()
 
     def _get_model(self, language: str) -> Language:
         if language not in self.__models:

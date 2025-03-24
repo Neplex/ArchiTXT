@@ -26,6 +26,7 @@ github_repository = 'architxt'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    'myst_nb',
     'sphinx_design',
     'sphinx_copybutton',
     'sphinx_toolbox.more_autodoc',
@@ -61,6 +62,7 @@ html_css_files = [
     'custom.css',
 ]
 
+html_title = project
 html_theme = 'sphinx_book_theme'
 html_theme_options = {
     'path_to_docs': 'docs',
@@ -69,6 +71,9 @@ html_theme_options = {
     'use_source_button': True,
     'use_issues_button': True,
     'announcement': 'This project is currently in active development. Features may change, and some sections might be incomplete.',
+    'launch_buttons': {
+        'colab_url': 'https://colab.research.google.com',
+    },
 }
 
 # -- Options for autodoc extension -------------------------------------------
@@ -111,3 +116,10 @@ intersphinx_mapping = {
 
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
+
+# -- Options for myst_nb extension -------------------------------------------
+# https://myst-nb.readthedocs.io/en/latest/configuration.html
+
+nb_execution_timeout = 600
+nb_merge_streams = True
+nb_execution_raise_on_error = True
