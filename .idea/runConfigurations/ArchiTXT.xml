@@ -18,7 +18,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="architxt" />
-    <option name="PARAMETERS" value="run CAS.tar.gz --language=French --resolver=umls --sample=500 --debug --tau=0.5 --min-support=10" />
+    <option name="PARAMETERS" value="load corpus CAS.tar.gz --language=French --resolver=umls --sample=500 --debug --tau=0.5 --min-support=10" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="true" />

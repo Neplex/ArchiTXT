@@ -56,7 +56,7 @@ async def _get_cache_key(
 
 
 async def _load_or_cache_corpus(
-    archive_file: Path | BytesIO | BinaryIO,
+    archive_file: str | Path | BytesIO | BinaryIO,
     *,
     entities_filter: set[str] | None = None,
     relations_filter: set[str] | None = None,
@@ -86,7 +86,7 @@ async def _load_or_cache_corpus(
     """
     should_close = False
 
-    if isinstance(archive_file, Path):
+    if isinstance(archive_file, str | Path):
         archive_file = archive_file.open('rb')
         should_close = True
 
@@ -163,7 +163,7 @@ async def _load_or_cache_corpus(
 
 
 async def raw_load_corpus(
-    corpus_archives: Sequence[Path | BytesIO | BinaryIO],
+    corpus_archives: Sequence[str | Path | BytesIO | BinaryIO],
     languages: Sequence[str],
     *,
     entities_filter: set[str] | None = None,
