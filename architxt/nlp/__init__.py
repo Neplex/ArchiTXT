@@ -1,10 +1,11 @@
 import asyncio
 import hashlib
+import tarfile
+import zipfile
 from collections.abc import Sequence
 from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path
-from tarfile import TarFile
 from tempfile import TemporaryDirectory
 from typing import BinaryIO
 
@@ -55,6 +56,24 @@ async def _get_cache_key(
     return file_hash.hexdigest()
 
 
+def get_archive_loader(archive_file: BytesIO | BinaryIO) -> type[zipfile.ZipFile | tarfile.TarFile]:
+    cursor = archive_file.tell()
+    signature = archive_file.read(4)
+    archive_file.seek(cursor)
+
+    if signature.startswith(b'PK\x03\x04'):  # ZIP file signature
+        loader = zipfile.ZipFile
+
+    elif signature.startswith(b'\x1f\x8b'):  # GZIP signature (tar.gz)
+        loader = tarfile.TarFile
+
+    else:
+        msg = "Unsupported file format"
+        raise ValueError(msg)
+
+    return loader
+
+
 async def _load_or_cache_corpus(
     archive_file: str | Path | BytesIO | BinaryIO,
     *,
@@ -87,7 +106,7 @@ async def _load_or_cache_corpus(
     should_close = False
 
     if isinstance(archive_file, str | Path):
-        archive_file = archive_file.open('rb')
+        archive_file = Path(archive_file).open('rb')  # noqa: SIM115
         should_close = True
 
     try:
@@ -126,13 +145,16 @@ async def _load_or_cache_corpus(
 
         console.print(f'[yellow]Loading corpus from disk:[/] {archive_file.name}')
 
+        archive_loader = get_archive_loader(archive_file)
+        corpus: zipfile.ZipFile | tarfile.TarFile
+
         # If the cache does not exist, process the archive
         with (
-            TarFile.open(fileobj=archive_file) as corpus,
+            archive_loader.open(fileobj=archive_file) as corpus,
             TemporaryDirectory() as tmp_dir,
         ):
             # Extract archive contents to a temporary directory
-            await asyncio.to_thread(corpus.extractall, tmp_dir, None)
+            await asyncio.to_thread(corpus.extractall, path=tmp_dir)
             tmp_path = Path(tmp_dir)
 
             # Parse sentences and enrich the forest
