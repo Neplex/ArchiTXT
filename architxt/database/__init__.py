@@ -2,7 +2,7 @@ import warnings
 from collections.abc import Generator
 from typing import Any
 
-from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, create_engine
+from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, create_engine, exists
 from tqdm.auto import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
@@ -40,7 +40,6 @@ def read_database(
                 for foreign_table in table.foreign_keys:
                     if foreign_table.column.table not in root_tables:
                         yield from read_unreferenced_table(table, foreign_table, conn=conn, sample=sample, visited_links=set())
-
 
 
 def get_root_tables(tables: set[Table]) -> set[Table]:
@@ -134,30 +133,31 @@ def read_table(
         yield Tree("ROOT", children)
 
 
-def read_unreferenced_table(parent_table: Table, foreign_table: ForeignKey, *, conn: Connection, sample: int = 0, visited_links: set[ForeignKey] = set()) -> Generator[Tree, None, None]:
+def read_unreferenced_table(parent_table: Table, foreign_key: ForeignKey, *, conn: Connection, sample: int = 0, visited_links: set[ForeignKey]) -> Generator[Tree, None, None]:
     """
     Process the relations of a table that is not referenced by any other tables.
 
     :param parent_table: The table that refers to the foreign table.
-    :param foreign_table: The table to process.
+    :param foreign_key: The foreign key to process.
     :param conn: SQLAlchemy connection.
     :param sample: Number of samples for each table to get.
     :param visited_links: Set of visited relations to avoid cycles.
     :return: A list of trees representing the relations and data for the table.
     """
-    table = foreign_table.column.table
+    table = foreign_key.column.table
 
-    query = table.select().outerjoin(
-        parent_table,
-        parent_table.c[foreign_table.parent.name] == table.c[foreign_table.column.name],
-        ).where(parent_table.c[foreign_table.parent.name] == None)
+    query = table.select().where(
+        ~exists().where(
+            parent_table.c[foreign_key.parent.name] == table.c[foreign_key.column.name]
+        )
+    )
     if sample > 0:
         query = query.limit(sample)
 
     for row in tqdm(conn.execute(query), desc=table.name):
-        yield from parse_table(table, row, conn=conn)
+        yield Tree("ROOT", parse_table(table, row, conn=conn))
 
-    visited_links.add(foreign_table)
+    visited_links.add(foreign_key)
     for fk in table.foreign_keys:
         if fk.column.table != table:
             yield from read_unreferenced_table(table, fk, conn=conn, sample=sample, visited_links=visited_links)
@@ -223,8 +223,7 @@ def parse_table(
     if _visited_links is None:
         _visited_links = set()
 
-    group = build_group(table, row)
-    yield Tree("ROOT", [group])
+    yield build_group(table, row)
 
     for fk in table.foreign_keys:
         if fk in _visited_links:
