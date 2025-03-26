@@ -1,13 +1,11 @@
-import asyncio
+import abc
 import uuid
 import warnings
-from collections.abc import AsyncGenerator, AsyncIterable, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
 from copy import deepcopy
 from types import TracebackType
 
-import requests.exceptions
-from aiostream import stream
-from nltk.parse.corenlp import CoreNLPParser
+from aiostream import pipe, stream
 from nltk.tokenize.util import align_tokens
 
 from architxt.nlp.entity_resolver import EntityResolver
@@ -17,38 +15,22 @@ from architxt.tree import NodeLabel, NodeType, Tree, has_type, reduce_all
 __all__ = ['Parser']
 
 
-class Parser:
-    def __init__(
-        self,
-        *,
-        corenlp_url: str,
-        max_concurrency: int = 16,
-    ) -> None:
-        """
-        Create an NLP parser.
-
-        :param corenlp_url: The URL of the CoreNLP server.
-        :param max_concurrency: Maximum concurrent requests to CoreNLP.
-        """
-        self.corenlp = CoreNLPParser(url=corenlp_url)
-        self.semaphore = asyncio.Semaphore(max_concurrency)
-        self.max_concurrency = max_concurrency
-
+class Parser(abc.ABC):
     def __enter__(self) -> 'Parser':
         return self
 
     def __exit__(
         self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
     ) -> None:
-        self.corenlp.session.close()
+        pass
 
     async def parse_batch(
         self,
         sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence],
         language: str,
         resolver: EntityResolver | None = None,
-        batch_size: int | None = None,
-    ) -> AsyncGenerator[tuple[AnnotatedSentence, Tree]]:
+        batch_size: int = 100,
+    ) -> AsyncIterator[tuple[AnnotatedSentence, Tree]]:
         """
         Parse a batch of annotated sentences into enriched syntax trees.
 
@@ -62,8 +44,6 @@ class Parser:
         :param resolver: An optional entity resolver used to resolve entities within the parsed trees.
             If `None`, no entity resolution is performed.
         :param batch_size: The maximum number of concurrent parsing tasks that can run at once.
-            If `None`, it defaults to the class maximum concurrency parameter.
-            It should generally be less than or equal to the maximum concurrency limit.
             It will only load at most `batch_size` element from the input iterable.
 
         :yields: A tuple of the original `AnnotatedSentence` and its enriched `Tree`.
@@ -78,16 +58,33 @@ class Parser:
                         print(tree)
 
         """
-        # Convert sync iterable to async for compatibility
-        sentences = stream.iterate(sentences)
 
-        async def task(sent: AnnotatedSentence, *_: AnnotatedSentence) -> tuple[AnnotatedSentence, Tree | None]:
-            return sent, await self.parse(sent, language=language, resolver=resolver)
+        def parse(
+            batch_sentences: list[AnnotatedSentence], *_: list[AnnotatedSentence]
+        ) -> AsyncIterable[tuple[AnnotatedSentence, Tree]]:
+            texts = (sentence.txt for sentence in batch_sentences)
+            trees = self.raw_parse(texts, language=language)
+            return stream.iterate(zip(batch_sentences, trees))
 
-        async for sentence, tree in stream.amap.raw(
-            sentences, task, ordered=False, task_limit=batch_size or self.max_concurrency
-        ):
-            if tree:
+        async def process(
+            sent_tree: tuple[AnnotatedSentence, Tree], *_: tuple[AnnotatedSentence, Tree] | None
+        ) -> tuple[AnnotatedSentence, Tree] | None:
+            sentence, tree = sent_tree
+            if enriched_tree := await process_tree(sentence, tree, resolver=resolver):
+                return sentence, enriched_tree
+
+            return None
+
+        tree_stream = (
+            stream.iterate(sentences)
+            | pipe.chunks(batch_size)
+            | pipe.flatmap(parse)
+            | pipe.amap(process, ordered=False, task_limit=batch_size)
+            | pipe.filter(lambda x: x is not None)
+        )
+
+        async with tree_stream.stream() as streamer:
+            async for sentence, tree in streamer:
                 yield sentence, tree
 
     async def parse(
@@ -115,86 +112,77 @@ class Parser:
             .. code-block:: python
 
                 with Parser(corenlp_url="http://localhost:9000") as parser:
-                    enriched_tree = parse_sentence(sentence, language='English')
+                    tree = parse(sentence, language='English')
+                    print(tree)
 
         """
-        tree = await self.raw_parse(sentence.txt, language)
+        for tree in self.raw_parse([sentence.txt], language=language):
+            if enriched_tree := await process_tree(sentence, tree, resolver=resolver):
+                return enriched_tree
 
-        if not tree:
-            return None
+        return None
 
-        # Replace specific parenthesis tokens ('-LRB-' for '(', '-RRB-' for ')') in the leaf nodes
-        for subtree in tree.subtrees(lambda x: x.height() == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
-            subtree[0] = '(' if subtree[0] == '-LRB-' else ')'
-
-        # Flatten the coordination in the tree structure
-        fix_all_coord(tree)
-
-        # Enrich the tree with named entities and relations from the sentence
-        try:
-            enrich_tree(tree, sentence.txt, sentence.entities, sentence.rels)
-        except ValueError as error:
-            # Alignment issue, skip the tree
-            warnings.warn(f'Alignment issue: {error}')
-            return None
-
-        # Reduce the tree structure removing unneeded nodes
-        reduce_all(tree, set(NodeType))
-
-        # Don't yield an empty tree
-        if not len(tree) or any(isinstance(child, str) for child in tree):
-            return None
-
-        assert tree.root().label() == 'SENT'
-        assert all(child.label() != 'SENT' for child in tree)
-
-        # Rename nodes to unique undefined names
-        # This is needed when measuring statistics
-        for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT)):
-            subtree.set_label(f'UNDEF_{uuid.uuid4().hex}')
-
-        if resolver:
-            await resolve_tree(tree, resolver)
-
-        return tree
-
-    async def raw_parse(self, sentence: str, language: str) -> Tree | None:
+    @abc.abstractmethod
+    def raw_parse(self, sentences: Iterable[str], *, language: str) -> Iterator[Tree]:
         """
         Parse a sentences into syntax trees using CoreNLP server.
 
-        :param sentence: A sentence to parse.
+        :param sentences: The sentences to parse.
         :param language: The language to use for parsing.
 
-        :returns: The parse tree of the sentence.
+        :returns: The parse trees of the sentences.
 
         Example:
             .. code-block:: python
 
                 with Parser(corenlp_url="http://localhost:9000") as parser:
-                    tree = parser.raw_parse(sentence, language='English')
+                    for tree in parser.raw_parse(sentences, language='English'):
+                        print(tree)
 
         """
-        try:
-            async with self.semaphore:
-                parse_trees = await asyncio.to_thread(
-                    self.corenlp.raw_parse,
-                    sentence,
-                    properties={
-                        'tokenize.language': language,
-                        'ssplit.eolonly': 'true',
-                    },
-                )
+        raise NotImplementedError
 
-            # CoreNLP return a list of candidates tree, we only select the first one.
-            # A parse tree may contain multiple sentence subtrees we select only one and convert it into a tree.
-            for rooted_tree in parse_trees:
-                for sent_tree in rooted_tree:
-                    return Tree.convert(sent_tree)
 
-        except requests.exceptions.ConnectionError as error:
-            print(f'Cannot parse the following text due to {error.strerror} : "{sentence}"')
+async def process_tree(
+    sentence: AnnotatedSentence,
+    tree: Tree,
+    *,
+    resolver: EntityResolver | None = None,
+) -> Tree | None:
+    # Replace specific parenthesis tokens ('-LRB-' for '(', '-RRB-' for ')') in the leaf nodes
+    for subtree in tree.subtrees(lambda x: x.height() == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
+        subtree[0] = '(' if subtree[0] == '-LRB-' else ')'
 
+    # Flatten the coordination in the tree structure
+    fix_all_coord(tree)
+
+    # Enrich the tree with named entities and relations from the sentence
+    try:
+        enrich_tree(tree, sentence.txt, sentence.entities, sentence.rels)
+    except ValueError as error:
+        # Alignment issue, skip the tree
+        warnings.warn(f'Alignment issue: {error}')
         return None
+
+    # Reduce the tree structure removing unneeded nodes
+    reduce_all(tree, set(NodeType))
+
+    # Don't yield an empty tree
+    if not len(tree) or any(isinstance(child, str) for child in tree):
+        return None
+
+    assert tree.root().label() == 'SENT', tree.root().label()
+    assert all(child.label() != 'SENT' for child in tree)
+
+    # Rename nodes to unique undefined names
+    # This is needed when measuring statistics
+    for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT)):
+        subtree.set_label(f'UNDEF_{uuid.uuid4().hex}')
+
+    if resolver:
+        await resolve_tree(tree, resolver)
+
+    return tree
 
 
 def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:

@@ -17,6 +17,7 @@ from rich.console import Console
 from architxt.nlp.brat import load_brat_dataset
 from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
 from architxt.nlp.parser import Parser
+from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.tree import Forest, Tree
 from architxt.utils import read_cache, write_cache
 
@@ -220,7 +221,7 @@ async def raw_load_corpus(
 
     :returns: A forest containing the parsed and enriched trees.
     """
-    with Parser(corenlp_url=corenlp_url) as parser:
+    with CoreNLPParser(corenlp_url=corenlp_url) as parser:
         resolver_ctx = (
             ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
         )
