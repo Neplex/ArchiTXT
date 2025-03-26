@@ -17,7 +17,6 @@ from rich.console import Console
 from architxt.nlp.brat import load_brat_dataset
 from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
 from architxt.nlp.parser import Parser
-from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.tree import Forest, Tree
 from architxt.utils import read_cache, write_cache
 
@@ -57,22 +56,19 @@ async def _get_cache_key(
     return file_hash.hexdigest()
 
 
-def get_archive_loader(archive_file: BytesIO | BinaryIO) -> type[zipfile.ZipFile | tarfile.TarFile]:
+def open_archive(archive_file: BytesIO | BinaryIO) -> zipfile.ZipFile | tarfile.TarFile:
     cursor = archive_file.tell()
     signature = archive_file.read(4)
     archive_file.seek(cursor)
 
     if signature.startswith(b'PK\x03\x04'):  # ZIP file signature
-        loader = zipfile.ZipFile
+        return zipfile.ZipFile(archive_file)
 
-    elif signature.startswith(b'\x1f\x8b'):  # GZIP signature (tar.gz)
-        loader = tarfile.TarFile
+    if signature.startswith(b'\x1f\x8b'):  # GZIP signature (tar.gz)
+        return tarfile.TarFile.open(fileobj=archive_file)
 
-    else:
-        msg = "Unsupported file format"
-        raise ValueError(msg)
-
-    return loader
+    msg = "Unsupported file format"
+    raise ValueError(msg)
 
 
 async def _load_or_cache_corpus(
@@ -145,13 +141,11 @@ async def _load_or_cache_corpus(
             return await read_cache(corpus_cache_path)
 
         console.print(f'[yellow]Loading corpus from disk:[/] {archive_file.name}')
-
-        archive_loader = get_archive_loader(archive_file)
         corpus: zipfile.ZipFile | tarfile.TarFile
 
         # If the cache does not exist, process the archive
         with (
-            archive_loader.open(fileobj=archive_file) as corpus,
+            open_archive(archive_file) as corpus,
             TemporaryDirectory() as tmp_dir,
         ):
             # Extract archive contents to a temporary directory
@@ -190,11 +184,11 @@ async def raw_load_corpus(
     corpus_archives: Sequence[str | Path | BytesIO | BinaryIO],
     languages: Sequence[str],
     *,
+    parser: Parser,
     entities_filter: set[str] | None = None,
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-    corenlp_url: str,
     resolver_name: str | None = None,
     cache: bool = True,
 ) -> list[Tree]:
@@ -211,17 +205,17 @@ async def raw_load_corpus(
         - In-memory file-like objects.
         The list can include both local and in-memory sources, and its size should match the length of `languages`.
     :param languages: A list of languages corresponding to each corpus archive. The number of languages must match the number of archives.
+    :param parser: The parser to use to parse the sentences.
     :param entities_filter: A set of entity types to exclude from the output. If py:`None`, no filtering is applied.
     :param relations_filter: A set of relation types to exclude from the output. If py:`None`, no filtering is applied.
     :param entities_mapping: A dictionary mapping entity names to new values. If py:`None`, no mapping is applied.
     :param relations_mapping: A dictionary mapping relation names to new values. If py:`None`, no mapping is applied.
-    :param corenlp_url: The URL of the CoreNLP server used for parsing the corpus. The server should be accessible and properly configured to process the data.
     :param resolver_name: The name of the entity resolver to use. If py:`None`, no entity resolution is performed.
     :param cache: A boolean flag indicating whether to cache the computed forest for faster future access.
 
     :returns: A forest containing the parsed and enriched trees.
     """
-    with CoreNLPParser(corenlp_url=corenlp_url) as parser:
+    with parser as paser_ctx:
         resolver_ctx = (
             ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
         )
@@ -235,7 +229,7 @@ async def raw_load_corpus(
                         relations_filter=relations_filter,
                         entities_mapping=entities_mapping,
                         relations_mapping=relations_mapping,
-                        parser=parser,
+                        parser=paser_ctx,
                         language=language,
                         resolver=resolver,
                         cache=cache,

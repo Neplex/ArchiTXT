@@ -14,6 +14,7 @@ from rich.table import Table
 from typer.main import get_command
 
 from architxt.nlp import raw_load_corpus
+from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 
@@ -105,7 +106,7 @@ def corpus_stats(
         raw_load_corpus(
             corpus_path,
             language,
-            corenlp_url=corenlp_url,
+            parser=CoreNLPParser(corenlp_url=corenlp_url),
             cache=cache,
             entities_filter=ENTITIES_FILTER,
             relations_filter=RELATIONS_FILTER,
@@ -164,7 +165,7 @@ def largest_tree(
         raw_load_corpus(
             corpus_path,
             language,
-            corenlp_url=corenlp_url,
+            parser=CoreNLPParser(corenlp_url=corenlp_url),
             cache=cache,
             entities_filter=ENTITIES_FILTER,
             relations_filter=RELATIONS_FILTER,
