@@ -3,7 +3,7 @@ from collections.abc import Generator
 from typing import Any
 
 from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, create_engine
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
 

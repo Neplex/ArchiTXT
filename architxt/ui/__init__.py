@@ -12,6 +12,7 @@ from streamlit_tags import st_tags
 
 from architxt.cli import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
 from architxt.nlp import raw_load_corpus
+from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 from architxt.tree import Forest, Tree
@@ -135,7 +136,7 @@ async def load_forest() -> list[Tree]:
         entities_filter=set(entities_filter),
         relations_filter=set(relations_filter),
         entities_mapping=entity_mapping,
-        corenlp_url=corenlp_url,
+        parser=CoreNLPParser(corenlp_url=corenlp_url),
         resolver_name=resolver_name,
     )
 

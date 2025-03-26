@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Any
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from architxt.tree import Forest, NodeLabel, NodeType, Tree
 

@@ -9,7 +9,7 @@ from Levenshtein import jaro_winkler
 from Levenshtein import ratio as levenshtein_ratio
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from architxt.tree import Forest, NodeType, Tree, has_type
 

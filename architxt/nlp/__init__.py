@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import random
 import tarfile
 import zipfile
 from collections.abc import Sequence
@@ -13,6 +14,7 @@ import mlflow
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
 from rich.console import Console
+from tqdm.auto import tqdm
 
 from architxt.nlp.brat import load_brat_dataset
 from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
@@ -83,6 +85,7 @@ async def _load_or_cache_corpus(
     name: str | None = None,
     resolver: EntityResolver | None = None,
     cache: bool = True,
+    sample: int | None = None,
 ) -> Forest:
     """
     Load the corpus from disk or cache.
@@ -97,6 +100,7 @@ async def _load_or_cache_corpus(
     :param name: The corpus name.
     :param resolver: An optional entity resolver to use.
     :param cache: Whether to cache the computed forest or not.
+    :param sample: The number of examples to get from the corpus.
 
     :returns: A list of parsed trees representing the enriched corpus.
     """
@@ -160,6 +164,10 @@ async def _load_or_cache_corpus(
                 entities_mapping=entities_mapping,
                 relations_mapping=relations_mapping,
             )
+
+            if sample:
+                sentences = tqdm(random.sample(tuple(sentences), sample))
+
             forest = [tree async for _, tree in parser.parse_batch(sentences, language=language, resolver=resolver)]
             console.print(f'[green]Dataset loaded! {len(forest)} sentences found.[/]')
 
@@ -191,6 +199,7 @@ async def raw_load_corpus(
     relations_mapping: dict[str, str] | None = None,
     resolver_name: str | None = None,
     cache: bool = True,
+    sample: int | None = None,
 ) -> list[Tree]:
     """
     Asynchronously loads a set of corpus from disk or in-memory archives, parses it, and returns the enriched forest.
@@ -212,6 +221,7 @@ async def raw_load_corpus(
     :param relations_mapping: A dictionary mapping relation names to new values. If py:`None`, no mapping is applied.
     :param resolver_name: The name of the entity resolver to use. If py:`None`, no entity resolution is performed.
     :param cache: A boolean flag indicating whether to cache the computed forest for faster future access.
+    :param sample: The number of examples to take in each corpus.
 
     :returns: A forest containing the parsed and enriched trees.
     """
@@ -233,6 +243,7 @@ async def raw_load_corpus(
                         language=language,
                         resolver=resolver,
                         cache=cache,
+                        sample=sample,
                     )
                     for corpus, language in zip(corpus_archives, languages, strict=True)
                 ]

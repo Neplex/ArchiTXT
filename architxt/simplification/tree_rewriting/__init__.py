@@ -12,7 +12,7 @@ from multiprocessing.synchronize import Barrier
 import mlflow
 from mlflow.entities import SpanEvent
 from nltk import TreePrettyPrinter
-from tqdm import tqdm, trange
+from tqdm.auto import tqdm, trange
 
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type, reduce_all

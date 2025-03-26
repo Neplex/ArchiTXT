@@ -6,7 +6,7 @@ from pathlib import Path
 from pybrat.parser import BratParser, Example
 from pybrat.parser import Entity as BratEntity
 from pybrat.parser import Relation as BratRelation
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation
 from architxt.nlp.utils import split_entities, split_relations, split_sentences
@@ -152,7 +152,7 @@ def load_brat_dataset(
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
 ) -> Generator[AnnotatedSentence, None, None]:
-    examples = BratParser().parse(path.absolute())
+    examples = BratParser(ignore_types={"*", "E", "N", "AM"}, error='ignore').parse(path.absolute())
 
     for example in (pbar := tqdm(examples)):
         pbar.set_description(f'Load {example.id}')
