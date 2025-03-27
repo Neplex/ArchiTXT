@@ -22,9 +22,9 @@ ArchiTXT Documentation
     installation
     getting_started
     fundamentals
-    architecture
     load_data
     transform_data
+    export_data
     examples
     integrations
 

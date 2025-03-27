@@ -52,6 +52,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 autosectionlabel_prefix_document = True
 
+mermaid_version = "11.6.0"
+
 language = 'en'
 
 # -- Options for HTML output -------------------------------------------------
