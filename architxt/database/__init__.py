@@ -11,7 +11,7 @@ __all__ = ['read_database']
 
 
 def read_database(
-    engine: Connection,
+    conn: Connection,
     *,
     simplify_association: bool = True,
     search_all_instances: bool = False,
@@ -20,24 +20,26 @@ def read_database(
     """
     Read the database instance as a tree.
 
-    :param engine: SQLAlchemy engine to connect to the database.
+    :param conn: SQLAlchemy connection to the database.
     :param simplify_association: Flag to simplify non attributed association tables.
     :param search_all_instances: Flag to search for all instances of database.
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the database.
     """
     metadata = MetaData()
-    metadata.reflect(bind=engine)
+    metadata.reflect(bind=conn)
 
     root_tables = get_root_tables(set(metadata.tables.values()))
 
-    with engine.begin() as conn:
-        for table in root_tables:
-            yield from read_table(table, conn=conn, simplify_association=simplify_association, sample=sample)
-            if search_all_instances:
-                for foreign_table in table.foreign_keys:
-                    if foreign_table.column.table not in root_tables:
-                        yield from read_unreferenced_table(table, foreign_table, conn=conn, sample=sample, visited_links=set())
+    for table in root_tables:
+        yield from read_table(table, conn=conn, simplify_association=simplify_association, sample=sample)
+
+        if not search_all_instances:
+            continue
+
+        for foreign_table in table.foreign_keys:
+            if foreign_table.column.table not in root_tables:
+                yield from read_unreferenced_table(foreign_table, conn=conn, sample=sample)
 
 
 def get_root_tables(tables: set[Table]) -> set[Table]:
@@ -105,7 +107,11 @@ def is_association_table(table: Table) -> bool:
 
 
 def read_table(
-    table: Table, *, conn: Connection, simplify_association: bool = False, sample: int = 0
+    table: Table,
+    *,
+    conn: Connection,
+    simplify_association: bool = False,
+    sample: int = 0,
 ) -> Generator[Tree, None, None]:
     """
     Process the relations of a given table, retrieve data, and construct tree representations.
@@ -131,34 +137,39 @@ def read_table(
         yield Tree("ROOT", children)
 
 
-def read_unreferenced_table(parent_table: Table, foreign_key: ForeignKey, *, conn: Connection, sample: int = 0, visited_links: set[ForeignKey]) -> Generator[Tree, None, None]:
+def read_unreferenced_table(
+    foreign_key: ForeignKey,
+    *,
+    conn: Connection,
+    sample: int = 0,
+    _visited_links: set[ForeignKey] | None = None,
+) -> Generator[Tree, None, None]:
     """
     Process the relations of a table that is not referenced by any other tables.
 
-    :param parent_table: The table that refers to the foreign table.
     :param foreign_key: The foreign key to process.
     :param conn: SQLAlchemy connection.
     :param sample: Number of samples for each table to get.
-    :param visited_links: Set of visited relations to avoid cycles.
+    :param _visited_links: Set of visited relations to avoid cycles.
     :return: A list of trees representing the relations and data for the table.
     """
     table = foreign_key.column.table
 
-    query = table.select().where(
-        ~exists().where(
-            parent_table.c[foreign_key.parent.name] == table.c[foreign_key.column.name]
-        )
-    )
+    query = table.select().where(~exists().where(foreign_key.parent == foreign_key.column))
+
     if sample > 0:
         query = query.limit(sample)
 
     for row in tqdm(conn.execute(query), desc=table.name):
         yield Tree("ROOT", parse_table(table, row, conn=conn))
 
-    visited_links.add(foreign_key)
+    if _visited_links is None:
+        _visited_links = set()
+
+    _visited_links.add(foreign_key)
     for fk in table.foreign_keys:
         if fk.column.table != table:
-            yield from read_unreferenced_table(table, fk, conn=conn, sample=sample, visited_links=visited_links)
+            yield from read_unreferenced_table(fk, conn=conn, sample=sample, _visited_links=_visited_links)
 
 
 def parse_association_table(
