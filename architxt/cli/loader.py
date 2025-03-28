@@ -5,6 +5,7 @@ import click
 import mlflow
 import typer
 from rich.panel import Panel
+from sqlalchemy import create_engine
 
 from architxt.database import read_database
 from architxt.generator import gen_instance
@@ -53,8 +54,9 @@ def load_database(
     sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
     output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
 ) -> None:
+    engine = create_engine(db_connection)
     """Extract the database schema and relations to a tree format."""
-    forest = list(read_database(db_connection, simplify_association=simplify_association, sample=sample or 0))
+    forest = list(read_database(engine, simplify_association=simplify_association, sample=sample or 0))
 
     if output is not None:
         save_forest(forest, output)

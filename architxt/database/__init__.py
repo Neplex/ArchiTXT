@@ -2,7 +2,7 @@ import warnings
 from collections.abc import Generator
 from typing import Any
 
-from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, create_engine, exists
+from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, exists
 from tqdm.auto import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
@@ -11,7 +11,7 @@ __all__ = ['read_database']
 
 
 def read_database(
-    db_connection: str,
+    engine: Connection,
     *,
     simplify_association: bool = True,
     search_all_instances: bool = False,
@@ -20,14 +20,12 @@ def read_database(
     """
     Read the database instance as a tree.
 
-    :param db_connection: Connection string for the database.
+    :param engine: SQLAlchemy engine to connect to the database.
     :param simplify_association: Flag to simplify non attributed association tables.
     :param search_all_instances: Flag to search for all instances of database.
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the database.
     """
-    engine = create_engine(db_connection)
-
     metadata = MetaData()
     metadata.reflect(bind=engine)
 

@@ -1,11 +1,13 @@
 import pytest
-from architxt.database import read_table, read_unreferenced_table
+from architxt.database import read_database
 from architxt.tree import Forest, Tree
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-def create_test_database(engine: create_engine) -> None:
+@pytest.fixture
+def create_test_database() -> any:
+    engine = create_engine('sqlite:///:memory:')
     metadata = MetaData()
     product_table = Table('Product', metadata,
                           Column('id', Integer, primary_key=True),
@@ -45,8 +47,10 @@ def create_test_database(engine: create_engine) -> None:
         {'product_id': 1, 'consumer_id': 2, 'quantity': 1},
     ])
     session.commit()
+    return engine
 
 
+@pytest.fixture
 def build_expected_trees(include_unreferenced: bool) -> Forest:
     if include_unreferenced:
         return [
@@ -116,31 +120,14 @@ def build_expected_trees(include_unreferenced: bool) -> Forest:
 
 
 @pytest.mark.parametrize("include_unreferenced", [True, False])
-def test_read_database(include_unreferenced: bool) -> None:
-    engine = create_engine('sqlite:///:memory:')
+def test_read_database(include_unreferenced: bool, create_test_database: any, build_expected_trees: any) -> None:
+    engine = create_test_database
 
-    create_test_database(engine)
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
-    order = metadata.tables['Order']
+    forest_test = build_expected_trees
+    forest = list(read_database(engine, search_all_instances=include_unreferenced))
 
-    with engine.begin() as conn:
-        forest = list(read_table(order, conn=conn))
-        if include_unreferenced:
-            for fk in order.foreign_keys:
-                if fk.column.table not in forest:
-                    forest.extend(read_unreferenced_table(order, fk, conn=conn, visited_links=set()))
-
-        test_forest = build_expected_trees(include_unreferenced)
-        assert len(forest) == len(test_forest)
-        for i in range(len(forest)):
-            assert isinstance(forest[i], Tree)
-            assert len(forest[i]) == len(test_forest[i])
-            assert forest[i].depth() == test_forest[i].depth()
-            assert forest[i].height() == test_forest[i].height()
-            assert forest[i].label() == test_forest[i].label()
-            assert forest[i].groups() == test_forest[i].groups()
-            assert forest[i].entity_labels() == test_forest[i].entity_labels()
-            assert set(forest[i].leaves()) == set(test_forest[i].leaves())
-            assert forest[i].has_duplicate_entity() == test_forest[i].has_duplicate_entity()
+    for expected_tree, actual_tree in zip(forest_test, forest):
+        assert expected_tree.pprint() == actual_tree.pprint()
