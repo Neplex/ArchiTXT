@@ -123,7 +123,7 @@ pytest-cov = "*"
 pytest-xdist = "*"
 pytest-mock = "*"
 
-beartype = "^0.19.0"
+beartype = ">=0.19,<0.21"
 pytest-beartype = "^0.2.0"
 
 hypothesis = "^6.68.0"
