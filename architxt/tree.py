@@ -451,7 +451,7 @@ def reduce(tree: Tree, pos: int, types: set[str | NodeType] | None = None) -> bo
     if (
         not isinstance(tree[pos], Tree)  # Ensure the subtree at `pos` is a Tree
         or (types and has_type(tree[pos], types))  # Check if it matches the specified types
-        or (not types and len(tree[pos]) > 1)  # If no types, only reduce if it has one child
+        or (len(tree[pos]) > 1)  # If no types, only reduce if it has one child
     ):
         return False
 

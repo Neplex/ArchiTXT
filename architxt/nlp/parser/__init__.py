@@ -172,13 +172,14 @@ async def process_tree(
     if not len(tree) or any(isinstance(child, str) for child in tree):
         return None
 
-    assert tree.root().label() == 'SENT', tree.root().label()
-    assert all(child.label() != 'SENT' for child in tree)
+    # Do not keep root with only one child
+    if len(tree) == 1 and isinstance(tree[0], Tree):
+        tree = Tree.convert(tree[0])
 
     # Rename nodes to unique undefined names
     # This is needed when measuring statistics
     for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT)):
-        subtree.set_label(f'UNDEF_{uuid.uuid4().hex}')
+        subtree.set_label('ROOT' if subtree.parent() is None else f'UNDEF_{uuid.uuid4().hex}')
 
     if resolver:
         await resolve_tree(tree, resolver)
