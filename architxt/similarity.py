@@ -3,8 +3,10 @@ from collections import defaultdict
 from collections.abc import Callable, Collection, Iterable
 from itertools import combinations
 
+import mlflow
 import numpy as np
 import numpy.typing as npt
+import plotly.figure_factory as ff
 from Levenshtein import jaro_winkler
 from Levenshtein import ratio as levenshtein_ratio
 from scipy.cluster import hierarchy
@@ -139,7 +141,7 @@ def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> n
     nb_combinations = math.comb(len(subtrees), 2)
 
     distances = (
-        np.uint16((1 - similarity(x, y, metric=metric)) * 10000) if abs(x.height() - y.height()) < 5 else np.nan
+        (1 - similarity(x, y, metric=metric)) if abs(x.height() - y.height()) < 5 else np.nan
         for x, y in combinations(subtrees, 2)
     )
 
@@ -152,12 +154,17 @@ def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> n
             unit_scale=True,
         ),
         count=nb_combinations,
-        dtype=np.uint16,
+        dtype=np.float32,
     )
 
 
 def equiv_cluster(
-    trees: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC, _all_subtrees: bool = True
+    trees: Forest,
+    *,
+    tau: float,
+    metric: METRIC_FUNC = DEFAULT_METRIC,
+    _all_subtrees: bool = True,
+    _step: int | None = None,
 ) -> TREE_CLUSTER:
     """
     Cluster subtrees of a given tree based on their similarity.
@@ -192,6 +199,23 @@ def equiv_cluster(
     linkage_matrix = hierarchy.linkage(dist_matrix, method='single')
     clusters = hierarchy.fcluster(linkage_matrix, 1 - tau, criterion='distance')
 
+    square_dist_matrix = squareform(dist_matrix)
+
+    if mlflow.active_run() and _step is not None:
+        labels = [st.label() for st in subtrees]
+
+        fig = ff.create_annotated_heatmap(z=square_dist_matrix, colorscale='Cividis', x=labels, y=labels)
+        mlflow.log_figure(fig, f'similarity/{_step}/heatmap.html')
+
+        fig = ff.create_dendrogram(
+            linkage_matrix,
+            orientation='left',
+            color_threshold=1 - tau,
+            labels=labels,
+            linkagefun=lambda _: linkage_matrix,
+        )
+        mlflow.log_figure(fig, f'similarity/{_step}/dendrogram.html')
+
     # Group subtrees by cluster ID
     subtree_clusters = defaultdict(list)
     for idx, cluster_id in enumerate(clusters):
@@ -200,7 +224,6 @@ def equiv_cluster(
     # Sort clusters based on the center element (the closest subtree to all others)
     # We determine the center by computing the sum of distances for each subtree to all others in the cluster.
     # The index of the subtree with the smallest sum of distances is the center.
-    square_dist_matrix = squareform(dist_matrix)
     sorted_clusters = set()
 
     for cluster_indices in subtree_clusters.values():
