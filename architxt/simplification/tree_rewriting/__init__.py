@@ -159,7 +159,7 @@ def _rewrite_step(
             reduce_all(tree, {NodeType.ENT})
 
     with mlflow.start_span('equiv_cluster'):
-        equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
+        equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric, _step=iteration if debug else None)
         if debug:
             log_clusters(iteration, equiv_subtrees)
 
