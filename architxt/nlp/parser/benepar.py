@@ -50,16 +50,16 @@ class BeneparParser(Parser):
 
     def _get_model(self, language: str) -> Language:
         if language not in self.__models:
-            nlp = spacy.load(self.spacy_models[language])
+            nlp = spacy.load(self.spacy_models[language], disable={'ner', 'textcat', 'lemmatizer', 'tagger'})
             nlp.add_pipe('benepar', config={'model': self.benepar_models[language]})
             self.__models[language] = nlp
 
         return self.__models[language]
 
-    def raw_parse(self, sentences: Iterable[str], *, language: str) -> Iterator[Tree]:
+    def raw_parse(self, sentences: Iterable[str], *, language: str, batch_size: int = 128) -> Iterator[Tree]:
         nlp = self._get_model(language)
 
-        for doc in nlp.pipe(sentences):
+        for doc in nlp.pipe(sentences, batch_size=batch_size):
             sent = next(doc.sents)
             tree = Tree.fromstring(sent._.parse_string)
             tree.set_label('SENT')

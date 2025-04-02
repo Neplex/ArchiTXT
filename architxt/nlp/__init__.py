@@ -3,12 +3,12 @@ import hashlib
 import random
 import tarfile
 import zipfile
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 
 import mlflow
 from mlflow.data.code_dataset_source import CodeDatasetSource
@@ -21,6 +21,9 @@ from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
 from architxt.nlp.parser import Parser
 from architxt.tree import Forest, Tree
 from architxt.utils import read_cache, write_cache
+
+if TYPE_CHECKING:
+    from architxt.nlp.model import AnnotatedSentence
 
 __all__ = ['raw_load_corpus']
 
@@ -157,7 +160,7 @@ async def _load_or_cache_corpus(
             tmp_path = Path(tmp_dir)
 
             # Parse sentences and enrich the forest
-            sentences = load_brat_dataset(
+            sentences: Iterable[AnnotatedSentence] = load_brat_dataset(
                 tmp_path,
                 entities_filter=entities_filter,
                 relations_filter=relations_filter,

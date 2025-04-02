@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Iterable, Iterator
 from types import TracebackType
 
@@ -28,8 +29,9 @@ class CoreNLPParser(Parser):
     ) -> None:
         self.corenlp.session.close()
 
-    def raw_parse(self, sentences: Iterable[str], *, language: str) -> Iterator[Tree]:
-        for tree in self.corenlp.raw_parse_sents(sentences, properties={'tokenize.language': language}):
-            # CoreNLP return a list of candidates tree, we only select the first one.
-            # A parse tree may contain multiple sentence subtrees we select only one and convert it into a tree.
-            yield Tree.convert(next(tree)[0])
+    def raw_parse(self, sentences: Iterable[str], *, language: str, batch_size: int = 128) -> Iterator[Tree]:
+        for batch in itertools.batched(sentences, batch_size):
+            for tree in self.corenlp.raw_parse_sents(batch, properties={'tokenize.language': language}):
+                # CoreNLP return a list of candidates tree, we only select the first one.
+                # A parse tree may contain multiple sentence subtrees we select only one and convert it into a tree.
+                yield Tree.convert(next(tree)[0])

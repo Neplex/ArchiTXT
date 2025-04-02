@@ -29,7 +29,7 @@ class Parser(abc.ABC):
         sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence],
         language: str,
         resolver: EntityResolver | None = None,
-        batch_size: int = 100,
+        batch_size: int = 128,
     ) -> AsyncIterator[tuple[AnnotatedSentence, Tree]]:
         """
         Parse a batch of annotated sentences into enriched syntax trees.
@@ -63,7 +63,7 @@ class Parser(abc.ABC):
             batch_sentences: list[AnnotatedSentence], *_: list[AnnotatedSentence]
         ) -> AsyncIterable[tuple[AnnotatedSentence, Tree]]:
             texts = (sentence.txt for sentence in batch_sentences)
-            trees = self.raw_parse(texts, language=language)
+            trees = self.raw_parse(texts, language=language, batch_size=len(batch_sentences))
             return stream.iterate(zip(batch_sentences, trees))
 
         async def process(
@@ -116,19 +116,20 @@ class Parser(abc.ABC):
                     print(tree)
 
         """
-        for tree in self.raw_parse([sentence.txt], language=language):
+        for tree in self.raw_parse([sentence.txt], language=language, batch_size=1):
             if enriched_tree := await process_tree(sentence, tree, resolver=resolver):
                 return enriched_tree
 
         return None
 
     @abc.abstractmethod
-    def raw_parse(self, sentences: Iterable[str], *, language: str) -> Iterator[Tree]:
+    def raw_parse(self, sentences: Iterable[str], *, language: str, batch_size: int = 64) -> Iterator[Tree]:
         """
         Parse a sentences into syntax trees using CoreNLP server.
 
         :param sentences: The sentences to parse.
         :param language: The language to use for parsing.
+        :param batch_size: The maximum number of concurrent parsing tasks that can run at once.
 
         :returns: The parse trees of the sentences.
 
