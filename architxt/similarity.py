@@ -141,7 +141,7 @@ def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> n
     nb_combinations = math.comb(len(subtrees), 2)
 
     distances = (
-        (1 - similarity(x, y, metric=metric)) if abs(x.height() - y.height()) < 5 else np.nan
+        (1 - similarity(x, y, metric=metric)) if abs(x.height() - y.height()) < 5 else 1.0
         for x, y in combinations(subtrees, 2)
     )
 

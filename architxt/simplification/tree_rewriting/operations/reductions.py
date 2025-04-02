@@ -31,7 +31,7 @@ class ReduceOperation(Operation, ABC):
             parent = subtree.parent()
             position = subtree.treeposition()
             label = subtree.label()
-            old_labels = tuple(child.label() for child in parent)
+            old_labels = tuple(str(child.label()) for child in parent)
 
             # Convert subtree's children into independent nodes
             new_children = [deepcopy(child) for child in subtree]
@@ -40,7 +40,7 @@ class ReduceOperation(Operation, ABC):
             parent_pos = subtree.parent_index()
             parent[parent_pos : parent_pos + 1] = new_children
 
-            new_labels = tuple(child.label() for child in parent)
+            new_labels = tuple(str(child.label()) for child in parent)
             self._log_to_mlflow(
                 {
                     'label': str(label),
@@ -79,5 +79,5 @@ class ReduceTopOperation(ReduceOperation):
 
     def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]:
         for subtree in list(tree):
-            if not has_type(subtree):
+            if isinstance(subtree, Tree) and not has_type(subtree):
                 yield subtree
