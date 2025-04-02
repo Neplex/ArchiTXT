@@ -1,0 +1,1217 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Exploring a Textual Corpus with ArchiTXT &#8212; ArchiTXT</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/corpus_exploration';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Integrations" href="../integrations.html" />
+    <link rel="prev" title="Usage examples" href="../examples.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ArchiTXT</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/corpus.html">Preparing a Text Corpora</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../load_data.html">Load data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../load_data/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../transform_data.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../transform_data/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../export_data.html">Export data</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../examples.html">Usage examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Exploring a Textual Corpus with ArchiTXT</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.database.html">architxt.database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.simplification.tree_rewriting.utils.html">architxt.simplification.tree_rewriting.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/architxt">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/neplex/architxt/blob/master/docs/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Colab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Colab logo" src="../_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/neplex/architxt/blob/main/docs/examples/corpus_exploration.ipynb?plain=1" target="_blank"
+   class="btn btn-sm btn-source-file-button dropdown-item"
+   title="Show source"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-code"></i>
+  </span>
+<span class="btn__text-container">Show source</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/neplex/architxt/edit/main/docs/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/neplex/architxt/issues/new?title=Issue%20on%20page%20%2Fexamples/corpus_exploration.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Exploring a Textual Corpus with ArchiTXT</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#downloading-the-maccrobat-corpus">Downloading the MACCROBAT Corpus</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-and-configuring-nlp-models">Installing and Configuring NLP Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parsing-the-corpus-with-architxt">Parsing the Corpus with ArchiTXT</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="exploring-a-textual-corpus-with-architxt">
+<h1>Exploring a Textual Corpus with ArchiTXT<a class="headerlink" href="#exploring-a-textual-corpus-with-architxt" title="Link to this heading">#</a></h1>
+<p>This tutorial provides a <strong>step-by-step guide</strong> on how to use <strong>ArchiTXT</strong> to efficiently process and analyze textual corpora.</p>
+<p>ArchiTXT allows loading a corpus as a set of syntax trees, where each tree is enriched by incorporating named entities.
+These enriched trees form a <strong>forest</strong>, which can then be automatically structured into a valid <strong>database instance</strong> for further analysis.</p>
+<p>By following this tutorial, you’ll learn how to:</p>
+<ul class="simple">
+<li><p>Load a corpus</p></li>
+<li><p>Parse textual data with <strong>Berkeley Neural Parser (Benepar)</strong></p></li>
+<li><p>Extract structured data using <strong>ArchiTXT</strong></p></li>
+</ul>
+<section id="downloading-the-maccrobat-corpus">
+<h2>Downloading the MACCROBAT Corpus<a class="headerlink" href="#downloading-the-maccrobat-corpus" title="Link to this heading">#</a></h2>
+<p>The <strong>MACCROBAT</strong> corpus is a collection of <strong>200 annotated medical documents</strong>, specifically <strong>clinical case reports</strong>, extracted from <strong>PubMed Central</strong>.
+The annotations focus on key medical concepts such as <strong>diseases, treatments, medications, and symptoms</strong>, making it a valuable resource for biomedical text analysis.</p>
+<p>The <strong>MACCROBAT</strong> corpus is available for download at <a class="reference external" href="https://figshare.com/articles/dataset/MACCROBAT2018/9764942">Figshare</a>.</p>
+<p>Let’s download the corpora.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">urllib.request</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zipfile</span>
+
+<span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="s1">&#39;https://figshare.com/ndownloader/articles/9764942/versions/2&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+    <span class="n">archive_file</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+<span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">archive_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">archive</span><span class="p">:</span>
+    <span class="n">archive</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="s1">&#39;MACCROBAT2020.zip&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="installing-and-configuring-nlp-models">
+<h2>Installing and Configuring NLP Models<a class="headerlink" href="#installing-and-configuring-nlp-models" title="Link to this heading">#</a></h2>
+<p>ArchiTXT can parse the sentences using either <strong>Benepar</strong> with SpaCy or a <strong>CoreNLP</strong> server.
+In this tutorial, we will use the <strong>SpaCy parser</strong> with the default model, but you can use any models like one from <strong>SciSpaCy</strong>, a collection of models designed for biomedical text processing by <strong>AllenAI</strong>.</p>
+<p>To download the SciSpaCy model, do:</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>spacy<span class="w"> </span>download<span class="w"> </span>en_core_web_sm
+</pre></div>
+</div>
+</div>
+</div>
+<p>We also need to download the Benepar model for English</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">benepar</span>
+
+<span class="n">benepar</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">&#39;benepar_en3&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="parsing-the-corpus-with-architxt">
+<h2>Parsing the Corpus with ArchiTXT<a class="headerlink" href="#parsing-the-corpus-with-architxt" title="Link to this heading">#</a></h2>
+<p>Before processing the corpus, we need to configure the <strong>BeneparParser</strong>, specifying which SpaCy model to use for each language.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp.parser.benepar</span><span class="w"> </span><span class="kn">import</span> <span class="n">BeneparParser</span>
+
+<span class="c1"># Initialize the parser</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">BeneparParser</span><span class="p">(</span>
+    <span class="n">spacy_models</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;English&#39;</span><span class="p">:</span> <span class="s1">&#39;en_core_web_sm&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1"># Suppress warnings for unsupported annotations</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>To ensure everything is working correctly, we first parse a small set of sentences from the corpus.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp</span><span class="w"> </span><span class="kn">import</span> <span class="n">raw_load_corpus</span>
+
+<span class="n">forest</span> <span class="o">=</span> <span class="k">await</span> <span class="n">raw_load_corpus</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;MACCROBAT2020.zip&#39;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">&#39;English&#39;</span><span class="p">],</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">,</span>
+    <span class="n">sample</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can look at our enriched tree using the <code class="docutils literal notranslate"><span class="pre">pretty_print</span></code> method.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the highest tree</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tree</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">height</span><span class="p">())</span><span class="o">.</span><span class="n">pretty_print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                                                            ROOT                                                                                                                                                                                                                                      
+                         ____________________________________________________________________________________________________________________________________________________________________|______________________________________                                                                                                                                                                                                   
+                        |                                                                                                                                                                                                    UNDEF_ea80c20561                                                                                                                                                                                         
+                        |                                                                                                                                                                                                    5747cdb5923c9cb4                                                                                                                                                                                         
+                        |                                                                                                                                                                                                         959310                                                                                                                                                                                              
+                        |                              _____________________________________________________________________________________________________________________________________________________________________________|_________________________________                                                                                                                                                                 
+                        |                             |                  |                                           |                                                                                                                                         UNDEF_15b13a9cd8                                                                                                                                                       
+                        |                             |                  |                                           |                                                                                                                                         3141e6984dcf1161                                                                                                                                                       
+                        |                             |                  |                                           |                                                                                                                                              049652                                                                                                                                                            
+                        |                             |                  |                                           |                                                                        ________________________________________________________________________|______________________________________________________________________________________________________________________________________________________          
+                        |                             |                  |                                           |                                                                       |                                                                                         |                                                                                   UNDEF_38751ef053                                  |        
+                        |                             |                  |                                           |                                                                       |                                                                                         |                                                                                   2146e9ab893cb280                                  |        
+                        |                             |                  |                                           |                                                                       |                                                                                         |                                                                                        d1fbe3                                       |        
+                        |                             |                  |                                           |                                                                       |                                                                                         |                                                         _________________________________|____________________                      |         
+                 UNDEF_9d9278e1be                     |                  |                                    UNDEF_ee0888b9ca                                                        UNDEF_00cf8eb88d                                                                          UNDEF_3374c18319                                         UNDEF_1a5c779444                                              |                     |        
+                 4347ccbfcf34347a                     |                  |                                    284d7bbed110a79f                                                        7e4e08a9d1b297e2                                                                          434ad6904bda602c                                         694700aca95cdc23                                              |                     |        
+                      633d0a                          |                  |                                         421720                                                                  479bed                                                                                    64fac7                                                   44f8d4                                                   |                     |        
+            ____________|________________             |                  |                           ________________|________________                             __________________________|________________                                        _________________________________|________________                         _______________|________________                                      |                     |         
+        ENT::AGE                      ENT::SEX ENT::CLINICAL_EV     ENT::SUBJECT             ENT::NONBIOLOGIC                  ENT::DISEASE_DIS            ENT::DETAILED_DE                            ENT::DIAGNOSTIC_                       ENT::DETAILED_DE                                   ENT::DIAGNOSTIC_         ENT::LAB_VALUE                  ENT::DIAGNOSTIC_                      ENT::DIAGNOSTIC_      ENT::DISEASE_DIS
+           |                             |           ENT                 |                     AL_LOCATION                          ORDER                     SCRIPTION                                   PROCEDURE                              SCRIPTION                                          PROCEDURE                   |                            PROCEDURE                             PROCEDURE               ORDER      
+  _________|_______________________      |            |           _______|____________              |                                 |              _____________|_____________              ________________|_____________________                 |                 _________________________________|____________           |                ________________|________________            _________|__________           |         
+ 68  -    year          -         old   man        referred     his              optometrist       HES                               LTG        repeatedly                  irregular      visual           field       test     results          advanced          optic                              disc       cupping     normal       intraocular                        pressures      (                   IOPs     glaucoma
+</pre></div>
+</div>
+</div>
+</div>
+<p>Named Entity Resolution (NER) helps to standardize the named entities and to build a database instance.
+To enable NER, we need to provide the knowledge base to use.
+For this tutorial, we will use the <strong>UMLS (Unified Medical Language System)</strong> resolver.</p>
+<p>Let’s now parse more sentences from the corpora.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">forest</span> <span class="o">=</span> <span class="k">await</span> <span class="n">raw_load_corpus</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;MACCROBAT2020.zip&#39;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">&#39;English&#39;</span><span class="p">],</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">,</span>
+    <span class="n">sample</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">resolver_name</span><span class="o">=</span><span class="s1">&#39;umls&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the highest tree</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tree</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">height</span><span class="p">())</span><span class="o">.</span><span class="n">pretty_print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                                                                                                                                                                                                                           ROOT                                                                                                                                                                                                                                                                                                                                                                           
+                   _________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________|________________                                                                                                                                                                                                                                                                                                                                                              
+                  |                                                                                                                                                                                                                                                                                                                                                   UNDEF_b945bcce4e                                                                                                                                                                                                                                                                                                                                                    
+                  |                                                                                                                                                                                                                                                                                                                                                   f74b358b6f6ee1a3                                                                                                                                                                                                                                                                                                                                                    
+                  |                                                                                                                                                                                                                                                                                                                                                        fd365c                                                                                                                                                                                                                                                                                                                                                         
+                  |                          ________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________|________________                                                                                                                                                                                                                                                                                                                                             
+                  |                         |                                                                                                                                                                                                                                                                                                                                          UNDEF_efd62e6dd4                                                                                                                                                                                                                                                                                                                                   
+                  |                         |                                                                                                                                                                                                                                                                                                                                          604d69847ff5a881                                                                                                                                                                                                                                                                                                                                   
+                  |                         |                                                                                                                                                                                                                                                                                                                                               ce18e2                                                                                                                                                                                                                                                                                                                                        
+                  |                         |                                  _______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________|_______________________________________________________________________________________________________________________________________                                                                                                                                                                                                     
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                                                                                                                                     UNDEF_7bdbf1a0d4                                                                                                                                                                                           
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                                                                                                                                     2241ad89d0d176fb                                                                                                                                                                                           
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                                                                                                                                          d7825b                                                                                                                                                                                                
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                                       _____________________________________________________________________________________________________|______________________________________________________________________________________________________________________                                                                              
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                               UNDEF_2e4e13255d                                                                                                                               |                |                                                                   |                                                                            
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                               f94fab99a6ac8fb0                                                                                                                               |                |                                                                   |                                                                            
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                                                                                    2f957c                                                                                                                                    |                |                                                                   |                                                                            
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                   ___________________________________________________________________|__________________________________________________                                                                                     |                |                                                                   |                                                                             
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                                                                               UNDEF_0f105da3a1                                                                            |                |                                                                   |                                                                            
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                                                                               cf4a39a03695ffeb                                                                            |                |                                                                   |                                                                            
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                                                                                    6c1a29                                                                                 |                |                                                                   |                                                                            
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                   ___________________________________________________________________|________________                                                                    |                |                                                                   |                                                                             
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                  |                                                                             UNDEF_1c9afa90f2                                                           |                |                                                            UNDEF_eb45f238b5                                                                    
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                  |                                                                             6549e092adfa4ba5                                                           |                |                                                            334f84b5228b0f2f                                                                    
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                  |                                                                                  43ea0f                                                                |                |                                                                 c88024                                                                         
+                  |                         |                                 |                                                  |                                                  |                                                                                    |                                                                                  |                                                  |                                                   _________________________________|_________________________________                                  |                |                                  _________________________________|_________________________________                                            
+                  |                         |                                 |                                                  |                                                  |                                                                             UNDEF_c8debe7990                                                                          |                                                  |                                                  |                                                            UNDEF_736bea0808                         |                |                                 |                                                            UNDEF_48b445d3c0                                  
+                  |                         |                                 |                                                  |                                                  |                                                                             d5418cb18c52263c                                                                          |                                                  |                                                  |                                                            0a47979272b106e0                         |                |                                 |                                                            3549efa512784fa5                                  
+                  |                         |                                 |                                                  |                                                  |                                                                                  5ec34d                                                                               |                                                  |                                                  |                                                                 c50830                              |                |                                 |                                                                 b89965                                       
+                  |                         |                                 |                                                  |                                                  |                                                   _________________________________|_________________________________                                                 |                                                  |                                                  |                                                   ________________|________________                 |                |                                 |                                                   ________________|_________________________________          
+           UNDEF_01fad00b42                 |                          UNDEF_803261ae3f                                   UNDEF_bcb6a091e8                                   UNDEF_a74ffdbf1b                                   UNDEF_8498938bfa                                                    UNDEF_7206047452                                 UNDEF_52285d6c42                                   UNDEF_ad97bbaf45                                   UNDEF_7985259d56                                   UNDEF_b854145a46                         |                |                |                          UNDEF_70a8641036                                   UNDEF_d74c1eb4a1                                          |        
+           eb4e9cb634e3302f                 |                          d34fd3aa82e7d2fa                                   004ca2a3dd5f5d7c                                   3c41e4b43803c067                                   934d099e793893dc                                                    8348d8bad30f786d                                 d841368db81c75a9                                   ae457c8c5e1a0974                                   45458e8e39222291                                   114de5a8713a1fa0                         |                |                |                          a942d5adb79d2bf8                                   1c4eb3bd51307dc2                                          |        
+                eba50d                      |                               50835c                                             0ec684                                             a7486a                                             9cf669                                                              dcf389                                           b04e0a                                             a33cdf                                             46948e                                             6a7e20                              |                |                |                               591521                                             1d4a37                                               |        
+     _____________|____________             |                 ________________|________________                  ________________|________________                  ________________|________________                  ________________|________________                                   ________________|________________                 _______________|________________                  ________________|________________                  ________________|________________                  ________________|________________                 |                |                |                 ________________|________________                  ________________|_________________________________                 |         
+ ENT::AGE                   ENT::SEX ENT::DIAGNOSTIC_ ENT::DETAILED_DE                  ENT::BIOLOGICAL_ ENT::DETAILED_DE                  ENT::BIOLOGICAL_ ENT::DETAILED_DE ENT::BIOLOGICAL_ ENT::BIOLOGICAL_ ENT::DETAILED_DE                  ENT::BIOLOGICAL_                  ENT::DETAILED_DE                  ENT::BIOLOGICAL_ ENT::LAB_VALUE ENT::DETAILED_DE ENT::BIOLOGICAL_ ENT::DISEASE_DIS                  ENT::BIOLOGICAL_ ENT::DETAILED_DE                  ENT::BIOLOGICAL_ ENT::DETAILED_DE                  ENT::BIOLOGICAL_ ENT::DETAILED_DE ENT::DETAILED_DE ENT::DISEASE_DIS ENT::BIOLOGICAL_                  ENT::DISEASE_DIS  ENT::SEVERITY   ENT::DETAILED_DE                  ENT::DISEASE_DIS ENT::DISEASE_DIS
+    |                          |        PROCEDURE        SCRIPTION                         STRUCTURE        SCRIPTION                         STRUCTURE        SCRIPTION        STRUCTURE        STRUCTURE        SCRIPTION                         STRUCTURE                         SCRIPTION                         STRUCTURE           |           SCRIPTION        STRUCTURE          ORDER                           STRUCTURE        SCRIPTION                         STRUCTURE        SCRIPTION                         STRUCTURE        SCRIPTION        SCRIPTION          ORDER          STRUCTURE                           ORDER              |            SCRIPTION                           ORDER            ORDER      
+    |                          |            |                |                                 |                |                                 |                |                |                |                |                                 |                                 |                                 |               |               |                |                |                                 |                |                                 |                |                                 |                |                |                |                |                                 |                |                |                                 |                |         
+1 year old                   woman   vacterl associat      absent                        cervical atlas   supernumerary                    bone structure     hypoplastic    abies religiosa  bone structure     fatty acids                        end-stage                          tethered                        spinal cord        three           fused       bone structure   anorectal malfor                   cloaca chamber  common (qualifie                  urogenital sinus      duplex                            vagina       midline septum       type c      pathologic fistu   right kidney                        agenesis     moderate (severi       left                         hydronephrosis  vesico-ureteral 
+                                           ion                                                                                             of lumbar verteb                                      of coccyx                                                                                                                                                                 of rib          mations                                            r value)                                                                                                                                   la                                                             ty modifier)                                                           reflux     
+                                                                                                                                                  ra
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>ArchiTXT</strong> can then automatically structure parsed text into a <strong>database-friendly format</strong>.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">architxt.simplification.tree_rewriting</span><span class="w"> </span><span class="kn">import</span> <span class="n">rewrite</span>
+
+<span class="n">new_forest</span> <span class="o">=</span> <span class="n">rewrite</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the highest tree</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">new_forest</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tree</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">height</span><span class="p">())</span><span class="o">.</span><span class="n">pretty_print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                                                                                                                                                                          ROOT                                                                                                                                                                                                                                                                                                                                           
+               ____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________|________________                                                                                                                                                                                                                                                                                                                              
+              |                                                                                                                                                                                                                                                                                                      UNDEF_b945bcce4e                                                                                                                                                                                                                                                                                                                    
+              |                                                                                                                                                                                                                                                                                                      f74b358b6f6ee1a3                                                                                                                                                                                                                                                                                                                    
+              |                                                                                                                                                                                                                                                                                                           fd365c                                                                                                                                                                                                                                                                                                                         
+              |                      _______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________|________________                                                                                                                                                                                                                                                                                                             
+              |                     |                                                                                                                                                                                                                                                                                                 UNDEF_efd62e6dd4                                                                                                                                                                                                                                                                                                   
+              |                     |                                                                                                                                                                                                                                                                                                 604d69847ff5a881                                                                                                                                                                                                                                                                                                   
+              |                     |                                                                                                                                                                                                                                                                                                      ce18e2                                                                                                                                                                                                                                                                                                        
+              |                     |                              __________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________|_______________________________________________________________________________________________________________                                                                                                                                                                                             
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                                                                                                                UNDEF_7bdbf1a0d4                                                                                                                                                                                   
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                                                                                                                2241ad89d0d176fb                                                                                                                                                                                   
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                                                                                                                     d7825b                                                                                                                                                                                        
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                                  _____________________________________________________________________________________|______________________________________________________________________________________________________________                                                                              
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                          UNDEF_2e4e13255d                                                                                                               |                |                                                           |                                                                            
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                          f94fab99a6ac8fb0                                                                                                               |                |                                                           |                                                                            
+              |                     |                             |                                          |                                              |                                                                        |                                                                                                                               2f957c                                                                                                                    |                |                                                           |                                                                            
+              |                     |                             |                                          |                                              |                                                                        |                                                                      ___________________________________________________________|__________________________________________                                                                             |                |                                                           |                                                                             
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                                                                               UNDEF_0f105da3a1                                                                    |                |                                                           |                                                                            
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                                                                               cf4a39a03695ffeb                                                                    |                |                                                           |                                                                            
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                                                                                    6c1a29                                                                         |                |                                                           |                                                                            
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                               _______________________________________________________|________________                                                            |                |                                                           |                                                                             
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                              |                                                                 UNDEF_1c9afa90f2                                                   |                |                                                    UNDEF_eb45f238b5                                                                    
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                              |                                                                 6549e092adfa4ba5                                                   |                |                                                    334f84b5228b0f2f                                                                    
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                              |                                                                      43ea0f                                                        |                |                                                         c88024                                                                         
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                              |                                           _____________________________|_________________________                                  |                |                              _____________________________|_________________________________                                            
+              |                     |                             |                                          |                                              |                                                                     COLL::0                                                                  |                                              |                                          |                                                UNDEF_736bea0808                         |                |                             |                                                        UNDEF_48b445d3c0                                  
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                              |                                          |                                                0a47979272b106e0                         |                |                             |                                                        3549efa512784fa5                                  
+              |                     |                             |                                          |                                              |                                                                        |                                                                     |                                              |                                          |                                                     c50830                              |                |                             |                                                             b89965                                       
+              |                     |                             |                                          |                                              |                                               _________________________|________________________                                             |                                              |                                          |                                           ____________|________________                 |                |                             |                                               ________________|_________________________________          
+           GROUP::1                 |                          GROUP::0                                   GROUP::0                                   UNDEF_a74ffdbf1b                                   GROUP::0                                           GROUP::0                                     GROUP::0                                       GROUP::0                                   GROUP::0                                   GROUP::0                         |                |                |                          GROUP::0                                       GROUP::0                                              |        
+              |                     |                             |                                          |                                       3c41e4b43803c067                                      |                                                  |                                            |                                              |                                          |                                          |                             |                |                |                             |                                              |                                                  |        
+              |                     |                             |                                          |                                            a7486a                                           |                                                  |                                            |                                              |                                          |                                          |                             |                |                |                             |                                              |                                                  |        
+     _________|________             |                 ____________|____________                  ____________|____________                  ________________|________________                  ____________|____________                          ____________|____________                 _______________|________________                  ____________|____________                  ____________|____________                  ____________|____________                 |                |                |                 ____________|____________                  ________________|_________________________________                 |         
+ ENT::AGE           ENT::SEX ENT::DIAGNOSTIC_ ENT::DETAILED_DE          ENT::BIOLOGICAL_ ENT::DETAILED_DE          ENT::BIOLOGICAL_ ENT::DETAILED_DE ENT::BIOLOGICAL_ ENT::BIOLOGICAL_ ENT::DETAILED_DE          ENT::BIOLOGICAL_         ENT::DETAILED_DE          ENT::BIOLOGICAL_ ENT::LAB_VALUE ENT::DETAILED_DE ENT::BIOLOGICAL_ ENT::DISEASE_DIS          ENT::BIOLOGICAL_ ENT::DETAILED_DE          ENT::BIOLOGICAL_ ENT::DETAILED_DE          ENT::BIOLOGICAL_ ENT::DETAILED_DE ENT::DETAILED_DE ENT::DISEASE_DIS ENT::BIOLOGICAL_          ENT::DISEASE_DIS  ENT::SEVERITY   ENT::DETAILED_DE                  ENT::DISEASE_DIS ENT::DISEASE_DIS
+    |                  |        PROCEDURE        SCRIPTION                 STRUCTURE        SCRIPTION                 STRUCTURE        SCRIPTION        STRUCTURE        STRUCTURE        SCRIPTION                 STRUCTURE                SCRIPTION                 STRUCTURE           |           SCRIPTION        STRUCTURE          ORDER                   STRUCTURE        SCRIPTION                 STRUCTURE        SCRIPTION                 STRUCTURE        SCRIPTION        SCRIPTION          ORDER          STRUCTURE                   ORDER              |            SCRIPTION                           ORDER            ORDER      
+    |                  |            |                |                         |                |                         |                |                |                |                |                         |                        |                         |               |               |                |                |                         |                |                         |                |                         |                |                |                |                |                         |                |                |                                 |                |         
+1 year old           woman   vacterl associat      absent                cervical atlas   supernumerary            bone structure     hypoplastic    abies religiosa  bone structure     fatty acids                end-stage                 tethered                spinal cord        three           fused       bone structure   anorectal malfor           cloaca chamber  common (qualifie          urogenital sinus      duplex                    vagina       midline septum       type c      pathologic fistu   right kidney                agenesis     moderate (severi       left                         hydronephrosis  vesico-ureteral 
+                                   ion                                                                             of lumbar verteb                                      of coccyx                                                                                                                                        of rib          mations                                    r value)                                                                                                                   la                                                     ty modifier)                                                           reflux     
+                                                                                                                          ra
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now that we have a structured instance, we can extract its schema.
+The schema provides a <strong>formal representation</strong> of the extracted data.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">architxt.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span>
+
+<span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">new_forest</span><span class="p">,</span> <span class="n">keep_unlabelled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">as_cfg</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ROOT -&gt; COLL::0 COLL::1 GROUP::0 GROUP::1 REL::0&lt;-&gt;1;
+COLL::0 -&gt; GROUP::0;
+COLL::1 -&gt; GROUP::1;
+REL::0&lt;-&gt;1 -&gt; GROUP::0 GROUP::1;
+GROUP::1 -&gt; ENT::AGE ENT::DOSAGE ENT::MEDICATION ENT::SEX ENT::THERAPEUTIC_PROCEDURE;
+GROUP::0 -&gt; ENT::ADMINISTRATION ENT::AGE ENT::AREA ENT::BIOLOGICAL_ATTRIBUTE ENT::BIOLOGICAL_STRUCTURE ENT::CLINICAL_EVENT ENT::COLOR ENT::COREFERENCE ENT::DATE ENT::DETAILED_DESCRIPTION ENT::DIAGNOSTIC_PROCEDURE ENT::DISEASE_DISORDER ENT::DISTANCE ENT::DOSAGE ENT::DURATION ENT::FREQUENCY ENT::HISTORY ENT::LAB_VALUE ENT::MEDICATION ENT::NONBIOLOGICAL_LOCATION ENT::OTHER_EVENT ENT::OUTCOME ENT::PERSONAL_BACKGROUND ENT::QUALITATIVE_CONCEPT ENT::QUANTITATIVE_CONCEPT ENT::SEVERITY ENT::SEX ENT::SHAPE ENT::SIGN_SYMPTOM ENT::SUBJECT ENT::TEXTURE ENT::THERAPEUTIC_PROCEDURE ENT::TIME ENT::VOLUME;
+</pre></div>
+</div>
+</div>
+</div>
+<p>Not all extracted trees contribute to meaningful insights.
+We can filter our structured instance to retain only <strong>valid trees</strong>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cleaned_forest</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">extract_valid_trees</span><span class="p">(</span><span class="n">new_forest</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now that we have a structured dataset, we can explore the different <strong>semantic groups</strong>.
+Groups represent common patterns across the corpus.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">datasets</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">extract_datasets</span><span class="p">(</span><span class="n">new_forest</span><span class="p">)</span>
+<span class="n">group</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+<span class="n">datasets</span><span class="p">[</span><span class="n">group</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>DETAILED_DESCRIPTION</th>
+      <th>BIOLOGICAL_STRUCTURE</th>
+      <th>DISEASE_DISORDER</th>
+      <th>SEVERITY</th>
+      <th>LAB_VALUE</th>
+      <th>DIAGNOSTIC_PROCEDURE</th>
+      <th>SIGN_SYMPTOM</th>
+      <th>MEDICATION</th>
+      <th>DOSAGE</th>
+      <th>DURATION</th>
+      <th>...</th>
+      <th>DISTANCE</th>
+      <th>COLOR</th>
+      <th>BIOLOGICAL_ATTRIBUTE</th>
+      <th>QUANTITATIVE_CONCEPT</th>
+      <th>TIME</th>
+      <th>QUALITATIVE_CONCEPT</th>
+      <th>VOLUME</th>
+      <th>SUBJECT</th>
+      <th>SHAPE</th>
+      <th>TEXTURE</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>absent</td>
+      <td>cervical atlas</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>supernumerary</td>
+      <td>bone structure of lumbar vertebra</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>NaN</td>
+      <td>right kidney</td>
+      <td>agenesis</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>left</td>
+      <td>NaN</td>
+      <td>hydronephrosis</td>
+      <td>moderate (severity modifier)</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>fused</td>
+      <td>bone structure of rib</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>three</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>896</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>symptoms aspect</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>six months</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>897</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>early</td>
+      <td>NaN</td>
+      <td>recovery - action</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>898</th>
+      <td>NaN</td>
+      <td>sore throat</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>899</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>normal</td>
+      <td>coronary angiography</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>900</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>undergarment</td>
+      <td>500 mg daily</td>
+      <td>NaN</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>901 rows × 34 columns</p>
+</div></div></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Usage examples</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../integrations.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Integrations</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#downloading-the-maccrobat-corpus">Downloading the MACCROBAT Corpus</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-and-configuring-nlp-models">Installing and Configuring NLP Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parsing-the-corpus-with-architxt">Parsing the Corpus with ArchiTXT</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
