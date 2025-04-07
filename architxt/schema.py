@@ -77,15 +77,18 @@ class Schema(CFG):
         return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: _get_rank(p.lhs()))])
 
     @classmethod
-    def from_forest(cls, forest: Forest | Iterable[Tree], *, keep_unlabelled: bool = True) -> 'Schema':
+    def from_forest(
+        cls, forest: Forest | Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True
+    ) -> 'Schema':
         """
         Create a Schema from a given forest of trees.
 
         :param forest: The input forest from which to derive the schema.
         :param keep_unlabelled: Whether to keep uncategorized nodes in the schema.
+        :param merge_lhs: Whether to merge nodes in the schema.
         :return: A CFG-based schema representation.
         """
-        schema: dict[Nonterminal, set[Nonterminal]] = defaultdict(set)
+        schema: dict[Nonterminal, set[tuple[Nonterminal, ...]]] = defaultdict(set)
 
         for tree in forest:
             for prod in tree.productions():
@@ -94,13 +97,23 @@ class Schema(CFG):
                     continue
 
                 if has_type(prod, NodeType.COLL):
-                    schema[prod.lhs()] = {prod.rhs()[0]}
+                    schema[prod.lhs()] = {(prod.rhs()[0],)}
+
+                elif has_type(prod, NodeType.REL):
+                    rhs = tuple(sorted(prod.rhs()))
+                    schema[prod.lhs()].add(rhs)
+
+                elif merge_lhs:
+                    merged_rhs = set(prod.rhs()).union(*schema[prod.lhs()])
+                    rhs = tuple(sorted(merged_rhs))
+                    schema[prod.lhs()] = {rhs}
 
                 else:
-                    schema[prod.lhs()] |= set(prod.rhs())
+                    rhs = tuple(sorted(set(prod.rhs())))
+                    schema[prod.lhs()].add(rhs)
 
         # Create productions for the schema
-        productions = [Production(lhs, sorted(rhs)) for lhs, rhs in schema.items()]
+        productions = (Production(lhs, rhs) for lhs, alternatives in schema.items() for rhs in alternatives)
         productions = sorted(productions, key=lambda p: _get_rank(p.lhs()))
 
         return cls(Nonterminal('ROOT'), [Production(Nonterminal('ROOT'), sorted(schema.keys())), *productions])
