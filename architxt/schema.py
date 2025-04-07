@@ -286,6 +286,8 @@ class Schema(CFG):
             group: dataset
             for group in self.groups
             if not (
-                dataset := pd.concat([tree.group_instances(group.name) for tree in cleaned_forest], ignore_index=True)
+                dataset := pd.concat(
+                    [tree.group_instances(group.name) for tree in cleaned_forest], ignore_index=True
+                ).drop_duplicates()
             ).empty
         }
