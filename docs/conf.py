@@ -75,6 +75,7 @@ html_theme_options = {
     'announcement': 'This project is currently in active development. Features may change, and some sections might be incomplete.',
     'launch_buttons': {
         'colab_url': 'https://colab.research.google.com',
+        'binderhub_url': 'https://mybinder.org',
     },
 }
 
