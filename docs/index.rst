@@ -1,18 +1,25 @@
 ArchiTXT Documentation
 ======================
 
+.. meta::
+    :description: ArchiTXT is an open source Python library that transforms unstructured text into structured, searchable, and AI-ready data, enabling automated database generation and seamless integration.
+    :keywords: ArchiTXT, open source Python library, data structuration, text conversion, structured data, searchable data, AI-ready, auromatic modeling, text parsing, natural language processing, data modeling, machine learning, auditable, meta grammar, tree rewriting
+    :keywords lang=fr: ArchiTXT, bibliothèque Python open source, structuration de données, conversion de texte, données structurées, données interrogeables, prêtes pour l'IA, modelisation automatique, analyse de texte, traitement du langage naturel, modélisation de données, apprentissage automatique, auditable, méta-grammaire, réécriture d'arbres
+
 .. image:: https://img.shields.io/pypi/status/architxt
-    :alt: PyPI - Status
+    :alt: PyPI - Project Status
+    :target: https://pypi.org/project/architxt
 
 .. image:: https://img.shields.io/pypi/v/architxt
-    :alt: PyPI - Version
+    :alt: PyPI - Latest Version
     :target: https://pypi.org/project/architxt
 
 .. image:: https://img.shields.io/pypi/pyversions/architxt
-    :alt: PyPI - Python Version
+    :alt: PyPI - Supported Python Versions
+    :target: https://pypi.org/project/architxt
 
 .. image:: https://archive.softwareheritage.org/badge/origin/https://github.com/Neplex/ArchiTXT/
-    :alt: SWH
+    :alt: Software Heritage - ArchiTXT Source Code Archive
     :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/Neplex/ArchiTXT
 
 .. toctree::
@@ -51,9 +58,11 @@ ArchiTXT Documentation
 What is ArchiTXT ?
 ------------------
 
-ArchiTXT is a tool and library to converts unstructured text to structured formats.
-Making a valuable, searchable, AI-ready data and simplifying integration into databases.
+ArchiTXT is an open source Python library that transforms unstructured text into structured, searchable, and AI-ready data, enabling automated database generation and seamless integration.
 It ensures transparency, interoperability, and trust by offering a fully auditable, fair, and unbiased data modeling process.
+
+Key Features
+------------
 
 With ArchiTXT, you can:
 

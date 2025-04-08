@@ -59,12 +59,18 @@ language = 'en'
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+html_title = f'{project} Documentation'
+html_short_title = project
+
+html_logo = '_static/logo.png'
+html_favicon = '_static/favicon.png'
+
 html_static_path = ['_static']
-html_css_files = [
-    'custom.css',
+html_css_files = []
+html_js_files = [
+    'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js',
 ]
 
-html_title = project
 html_theme = 'sphinx_book_theme'
 html_theme_options = {
     'path_to_docs': 'docs',
