@@ -25,7 +25,9 @@ jobs:
         run: poetry install
 
       - name: Build Documentation
-        run: poetry run sphinx-build -M html docs _build
+        uses: ammaraskar/sphinx-action@8.2.3
+        with:
+          docs-folder: "docs/"
 
       - name: Deploy (GitHub Pages)
         uses: peaceiris/actions-gh-pages@v3
