@@ -1,5 +1,6 @@
 import asyncio
 import random
+from pathlib import Path
 
 import click
 import mlflow
@@ -7,7 +8,7 @@ import typer
 from rich.panel import Panel
 from sqlalchemy import create_engine
 
-from architxt.database import read_database
+from architxt.database import read_database, read_document
 from architxt.generator import gen_instance
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.parser.corenlp import CoreNLPParser
@@ -44,6 +45,30 @@ ENTITIES_MAPPING = {
 }
 
 app = typer.Typer(no_args_is_help=True)
+
+
+@app.command(name='document', help="Extract information of a document file into a formatted tree.")
+def load_document(
+    file: Path = typer.Argument(..., exists=True, readable=True, help="The document file to read."),
+    *,
+    raw: bool = typer.Option(
+        False, help="Enable row reading, skipping any transformation to convert it to the metamodel."
+    ),
+    root_name: str = typer.Option('ROOT', help="The root node name."),
+    sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
+    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+) -> None:
+    """Read a parse a document file to a structured tree."""
+    forest = list(read_document(file, raw_read=raw, root_name=root_name))
+
+    if sample:
+        forest = random.sample(forest, sample)
+
+    if output is not None:
+        save_forest(forest, output)
+
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
+    show_schema(schema)
 
 
 @app.command(name='database', help="Extract the database information into a formatted tree.")

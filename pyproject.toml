@@ -77,6 +77,8 @@ scispacy = "^0.5.5"
 notebook = "^7.3.3"
 plotly = "^6.0.1"
 itables = "^2.3.0"
+xmltodict = "^0.14.2"
+xlrd = "^2.0.1"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
@@ -110,6 +112,7 @@ udocker = "^1.3.0"
 pandas-stubs = "*"
 types-tqdm = "*"
 types-cachetools = "*"
+types-toml = "*"
 
 # Tools for generating grammar parsers
 antlr4-tools = "^0.2.1"
