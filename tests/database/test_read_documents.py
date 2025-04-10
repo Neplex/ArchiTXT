@@ -1,5 +1,5 @@
 import pytest
-from architxt.database.documents import parse_document_tree
+from architxt.database.loader.documents import parse_document_tree
 from architxt.tree import Tree
 
 
