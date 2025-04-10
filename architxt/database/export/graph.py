@@ -1,18 +1,21 @@
+from collections.abc import Iterable
+
 import neo4j
 from tqdm.auto import tqdm
 
-from architxt.tree import Forest, NodeType, Tree
+from architxt.tree import NodeType, Tree, has_type
 
 
 def export_graph(
-    session: neo4j.Session,
+    forest: Iterable[Tree],
     *,
-    forest: Forest,
+    session: neo4j.Session,
 ) -> None:
     """
     Export the graph instance as a dictionary using Neo4j.
 
     :param session: Neo4j session.
+    :param forest: The forest to export.
     :return: A generator that yields dictionaries representing the graph.
     """
     for tree in tqdm(forest, desc="Exporting graph"):
@@ -30,11 +33,11 @@ def export_tree(
     :param tree: Tree to export.
     :param session: Neo4j session.
     """
-    for node in tree:
-        if node.label().type == NodeType.GROUP:
-            export_group(node, session=session)
-        elif node.label().type == NodeType.REL:
-            export_relation(node, session=session)
+    for group in tree.subtrees(lambda subtree: has_type(subtree, NodeType.GROUP)):
+        export_group(group, session=session)
+
+    for relation in tree.subtrees(lambda subtree: has_type(subtree, NodeType.REL)):
+        export_relation(relation, session=session)
 
 
 def export_relation(
@@ -45,25 +48,25 @@ def export_relation(
     """
     Export the relation to the graph.
 
-    :param relation: Relation to export.
+    :param tree: Relation to export.
     :param session: Neo4j session.
     """
-    node1 = tree[0]
-    node2 = tree[1]
-    rel_name = tree[0].label().name + tree[1].label().name
+    # Order is arbitrary, a better strategy could be used to determine source and target nodes
+    src, dest = sorted(tree, key=lambda x: x.label())
+
+    rel_name = tree.label().replace('<->', '_')
     if tree.label().data:
-        if tree.label().data['source'] == tree[1].label().name:
-            node1, node2 = node2, node1
+        if tree.label().data['source'] != src.label().name:
+            src, dest = dest, src
+
         if tree.label().data['source_column']:
             rel_name = tree.label().data['source_column']
-    properties_group1 = get_properties(node1)
-    properties_group2 = get_properties(node2)
-    command = f"""
-    MERGE (n1:{tree[0].label().name} {{ {', '.join(f'{k}: {v!r}' for k, v in properties_group1.items())} }})
-    MERGE (n2:{tree[1].label().name} {{ {', '.join(f'{k}: {v!r}' for k, v in properties_group2.items())} }})
-    MERGE (n1)-[r:{rel_name}]->(n2)
-    """
-    session.run(command)
+
+    session.run(f"""
+    MATCH (src:`{src.label().name}` {{ {', '.join(f'`{k}`: {v!r}' for k, v in get_properties(src).items())} }})
+    MATCH (dest:`{dest.label().name}` {{ {', '.join(f'`{k}`: {v!r}' for k, v in get_properties(dest).items())} }})
+    MERGE (src)-[r:`{rel_name}`]->(dest)
+    """)
 
 
 def export_group(
@@ -78,7 +81,7 @@ def export_group(
     :param session: Neo4j session.
     """
     properties = get_properties(group)
-    command = f"MERGE (n:{group.label().name} {{ {', '.join(f'{k}: {v!r}' for k, v in properties.items())} }})"
+    command = f"MERGE (n:`{group.label().name}` {{ {', '.join(f'`{k}`: {v!r}' for k, v in properties.items())} }})"
     session.run(command, group=group.label().name, **properties)
 
 
