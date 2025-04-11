@@ -26,6 +26,7 @@ jobs:
           python-version: "${{ matrix.python-version }}"
         env:
           PYTEST_ADDOPTS: "--doctest-modules --beartype-skip-packages=architxt/grammar"
+          TOKENIZERS_PARALLELISM: false
 
   build:
     name: Build package
