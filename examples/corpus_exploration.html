@@ -1,0 +1,1082 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Exploring a Textual Corpus with ArchiTXT &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/corpus_exploration';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Integrating multiple databases" href="database_integration.html" />
+    <link rel="prev" title="Usage examples" href="../examples.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ArchiTXT Documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/corpus.html">Preparing a Text Corpora</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../load_data.html">Load data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../load_data/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../transform_data.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../transform_data/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../export_data.html">Export data</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../examples.html">Usage examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_api_reference/architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.database.export.graph.html">architxt.database.export.graph</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_api_reference/architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../_api_reference/architxt.simplification.tree_rewriting.utils.html">architxt.simplification.tree_rewriting.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/architxt">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://mybinder.org/v2/gh/neplex/architxt/master?urlpath=tree/docs/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Binder"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Binder logo" src="../_static/images/logo_binder.svg">
+  </span>
+<span class="btn__text-container">Binder</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/neplex/architxt/blob/master/docs/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Colab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Colab logo" src="../_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/neplex/architxt/blob/main/docs/examples/corpus_exploration.ipynb?plain=1" target="_blank"
+   class="btn btn-sm btn-source-file-button dropdown-item"
+   title="Show source"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-code"></i>
+  </span>
+<span class="btn__text-container">Show source</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/neplex/architxt/edit/main/docs/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/neplex/architxt/issues/new?title=Issue%20on%20page%20%2Fexamples/corpus_exploration.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/examples/corpus_exploration.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Exploring a Textual Corpus with ArchiTXT</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#downloading-the-maccrobat-corpus">Downloading the MACCROBAT Corpus</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-and-configuring-nlp-models">Installing and Configuring NLP Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parsing-the-corpus-with-architxt">Parsing the Corpus with ArchiTXT</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="exploring-a-textual-corpus-with-architxt">
+<h1>Exploring a Textual Corpus with ArchiTXT<a class="headerlink" href="#exploring-a-textual-corpus-with-architxt" title="Link to this heading">#</a></h1>
+<p>This tutorial provides a <strong>step-by-step guide</strong> on how to use <strong>ArchiTXT</strong> to efficiently process and analyze textual corpora.</p>
+<p>ArchiTXT allows loading a corpus as a set of syntax trees, where each tree is enriched by incorporating named entities.
+These enriched trees form a <strong>forest</strong>, which can then be automatically structured into a valid <strong>database instance</strong> for further analysis.</p>
+<p>By following this tutorial, you’ll learn how to:</p>
+<ul class="simple">
+<li><p>Load a corpus</p></li>
+<li><p>Parse textual data with <strong>Berkeley Neural Parser (Benepar)</strong></p></li>
+<li><p>Extract structured data using <strong>ArchiTXT</strong></p></li>
+</ul>
+<section id="downloading-the-maccrobat-corpus">
+<h2>Downloading the MACCROBAT Corpus<a class="headerlink" href="#downloading-the-maccrobat-corpus" title="Link to this heading">#</a></h2>
+<p>The <strong>MACCROBAT</strong> corpus is a collection of <strong>200 annotated medical documents</strong>, specifically <strong>clinical case reports</strong>, extracted from <strong>PubMed Central</strong>.
+The annotations focus on key medical concepts such as <strong>diseases, treatments, medications, and symptoms</strong>, making it a valuable resource for biomedical text analysis.</p>
+<p>The <strong>MACCROBAT</strong> corpus is available for download at <a class="reference external" href="https://figshare.com/articles/dataset/MACCROBAT2018/9764942">Figshare</a>.</p>
+<p>Let’s download the corpora.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">urllib.request</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zipfile</span>
+
+<span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="s1">&#39;https://figshare.com/ndownloader/articles/9764942/versions/2&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+    <span class="n">archive_file</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+<span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">archive_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">archive</span><span class="p">:</span>
+    <span class="n">archive</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="s1">&#39;MACCROBAT2020.zip&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="installing-and-configuring-nlp-models">
+<h2>Installing and Configuring NLP Models<a class="headerlink" href="#installing-and-configuring-nlp-models" title="Link to this heading">#</a></h2>
+<p>ArchiTXT can parse the sentences using either <strong>Benepar</strong> with SpaCy or a <strong>CoreNLP</strong> server.
+In this tutorial, we will use the <strong>SpaCy parser</strong> with the default model, but you can use any models like one from <strong>SciSpaCy</strong>, a collection of models designed for biomedical text processing by <strong>AllenAI</strong>.</p>
+<p>To download the SciSpaCy model, do:</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>spacy<span class="w"> </span>download<span class="w"> </span>en_core_web_sm
+</pre></div>
+</div>
+</div>
+</div>
+<p>We also need to download the Benepar model for English</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">benepar</span>
+
+<span class="n">benepar</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s1">&#39;benepar_en3&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="parsing-the-corpus-with-architxt">
+<h2>Parsing the Corpus with ArchiTXT<a class="headerlink" href="#parsing-the-corpus-with-architxt" title="Link to this heading">#</a></h2>
+<p>Before processing the corpus, we need to configure the <strong>BeneparParser</strong>, specifying which SpaCy model to use for each language.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp.parser.benepar</span><span class="w"> </span><span class="kn">import</span> <span class="n">BeneparParser</span>
+
+<span class="c1"># Initialize the parser</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">BeneparParser</span><span class="p">(</span>
+    <span class="n">spacy_models</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;English&#39;</span><span class="p">:</span> <span class="s1">&#39;en_core_web_sm&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1"># Suppress warnings for unsupported annotations</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>To ensure everything is working correctly, we first parse a small set of sentences from the corpus.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp</span><span class="w"> </span><span class="kn">import</span> <span class="n">raw_load_corpus</span>
+
+<span class="n">forest</span> <span class="o">=</span> <span class="k">await</span> <span class="n">raw_load_corpus</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;MACCROBAT2020.zip&#39;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">&#39;English&#39;</span><span class="p">],</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">,</span>
+    <span class="n">sample</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can look at our enriched tree using the <code class="docutils literal notranslate"><span class="pre">pretty_print</span></code> method.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the highest tree</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tree</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">height</span><span class="p">())</span><span class="o">.</span><span class="n">pretty_print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                          ROOT                                                                                                                                                                                                                                                                                                                             
+                                                ___________________________________________________________________________|_____________________________________________________________________________________                                                                                                                                                                                                                                           
+                                               |                                                                   |                                                                                      UNDEF_7fc008201f                                                                                                                                                                                                                                 
+                                               |                                                                   |                                                                                      624df494ee2d68d8                                                                                                                                                                                                                                 
+                                               |                                                                   |                                                                                           dd27d4                                                                                                                                                                                                                                      
+                                               |                                                                   |                   __________________________________________________________________________|___________________________________________________________________________________________________________________________________                                                                                                       
+                                               |                                                                   |                  |                                                                                                                                                                                                       UNDEF_7245682256                                                                                             
+                                               |                                                                   |                  |                                                                                                                                                                                                       014f7182f946119b                                                                                             
+                                               |                                                                   |                  |                                                                                                                                                                                                            fea938                                                                                                  
+                                               |                                                                   |                  |                                                                           ___________________________________________________________________________________________________________________________________|______________________________________________________                                                
+                                               |                                                                   |                  |                                                                   UNDEF_d0fddb9f77                                                                                                                                                                                  |                                              
+                                               |                                                                   |                  |                                                                   9e4dd2a06644e56f                                                                                                                                                                                  |                                              
+                                               |                                                                   |                  |                                                                        108c50                                                                                                                                                                                       |                                              
+                                               |                                                                   |                  |                                         _________________________________|_________________________________________________________________________________________                                                                                                 |                                               
+                                        UNDEF_145b57abc9                                                           |                  |                                 UNDEF_b6db25c0d0                                                                                                                   |                                                                                                |                                              
+                                        5f455b8d5936b277                                                           |                  |                                 274c179e29bf80c7                                                                                                                   |                                                                                                |                                              
+                                             f8d835                                                                |                  |                                      d7ec96                                                                                                                        |                                                                                                |                                              
+                  _____________________________|_________________________________                                  |                  |                          ______________|_________________________________                                                                                          |                                                                                                |                                               
+                 |                                                        UNDEF_9bcc29e037                         |                  |                         |                                         UNDEF_4e627a8f45                                                                          UNDEF_52fe2c9cb5                                                                                 UNDEF_f7d6f41748                                      
+                 |                                                        044498867d3cdb14                         |                  |                         |                                         784abca1689f23de                                                                          54436bbe53192f0a                                                                                 ea4d42991a727482                                      
+                 |                                                             771392                              |                  |                         |                                              8b4b37                                                                                    2da7d4                                                                                           22ff5f                                           
+                 |                                               ________________|________________                 |                  |                         |                                ________________|________________                                        _________________________________|____________________                                                              ______________|_______________________________________        
+            ENT::HISTORY                                 ENT::DETAILED_DE                  ENT::DISEASE_DIS     ENT::AGE       ENT::SIGN_SYMPTO            ENT::HISTORY                  ENT::DETAILED_DE                  ENT::DISEASE_DIS                       ENT::DIAGNOSTIC_                                       ENT::DIAGNOSTIC_                                               ENT::HISTORY                                          ENT::SEVERITY
+                 |                                          SCRIPTION                           ORDER              |                  M                         |                           SCRIPTION                           ORDER                                PROCEDURE                                              PROCEDURE                                                        |                                                      |      
+      ___________|_____________                                 |                                 |           _____|_______           |              ___________|______________                 |                 ________________|____________            ______________|________________                             _________|__________           _______________________________________|_________________________________________             |       
+nonischemic              cardiomyopathy                    nonischemic                      cardiomyopathy  age    10    years     symptoms     congestive    heart         failure         congestive         heart                        failure transthoracic                  echocardiography                   (                   TTE      severe      left ventricular  (   LV      )         dysfunction     (   LV  )  dysfunction     severe
+</pre></div>
+</div>
+</div>
+</div>
+<p>Named Entity Resolution (NER) helps to standardize the named entities and to build a database instance.
+To enable NER, we need to provide the knowledge base to use.
+For this tutorial, we will use the <strong>UMLS (Unified Medical Language System)</strong> resolver.</p>
+<p>Let’s now parse more sentences from the corpora.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">forest</span> <span class="o">=</span> <span class="k">await</span> <span class="n">raw_load_corpus</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;MACCROBAT2020.zip&#39;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">&#39;English&#39;</span><span class="p">],</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">,</span>
+    <span class="n">sample</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">resolver_name</span><span class="o">=</span><span class="s1">&#39;umls&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the highest tree</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tree</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">height</span><span class="p">())</span><span class="o">.</span><span class="n">pretty_print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                        ROOT                                                                                                                                                                                                                                 
+        _________________________________________________|__________________________________________________________________                                                                                                                                                                  
+       |                                                                                                             UNDEF_558e5aad26                                                                                                                                                        
+       |                                                                                                             904516a2182d927b                                                                                                                                                        
+       |                                                                                                                  6c866e                                                                                                                                                             
+       |                  __________________________________________________________________________________________________|________________                                                                                                                                                 
+       |                 |                                                                                                            UNDEF_5ad54bddfd                                                                                                                                       
+       |                 |                                                                                                            1340888a3f20e369                                                                                                                                       
+       |                 |                                                                                                                 67a1a9                                                                                                                                            
+       |                 |                                ___________________________________________________________________________________|______________________________________________________________________________________________________________________________________          
+       |                 |                        UNDEF_a21d216a5a                                                                                                                                                                                                 |                |        
+       |                 |                        364c2999b1fe80c5                                                                                                                                                                                                 |                |        
+       |                 |                             f8baef                                                                                                                                                                                                      |                |        
+       |                 |                _______________|__________________________________                                                                                                                                                                       |                |         
+       |                 |               |               |                           UNDEF_9d933b0a18                                                                                                                                                              |                |        
+       |                 |               |               |                           f94e468e906265f3                                                                                                                                                              |                |        
+       |                 |               |               |                                a62b75                                                                                                                                                                   |                |        
+       |                 |               |               |                  ________________|_______________________________                                                                                                                                       |                |         
+       |                 |               |               |                 |                |                        UNDEF_338ddec0b1                                                                                                                              |                |        
+       |                 |               |               |                 |                |                        214bd3abe362eeac                                                                                                                              |                |        
+       |                 |               |               |                 |                |                             6b6405                                                                                                                                   |                |        
+       |                 |               |               |                 |                |                _______________|_________________________________                                                                                                     |                |         
+       |                 |               |               |                 |                |               |                                          UNDEF_114b854648                                                                                            |                |        
+       |                 |               |               |                 |                |               |                                          a94925a9e11789a4                                                                                            |                |        
+       |                 |               |               |                 |                |               |                                               9ee1c3                                                                                                 |                |        
+       |                 |               |               |                 |                |               |                _________________________________|________________                                                                                    |                |         
+       |                 |               |               |                 |                |               |               |                                           UNDEF_4491e39e1f                                                                           |                |        
+       |                 |               |               |                 |                |               |               |                                           0a4c019cd2725c99                                                                           |                |        
+       |                 |               |               |                 |                |               |               |                                                e22d29                                                                                |                |        
+       |                 |               |               |                 |                |               |               |                 _________________________________|________________                                                                   |                |         
+       |                 |               |               |                 |                |               |               |                |                                           UNDEF_05541df006                                                          |                |        
+       |                 |               |               |                 |                |               |               |                |                                           2740829f4b6b52f8                                                          |                |        
+       |                 |               |               |                 |                |               |               |                |                                                642793                                                               |                |        
+       |                 |               |               |                 |                |               |               |                |                 _________________________________|________________                                                  |                |         
+       |                 |               |               |                 |                |               |               |                |                |                                           UNDEF_6ce6501a84                                         |                |        
+       |                 |               |               |                 |                |               |               |                |                |                                           4a42c99f441c878f                                         |                |        
+       |                 |               |               |                 |                |               |               |                |                |                                                0ac1eb                                              |                |        
+       |                 |               |               |                 |                |               |               |                |                |                 _________________________________|________________                                 |                |         
+       |                 |               |               |                 |                |               |               |                |                |                |                                           UNDEF_baf0f548cd                        |                |        
+       |                 |               |               |                 |                |               |               |                |                |                |                                           6441e7ba8c64a708                        |                |        
+       |                 |               |               |                 |                |               |               |                |                |                |                                                3e2b55                             |                |        
+       |                 |               |               |                 |                |               |               |                |                |                |                                  ________________|________________                |                |         
+ENT::DIAGNOSTIC_  ENT::DIAGNOSTIC_ ENT::LAB_VALUE ENT::DIAGNOSTIC_   ENT::LAB_VALUE  ENT::DIAGNOSTIC_ ENT::LAB_VALUE ENT::DIAGNOSTIC_  ENT::LAB_VALUE  ENT::DIAGNOSTIC_  ENT::LAB_VALUE                   ENT::DIAGNOSTIC_                   ENT::LAB_VALUE ENT::DIAGNOSTIC_  ENT::LAB_VALUE 
+   PROCEDURE         PROCEDURE           |           PROCEDURE             |            PROCEDURE           |           PROCEDURE            |            PROCEDURE            |                             PROCEDURE                             |           PROCEDURE            |        
+       |                 |               |               |                 |                |               |               |                |                |                |                                 |                                 |               |                |         
+  biochemical    cardiac troponin   was 0.714 mg     nesiritide    what 466,530 pg /  ), serum d -     was 8.14 mg   blood urea nitro  was 11.69 mmol  creatinine measu was 144.00 mmol                     serum urate                     was 611.40 mmol and endogenous   what 57.90 ml / 
+                    measurement                                                           dimer                      gen measurement                   rement, serum (                                      measurement                                     creatinine clear       min       
+                                                                                                                                                          procedure)                                                                                              ing
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>ArchiTXT</strong> can then automatically structure parsed text into a <strong>database-friendly format</strong>.</p>
+<div class="cell tag_remove-output docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">architxt.simplification.tree_rewriting</span><span class="w"> </span><span class="kn">import</span> <span class="n">rewrite</span>
+
+<span class="n">new_forest</span> <span class="o">=</span> <span class="n">rewrite</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the highest tree</span>
+<span class="nb">max</span><span class="p">(</span><span class="n">new_forest</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">tree</span><span class="p">:</span> <span class="n">tree</span><span class="o">.</span><span class="n">height</span><span class="p">())</span><span class="o">.</span><span class="n">pretty_print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                              ROOT                                                                                                                                                                 
+                                                _______________________________________________________________________________________________________________|___________________________________________________                                                                                                                 
+                                               |                                                  |                                                                                                         UNDEF_c8ba4b30f2                                                                                                       
+                                               |                                                  |                                                                                                         6c4f158914c60bf2                                                                                                       
+                                               |                                                  |                                                                                                              764d02                                                                                                            
+                                               |                                                  |                               _________________________________________________________________________________|_______________________________________________________________________________________________________         
+                                            COLL::0                                               |                              |                                                             COLL::0                                                                   |                |                |               |       
+                  _____________________________|________________                                  |                              |                                                ________________|_________________________________                                     |                |                |               |        
+              GROUP::0                                       GROUP::0                             |                           GROUP::0                                        GROUP::0                                           GROUP::0                                |                |                |               |       
+       __________|____________                  ________________|________________                 |                  ____________|____________                  _________________|________________                  ________________|_________________                   |                |                |               |        
+ENT::DURATION          ENT::CLINICAL_EV ENT::CLINICAL_EV ENT::NONBIOLOGIC ENT::SIGN_SYMPTO ENT::DIAGNOSTIC_   ENT::SEVERITY            ENT::SIGN_SYMPTO ENT::SIGN_SYMPTO  ENT::BIOLOGICAL_  ENT::LAB_VALUE  ENT::DIAGNOSTIC_ ENT::SIGN_SYMPTO   ENT::LAB_VALUE    ENT::DIAGNOSTIC_ ENT::DIAGNOSTIC_  ENT::LAB_VALUE  ENT::LAB_VALUE
+      |                      ENT              ENT          AL_LOCATION           M            PROCEDURE             |                         M                M             STRUCTURE            |            PROCEDURE            M                 |              PROCEDURE        PROCEDURE            |               |       
+      |                       |                |                |                |                |                 |                         |                |                 |                |                |                |                 |                  |                |                |               |        
+     year              follow-up status   presentation      hospitals          fever       echocardiography severe (severity            aortic valve        rupture      one of the cusps  worsening patter cardiac contract ectasia of left  ( telediastolic /  left ventricular       ( lvef      mental depressio  ( 40 - 45 %  
+                                                                                                                modifier)               insufficiency                     of the homograft        n         ility alteration atrial appendage   telesystolic      ejection fractio                         n                       
+                                                                                                                                                                                                                                               diameters 60/42           n                                                         
+                                                                                                                                                                                                                                                      mm
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now that we have a structured instance, we can extract its schema.
+The schema provides a <strong>formal representation</strong> of the extracted data.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">architxt.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span>
+
+<span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">new_forest</span><span class="p">,</span> <span class="n">keep_unlabelled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">as_cfg</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ROOT -&gt; COLL::0 GROUP::0;
+COLL::0 -&gt; GROUP::0;
+GROUP::0 -&gt; ENT::ACTIVITY ENT::ADMINISTRATION ENT::AGE ENT::BIOLOGICAL_ATTRIBUTE ENT::BIOLOGICAL_STRUCTURE ENT::CLINICAL_EVENT ENT::COLOR ENT::COREFERENCE ENT::DATE ENT::DETAILED_DESCRIPTION ENT::DIAGNOSTIC_PROCEDURE ENT::DISEASE_DISORDER ENT::DISTANCE ENT::DOSAGE ENT::DURATION ENT::FAMILY_HISTORY ENT::FREQUENCY ENT::HISTORY ENT::LAB_VALUE ENT::MASS ENT::MEDICATION ENT::NONBIOLOGICAL_LOCATION ENT::OCCUPATION ENT::OTHER_EVENT ENT::OUTCOME ENT::PERSONAL_BACKGROUND ENT::QUALITATIVE_CONCEPT ENT::QUANTITATIVE_CONCEPT ENT::SEVERITY ENT::SEX ENT::SHAPE ENT::SIGN_SYMPTOM ENT::SUBJECT ENT::TEXTURE ENT::THERAPEUTIC_PROCEDURE ENT::TIME ENT::VOLUME;
+</pre></div>
+</div>
+</div>
+</div>
+<p>Not all extracted trees contribute to meaningful insights.
+We can filter our structured instance to retain only <strong>valid trees</strong>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cleaned_forest</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">extract_valid_trees</span><span class="p">(</span><span class="n">new_forest</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now that we have a structured dataset, we can explore the different <strong>semantic groups</strong>.
+Groups represent common patterns across the corpus.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">datasets</span> <span class="o">=</span> <span class="n">schema</span><span class="o">.</span><span class="n">extract_datasets</span><span class="p">(</span><span class="n">new_forest</span><span class="p">)</span>
+<span class="n">group</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+<span class="n">datasets</span><span class="p">[</span><span class="n">group</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><table id="itables_ec27fe42_aab2_4c16_b32f_c27d3bb2ef5d" class="display nowrap" data-quarto-disable-processing="true" style="table-layout:auto;width:auto;margin:auto;caption-side:bottom">
+<thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>DISEASE_DISORDER</th>
+      <th>SIGN_SYMPTOM</th>
+      <th>SEVERITY</th>
+      <th>TEXTURE</th>
+      <th>BIOLOGICAL_STRUCTURE</th>
+      <th>AGE</th>
+      <th>SEX</th>
+      <th>PERSONAL_BACKGROUND</th>
+      <th>HISTORY</th>
+      <th>ACTIVITY</th>
+      <th>CLINICAL_EVENT</th>
+      <th>NONBIOLOGICAL_LOCATION</th>
+      <th>DATE</th>
+      <th>DETAILED_DESCRIPTION</th>
+      <th>LAB_VALUE</th>
+      <th>DURATION</th>
+      <th>DISTANCE</th>
+      <th>DIAGNOSTIC_PROCEDURE</th>
+      <th>BIOLOGICAL_ATTRIBUTE</th>
+      <th>COLOR</th>
+      <th>MEDICATION</th>
+      <th>DOSAGE</th>
+      <th>ADMINISTRATION</th>
+      <th>THERAPEUTIC_PROCEDURE</th>
+      <th>FREQUENCY</th>
+      <th>SHAPE</th>
+      <th>COREFERENCE</th>
+      <th>QUANTITATIVE_CONCEPT</th>
+      <th>FAMILY_HISTORY</th>
+      <th>SUBJECT</th>
+      <th>MASS</th>
+      <th>QUALITATIVE_CONCEPT</th>
+      <th>OUTCOME</th>
+      <th>TIME</th>
+      <th>OCCUPATION</th>
+      <th>VOLUME</th>
+      <th>OTHER_EVENT</th>
+    </tr>
+  </thead><tbody><tr>
+<td style="vertical-align:middle; text-align:left">
+<a href=https://mwouts.github.io/itables/><svg class="main-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+width="64" viewBox="0 0 500 400" style="font-family: 'Droid Sans', sans-serif;">
+    <g style="fill:#d9d7fc">
+        <path d="M100,400H500V357H100Z" />
+        <path d="M100,300H400V257H100Z" />
+        <path d="M0,200H400V157H0Z" />
+        <path d="M100,100H500V57H100Z" />
+        <path d="M100,350H500V307H100Z" />
+        <path d="M100,250H400V207H100Z" />
+        <path d="M0,150H400V107H0Z" />
+        <path d="M100,50H500V7H100Z" />
+    </g>
+    <g style="fill:#1a1366;stroke:#1a1366;">
+   <rect x="100" y="7" width="400" height="43">
+    <animate
+      attributeName="width"
+      values="0;400;0"
+      dur="5s"
+      repeatCount="indefinite" />
+      <animate
+      attributeName="x"
+      values="100;100;500"
+      dur="5s"
+      repeatCount="indefinite" />
+  </rect>
+        <rect x="0" y="107" width="400" height="43">
+    <animate
+      attributeName="width"
+      values="0;400;0"
+      dur="3.5s"
+      repeatCount="indefinite" />
+    <animate
+      attributeName="x"
+      values="0;0;400"
+      dur="3.5s"
+      repeatCount="indefinite" />
+  </rect>
+        <rect x="100" y="207" width="300" height="43">
+    <animate
+      attributeName="width"
+      values="0;300;0"
+      dur="3s"
+      repeatCount="indefinite" />
+    <animate
+      attributeName="x"
+      values="100;100;400"
+      dur="3s"
+      repeatCount="indefinite" />
+  </rect>
+        <rect x="100" y="307" width="400" height="43">
+    <animate
+      attributeName="width"
+      values="0;400;0"
+      dur="4s"
+      repeatCount="indefinite" />
+      <animate
+      attributeName="x"
+      values="100;100;500"
+      dur="4s"
+      repeatCount="indefinite" />
+  </rect>
+        <g style="fill:transparent;stroke-width:8; stroke-linejoin:round" rx="5">
+            <g transform="translate(45 50) rotate(-45)">
+                <circle r="33" cx="0" cy="0" />
+                <rect x="-8" y="32" width="16" height="30" />
+            </g>
+
+            <g transform="translate(450 152)">
+                <polyline points="-15,-20 -35,-20 -35,40 25,40 25,20" />
+                <rect x="-15" y="-40" width="60" height="60" />
+            </g>
+
+            <g transform="translate(50 352)">
+                <polygon points="-35,-5 0,-40 35,-5" />
+                <polygon points="-35,10 0,45 35,10" />
+            </g>
+
+            <g transform="translate(75 250)">
+                <polyline points="-30,30 -60,0 -30,-30" />
+                <polyline points="0,30 -30,0 0,-30" />
+            </g>
+
+            <g transform="translate(425 250) rotate(180)">
+                <polyline points="-30,30 -60,0 -30,-30" />
+                <polyline points="0,30 -30,0 0,-30" />
+            </g>
+        </g>
+    </g>
+</svg>
+</a>
+Loading ITables v2.3.0 from the internet...
+(need <a href=https://mwouts.github.io/itables/troubleshooting.html>help</a>?)</td>
+</tr></tbody>
+</table>
+<link href="https://www.unpkg.com/dt_for_itables@2.2.0/dt_bundle.css" rel="stylesheet">
+<script type="module">
+    import {DataTable, jQuery as $} from 'https://www.unpkg.com/dt_for_itables@2.2.0/dt_bundle.js';
+
+    document.querySelectorAll("#itables_ec27fe42_aab2_4c16_b32f_c27d3bb2ef5d:not(.dataTable)").forEach(table => {
+        if (!(table instanceof HTMLTableElement))
+            return;
+
+        // Define the table data
+        const data = [[0, "portal hypertensive gastropathy", "oozing (hemorrhage)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [1, "NaN", "thrombus", "extensive", "vomit contains coffee grounds finding", "stomach", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [2, "NaN", "varicosity", "NaN", "NaN", "esophageal", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [3, "NaN", "mass of body structure", "NaN", "NaN", "structure of left upper lobe of lung", "44 - year - old", "male population group", "chinese language", "smoking history", "smoking", "referring", "shanghai pulmonary hospital", "february", "numerous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [4, "pleural effusion disorder", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "left", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [5, "lymphadenopathy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "2r/4r/10l/11l", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [6, "NaN", "NaN", "NaN", "NaN", "NaN", "68 - year - old", "woman", "NaN", "non-smoker", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [7, "hypertensive disease", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "current non-drinker of alcohol", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [8, "NaN", "weight loss", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "9.9 kg", "infantile colic", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [9, "NaN", "diarrhea", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "chronic", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [10, "NaN", "mass of body structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "huge", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [11, "NaN", "NaN", "NaN", "NaN", "structure of left upper lobe of lung", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "11.0 cm", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [12, "NaN", "neoplasm metastasis", "NaN", "NaN", "intrapulmonary", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [14, "NaN", "neoplasms", "NaN", "NaN", "liver", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "numerous", "NaN", "NaN", "0.5 to 4.7 cm", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [15, "synovitis, granulomatous, with uveitis and cranial neuropathies (disorder)", "NaN", "NaN", "NaN", "ankle", "1 year old", "boys", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "( p. r334w", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [16, "arthritis", "NaN", "NaN", "NaN", "wrist", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [17, "uveitis", "exanthema", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "diffuse", "NaN", "NaN", "NaN", "NaN", "reaction eczematous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [18, "granuloma", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "noncaseating", "NaN", "NaN", "NaN", "histologic", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [19, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "heterozygote", "NaN", "NaN", "NaN", "mutation", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [20, "NaN", "bilateral", "NaN", "NaN", "salmon", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bilateral headache", "NaN", "NaN", "NaN", "NaN", "NaN", "fingers , salmon - colored", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [21, "NaN", "petechiae", "NaN", "NaN", ") ,", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bilateral", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [22, "NaN", "palmar surface", "NaN", "NaN", "inflammatory", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "inflammatory", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [23, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "allopurinol", "300mg / day", "perorally", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [24, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "24 hours", "NaN", "NaN", "NaN", "NaN", "pharmacotherapy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [25, "tumor lysis syndrome", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "2 days", "NaN", "NaN", "NaN", "NaN", "meat", "600mg / m2 / day", "infusion procedures", "prevention & control", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [26, "NaN", "stenosis morphology", "severe (severity modifier)", "NaN", "left coronary artery structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "before 18 years old", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "coronary artery bypass surgery", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [27, "NaN", "shadow", "NaN", "NaN", "chest", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "increased", "NaN", "NaN", "NaN", "roentgen rays", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [28, "NaN", "materials", "NaN", "NaN", "chest", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "reticular", "NaN", "NaN", "NaN", "connecticut", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [29, "NaN", "bone density", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "hypertensive disease", "NaN", "NaN", "NaN", "NaN", "unresectable", "NaN", "year", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [30, "NaN", "hypertensive disease", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "10 years", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [31, "hbv - related cirrhosis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "chronic hbv - related cirrhosis for 30 years", "NaN", "NaN", "NaN", "NaN", "chronic", "NaN", "year", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [32, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "lamivudine", "100 mg qd", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [33, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "adefovir dipivoxil", "10 mg qd", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [34, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "10 years", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "infliximab", "5 mg / kg increased to 10 mg / kg iv every 4 to 6 weeks", "intravenous infusion procedures", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [35, "inflammation", "NaN", "NaN", "NaN", "eye", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "persistent", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "methylprednisolone", "NaN", "intravenous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [36, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "local", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "steroids", "NaN", "injection of therapeutic agent", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [37, "NaN", "aneurysm", "NaN", "NaN", "main portal venous trunk", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "stent graft", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [38, "NaN", "obstruction", "NaN", "NaN", "structure of medial branch of portal vein", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [39, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "covered (qualifier value)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "stent graft", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [40, "laryngeal nerve injuries", "spatial displacement", "NaN", "NaN", "episodic", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "nerve injury", "NaN", "NaN", "NaN", "physical examination", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [41, "spinal cord paralysis", "thoracic cord injury without spinal bone injury", "NaN", "NaN", "root of tongue", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "right", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [42, "NaN", "intervertebral disk displacement", "NaN", "NaN", "intervertebral disk displacement", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [43, "NaN", "posterior cervical pain", "NaN", "NaN", "and bilateral posterior neck muscle", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [44, "NaN", "intracranial", "NaN", "NaN", "do not", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "magnetic resonance imaging", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [45, "NaN", "suggested spinal", "NaN", "NaN", "t2 suggested spinal", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "but enhancement within the central aspect of c3 -", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [46, "cnv protocol", "NaN", "NaN", "NaN", "NaN", "73 - year - old", "woman", "NaN", "NaN", "NaN", "referring", "NaN", "19 months prior", "fluorescein", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [47, "NaN", "NaN", "NaN", "NaN", "left eye structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "indocyanine green", "NaN", "NaN", "NaN", "angiogram", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [48, "NaN", "seizures", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "hospital admission", "NaN", "NaN", "initially", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "phenytoin", "3 x 100 mg / day", "NaN", "anti - epileptic treatment", "low", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [49, "NaN", "edema", "NaN", "NaN", "lower extremity", "30 - year - old", "woman", "NaN", "hiv", "NaN", "presentation", "accident and emergency department", "NaN", "NaN", "NaN", "monthly (qualifier value)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [50, "NaN", "NaN", "NaN", "NaN", "chest", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "negative", "NaN", "NaN", "connecticut", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [51, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "optical fiber device", "NaN", "NaN", "NaN", "bronchoscopy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [52, "NaN", "materials", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "irregular", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "nodular (qualifier value)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [53, "NaN", "obstructed", "NaN", "NaN", "bronchi", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "nearly", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [54, "ehlers-danlos syndrome", "NaN", "NaN", "bone fragile", "skin specimen", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "hypermobility", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [55, "hypermobility", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "( 9/9", "NaN", "NaN", "beighton hypermobility scale", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [56, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "finding of skin healing", "poverty", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [57, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "operative surgical procedures", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "removal technique", "NaN", "NaN", "bone density", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [58, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "phenoxybenzamine", "NaN", "NaN", "blocking", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [59, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "propranolol", "NaN", "NaN", "blocking", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [60, "pheochromocytoma", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cell of claudius", "NaN", "NaN", "NaN", "histology", "NaN", "NaN", "NaN", "NaN", "NaN", "renal cell carcinoma", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [61, "anastomosis", "NaN", "NaN", "NaN", "blood vessel", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "abnormal", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [62, "bronchiectasis", "NaN", "NaN", "NaN", "structure of middle lobe of right lung", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "focal", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [63, "NaN", "hemoptysis", "massive", "NaN", "right inferior phrenic artery", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [64, "NaN", "orthopnea", "NaN", "NaN", "NaN", "71 - year - old", "woman", "african american", "NaN", "NaN", "presentation", "NaN", "NaN", "NaN", "NaN", "3 weeks", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [65, "NaN", "dyspnea", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "exercise induced", "worsening pattern", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [66, "NaN", "orange (fruit)", "NaN", "NaN", "lower extremity", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [67, "NaN", "reduced tendon reflexes", "weak to absent", "NaN", "lower extremity", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "physical examination", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [68, "NaN", "paresis", "mild to moderate", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [69, "liver cirrhosis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "micronodular pattern", "positive", "NaN", "NaN", "immunostaining", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [70, "histiocytosis, langerhans-cell", "NaN", "NaN", "NaN", "liver", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cd1a antigen", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [71, "NaN", "NaN", "NaN", "NaN", "NaN", "child", "woman", "pakistani (ethnic group)", "NaN", "NaN", "childbirth", "NaN", "NaN", "emergency situation", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cesarean section", "NaN", "NaN", "NaN", "weeks pregnant", "consanguineous , first - cousin british pakistani parents", "parent", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [72, "infarction", "NaN", "small", "NaN", "left basal ganglia", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "incomplete", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [73, "hemorrhage", "NaN", "large", "NaN", "intracranial", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [74, "NaN", "neoplasm metastasis", "NaN", "NaN", "primary lesion", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "october", "NaN", "good response", "NaN", "NaN", "pet/ct scan", "NaN", "NaN", "NaN", "NaN", "NaN", "irradiated blood product (product)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [75, "NaN", "abdominal symptom", "NaN", "NaN", "NaN", "46 - year - old", "woman", "caucasian", "diabetes mellitus, non-insulin-dependent", "NaN", "presentation", "accident and emergency department", "NaN", "vague", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [76, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "high", "NaN", "NaN", "high", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [77, "humoral hypercalcemia of malignancy (disorder)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "of 16 ng / ml", "NaN", "NaN", "depressed 25 - oh vitamin", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [78, "NaN", "proteinuria", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "244 - 538 mg / l", "NaN", "NaN", "urine albumin tests", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [79, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "44 - 59 g / mol", "NaN", "NaN", "urine creatinine level finding", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [80, "NaN", "NaN", "NaN", "NaN", "sigmoid colon", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "neoplasms", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [81, "NaN", "invaded", "NaN", "NaN", "serous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [82, "NaN", "mass of body structure", "huge", "NaN", "pelvis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [83, "ovarian neoplasm", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "right", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [84, "NaN", "NaN", "NaN", "NaN", "NaN", "66 - year - old", "male population group", "NaN", "NaN", "NaN", "hospital admission", "hospitals", "november", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [85, "NaN", "splenomegaly", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "high", "NaN", "NaN", "red blood cell count measurement", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [86, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "low vision", "NaN", "NaN", "erythropoietin", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [87, "NaN", "NaN", "NaN", "NaN", "left ventricular mass", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "thirty", "NaN", "NaN", "ejection fraction (procedure)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [88, "NaN", "hypokinesia", "NaN", "NaN", "anterior-posterior", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "mid and basal segments", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [89, "NaN", "NaN", "NaN", "NaN", "apical segmental vein", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "biologic preservation", "NaN", "NaN", "contractility", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [90, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "clinical trials", "NaN", "d 32 to 36", "NaN", "NaN", "NaN", "NaN", "NaN", "structure of permanent mandibular right central incisor tooth", "NaN", "NaN", "daily", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [91, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "immunoglobulins, intravenous", "NaN", "intravenous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [92, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "second (number)", "NaN", "d 32 to 34", "NaN", "NaN", "NaN", "NaN", "methylprednisolone pulse therapy", "NaN", "intravenous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [93, "NaN", "NaN", "NaN", "NaN", "cytoplasm", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "abundance", "deep brownish - black granules", "NaN", "NaN", "nuclear chromatin", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [94, "nmsc", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "past ten years", "NaN", "NaN", "NaN", "NaN", "mercaptopurine", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "thirty", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [95, "pancreatic insufficiency", "NaN", "NaN", "NaN", "liver", "NaN", "NaN", "NaN", "transplantation of liver", "NaN", "NaN", "NaN", "z 2004", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "steroids", "NaN", "NaN", "transplantation", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [96, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "hospital admission", "NaN", "six months", "NaN", "mmhg", "NaN", "NaN", "rhce gene", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [97, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "improved", "NaN", "NaN", "do not", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [98, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "1,116 dyne*sec*cm-5", "NaN", "NaN", "pulmonary vascular resistance", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [99, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "1. place for / from / what", "NaN", "NaN", "cardiac index", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [100, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "176/80 mm / hg", "NaN", "NaN", "blood pressure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [101, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bpm pe", "NaN", "NaN", "heart rate", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [102, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bpm pe", "NaN", "NaN", "respiration", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [103, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "preoperative", "NaN", "kyphotic pelvis", "NaN", "NaN", "kyphotic cobb angle", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [104, "NaN", "virologic response", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "week", "partial", "<15 iu / ml", "NaN", "NaN", "(hcv rna", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [105, "malignant neoplasms", "lesion", "NaN", "NaN", "trunk structure", "NaN", "NaN", "NaN", "NaN", "NaN", "not returned", "ambulatory care facilities", "past year", "new", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "arabic numeral 100", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [106, "adenocarcinoma", "NaN", "NaN", "NaN", "gallbladder", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "moderately differentiated (qualifier value)", "NaN", "NaN", "NaN", "microscopy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [107, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "a.34 pussy 109 / l", "NaN", "NaN", "leukocytes", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [108, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "1.72 pussy 109 / l", "NaN", "NaN", "anc 1", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [109, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "85 g / l", "NaN", "NaN", "chrysarobin", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [110, "NaN", "NaN", "NaN", "NaN", "NaN", "53 - year - old", "male population group", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [111, "heart failure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "came", "hospitals", "NaN", "acute", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [810, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "fasting", "high", "NaN", "NaN", "lactates", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [811, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "maintaining (action)", "NaN", "NaN", "serum calcium level", "NaN", "NaN", "zoledronic", "bimonthly", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [812, "NaN", "dysuria", "mild severity of illness code", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [813, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "urine volume function", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [814, "NaN", "neoplasm metastasis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "1 year after", "distant", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [815, "NaN", "pansystolic murmur", "NaN", "NaN", "the left border of the stern", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "levels (qualifier value)", "NaN", "NaN", "examination of heart", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [816, "NaN", "NaN", "NaN", "NaN", "structure of femoral artery", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "arterial lines", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [817, "NaN", "blood pressure determination", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "191/92 mmhg", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [818, "NaN", "remarkable changes", "NaN", "NaN", "brain", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "physical examination", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [819, "NaN", "apyrexial", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "blood pressure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [820, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "patient discharge", "NaN", "NaN", "body fluid discharge", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "proper care", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [821, "NaN", "tachycardia", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "pathologic fistula", "no remarkable findings", "NaN", "NaN", "electrocardiogram", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [822, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "thyroid hormones", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [823, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "in addition to", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "trimethoprim-sulfamethoxazole combination", "sulfamethoxazole pill", "NaN", "noninvasive", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [824, "NaN", "telangiectasis", "NaN", "NaN", "nasal septum structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bilateral", "NaN", "NaN", "NaN", "endoscopy (procedure)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [825, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "operative surgical procedures", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "tumor debulking", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [826, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "positive", "NaN", "NaN", "s100 proteins", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "neoplastic cell", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [827, "NaN", "cholelithiasis", "NaN", "NaN", "gallbladder", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "numerous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [828, "NaN", "NaN", "NaN", "NaN", "bronchial stump", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "explorator", "NaN", "NaN", "NaN", "thoracotomy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [830, "NaN", "infiltration", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bilateral", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [831, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "hemodynamically stable", "during the next 48 hours", "NaN", "remained hemodynamically", "NaN", "NaN", "requirements of vasoactive agents", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [832, "NaN", "normocellular bone marrow", "NaN", "NaN", "bone marrow", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "biopsy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [833, "bowen's disease", "neoplastic vacuolated cell", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [834, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "positive", "NaN", "NaN", "adipophyllin", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [835, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "surgical transfer - action", "intensive care unit", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "tracheal extubation", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "at 02:00 p.m.", "NaN", "NaN", "NaN"], [836, "NaN", "petechiae", "NaN", "NaN", "limb structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "physical examination", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "numerous", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [837, "NaN", "hemoptysis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "acute", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [838, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "followed by", "NaN", "the time of writing this report", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [839, "esophageal achalasia", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "referring", "central", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "therapeutic aspects", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [840, "NaN", "pain", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "chewing", "consultation", "NaN", "months before", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [841, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "oncology clinic", "at the moment", "immunologic adjuvants", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "pharmacotherapy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [842, "NaN", "fatigue", "NaN", "NaN", "NaN", "1 year old", "boys", "NaN", "NaN", "referring", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [843, "NaN", "stable disease", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "12 months", "NaN", "NaN", "NaN", "NaN", "lapatinib", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [844, "NaN", "abnormal behavior", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "was denied a heart", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [845, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "consultation", "hospitals", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [846, "NaN", "symptomatic relief", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "short-term", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [847, "moreover ,", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "with different morphologies and cycle lengths", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "radiofrequency ablation", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [848, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "referring", "cardiovascular surgical procedures", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "surgery specialty", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [849, "NaN", "dyspnea", "severe (severity modifier)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "oxygen dependence", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [850, "heart block", "NaN", "complete", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "congenital mesh qualifier", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [851, "kcnq1 gene", "homozygous nonsense variant", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "the proband is a child from a first - cousin marriage", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [852, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "4 months earlier", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "pentasa", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [853, "thrombus", "NaN", "NaN", "NaN", "structure of right upper lobe of lung", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "4-((1,4,8,11-tetraazacyclotetradec-1-yl)methyl)benzoic acid", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [854, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "urinary tract", "positive", "NaN", "NaN", "urinalysis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [855, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "a day after 2 weeks", "NaN", "NaN", "NaN", "NaN", "connecticut", "NaN", "NaN", "pharmacotherapy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [856, "problems - what subject filter", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "laryngoscopy", "NaN", "NaN", "intubation (procedure)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [857, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "palliative care service", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "radiotherapy, intensity-modulated", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [858, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bleeding on palpation", "NaN", "NaN", "NaN", "diagnostic imaging", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "mass of body structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [859, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "month", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "therapeutic aspects", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cessation of life", "NaN", "NaN", "NaN", "NaN"], [860, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "both kidneys", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "donor person", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [861, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "improvement", "NaN", "NaN", "hemodynamics", "NaN", "NaN", "inotropic agent (substance)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [862, "bilateral arthritis of hip", "NaN", "NaN", "NaN", "ankle", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "bilateral", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [863, "NaN", "NaN", "NaN", "NaN", "lcca", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "storage", "NaN", "NaN", "timi iii flow", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [864, "NaN", "helminthiasis", "NaN", "NaN", "common bile duct structure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "more than 1000 mg", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [865, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "consultation", "hospitals, university", "NaN", "NaN", "NaN", "NaN", "NaN", "evaluation procedure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [866, "NaN", "weight loss", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "15 - 20 pound", "six months", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [867, "NaN", "recurrence", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "while", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [868, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "strong positive", "NaN", "NaN", "staining for vegfr-2", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cells", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [869, "myocarditis", "NaN", "severe (severity modifier)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "early", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [870, "NaN", "syncope", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "several instances", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "drug resistant epilepsy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [871, "NaN", "gram-positive cocci", "NaN", "NaN", "of csf", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "gram's stain", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [872, "hypertensive disease", "clubbed fingers", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "lung", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [873, "NaN", "recurrence", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "january 23 , 2015", "NaN", "NaN", "NaN", "NaN", "biopsy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [874, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "distal (qualifier value)", "five", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "anastms", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [875, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "good", "NaN", "NaN", "health", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [876, "altretamine/cisplatin/cyclophosphamide protocol", "NaN", "NaN", "NaN", "NaN", "age more than 65 years", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "limited stage (cancer stage)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [877, "NaN", "NaN", "NaN", "NaN", "heart", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "angiogram", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [878, "tubulovillous adenoma", "high grade dysplasia", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "polyps", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [879, "NaN", "mitral valve insufficiency", "NaN", "NaN", "left atrial appendage", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [880, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "at the age of 18 months", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "every four weeks", "NaN", "estrogen replacement therapy", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [881, "NaN", "hemorrhage", "NaN", "NaN", "rectal", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "since 5 months", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [882, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "voltage", "NaN", "NaN", "limb and precordial leads", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [883, "respiratory failure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "day", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cessation of life", "NaN", "NaN", "NaN", "NaN"], [884, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "visit day", "NaN", "NaN", "NaN", "NaN", "visual analog pain scale", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "7/10", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [885, "altretamine/cisplatin/cyclophosphamide protocol", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "usual", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [886, "heart failure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "right", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [887, "NaN", "alive (finding)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "1 month", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [888, "adenocarcinoma", "NaN", "NaN", "NaN", "mucous membrane", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [889, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "physical examination", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [890, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "hospitalists", "nephrology department", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [891, "NaN", "NaN", "NaN", "NaN", "adjacent", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "percutaneous endoscopic tube", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [892, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "was 24.4 kg", "NaN", "NaN", "body mass index procedure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [893, "chronic heart failure", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "was ivth degree", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [894, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "did not have a history of exposure to organic or inorganic dusts", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "office worker", "NaN", "NaN"], [895, "NaN", "abnormal", "NaN", "NaN", "nerve to right frontalis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [896, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "born in usa", "neither travelled recently nor had any sick contacts", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [897, "NaN", "NaN", "NaN", "NaN", "intra-abdominal fat", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "nursing interventions", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [898, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "stable status", "NaN", "NaN", "clinical", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [899, "NaN", "prenatal", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "uneventful", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [900, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "in addition to", "amb ( 3 mg / kg / day", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [901, "osteosarcoma", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "primary uterine osteoblastic variant", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [902, "NaN", "enlarged", "NaN", "NaN", "lymph nodes", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [903, "neoplasm metastasis", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "fdg - avid", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [904, "NaN", "deposition", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "fluorescent antibody technique", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [905, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "coronary angiography", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [906, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "negative for malignant cells", "NaN", "NaN", "biliary brushings", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [907, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "cardiac catheterization laboratory", "NaN", "direct visualization using fluoroscopy and radiopaque contrast dye", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [908, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "referring", "hospitals", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [909, "prolactinoma", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "with a giant", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [910, "NaN", "sequela of disorder", "serious", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [911, "NaN", "difficulty moving tongue", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "second day after endovascular treatment", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [912, "NaN", "discomfort", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "surgical intervention (finding)", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [913, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "sufficient", "NaN", "NaN", "neuropsychological tests", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [914, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "mental concentration", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [915, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "greater than 4,901 pg / ml.", "NaN", "NaN", "natriuretic peptides b", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [916, "NaN", "exanthema", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "period of 3 weeks", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [917, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "pharmacotherapy", "NaN", "NaN", "radiotherapeutic", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [918, "NaN", "recessive inheritance", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "sequencing of parental samples", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [920, "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "normal", "NaN", "NaN", "toe and all of dubbulation", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"], [921, "NaN", "NaN", "NaN", "NaN", "neck", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "intrathecal route of drug administration", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN", "NaN"]];
+
+        // Define the dt_args
+        let dt_args = {"layout": {"topStart": "pageLength", "topEnd": "search", "bottomStart": "info", "bottomEnd": "paging"}, "order": [], "warn_on_selected_rows_not_rendered": true, "filtered_row_count": 697, "fnInfoCallback": function (oSettings, iStart, iEnd, iMax, iTotal, sPre) { return sPre + ' (<a href="https://mwouts.github.io/itables/downsampling.html">downsampled</a> from 918x37 to 221x37 as maxBytes=64KB)'; }};
+        dt_args["data"] = data;
+
+        
+        new DataTable(table, dt_args);
+    });
+</script>
+</div></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Usage examples</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="database_integration.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Integrating multiple databases</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#downloading-the-maccrobat-corpus">Downloading the MACCROBAT Corpus</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installing-and-configuring-nlp-models">Installing and Configuring NLP Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parsing-the-corpus-with-architxt">Parsing the Corpus with ArchiTXT</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

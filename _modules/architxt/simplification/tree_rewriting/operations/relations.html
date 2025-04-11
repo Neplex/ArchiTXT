@@ -1,0 +1,551 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>architxt.simplification.tree_rewriting.operations.relations &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/architxt/simplification/tree_rewriting/operations/relations';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">ArchiTXT Documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/corpus.html">Preparing a Text Corpora</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../load_data.html">Load data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../load_data/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../transform_data.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../transform_data/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../export_data.html">Export data</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../examples.html">Usage examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../examples/corpus_exploration.html">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../examples/database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.database.export.graph.html">architxt.database.export.graph</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../_api_reference/architxt.simplification.tree_rewriting.utils.html">architxt.simplification.tree_rewriting.utils</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/architxt">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/neplex/architxt/issues/new?title=Issue%20on%20page%20%2F_modules/architxt/simplification/tree_rewriting/operations/relations.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button"
+   title="Open an issue"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for architxt.simplification.tree_rewriting.operations.relations</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">TREE_CLUSTER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">NodeLabel</span><span class="p">,</span> <span class="n">NodeType</span><span class="p">,</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">has_type</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.operation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Operation</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;FindRelationsOperation&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="FindRelationsOperation">
+<a class="viewcode-back" href="../../../../../_api_reference/architxt.simplification.tree_rewriting.operations.relations.html#architxt.simplification.tree_rewriting.operations.relations.FindRelationsOperation">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FindRelationsOperation</span><span class="p">(</span><span class="n">Operation</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Identifies and establishes hierarchical relationships between `GROUP` nodes within a tree structure.</span>
+
+<span class="sd">    The function scans for subtrees that contain at least two distinct elements.</span>
+<span class="sd">    When a `GROUP` node is found to have a relationship with a collection, that relationship</span>
+<span class="sd">    is distributed between the `GROUP` node itself and each member of the collection.</span>
+
+<span class="sd">    The operation can operate in two modes:</span>
+<span class="sd">    1. Naming-only mode: Simply assigns labels to valid relations without altering the tree&#39;s structure.</span>
+<span class="sd">    2. Structural modification mode: restructures the tree by creating relation nodes between groups and collections.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">naming_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">naming_only</span> <span class="o">=</span> <span class="n">naming_only</span>
+
+<div class="viewcode-block" id="FindRelationsOperation.apply">
+<a class="viewcode-back" href="../../../../../_api_reference/architxt.simplification.tree_rewriting.operations.relations.html#architxt.simplification.tree_rewriting.operations.relations.FindRelationsOperation.apply">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">equiv_subtrees</span><span class="p">:</span> <span class="n">TREE_CLUSTER</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>  <span class="c1"># noqa: ARG002</span>
+        <span class="n">simplified</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Traverse subtrees, starting with the deepest, containing exactly 2 children</span>
+        <span class="k">for</span> <span class="n">subtree</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">subtrees</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_type</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">{</span><span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">COLL</span><span class="p">})</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">depth</span><span class="p">(),</span>
+            <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">collection</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Group &lt;-&gt; Group</span>
+            <span class="k">if</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">)</span> <span class="ow">and</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Create and set relationship label</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                <span class="n">subtree</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">NodeLabel</span><span class="p">(</span><span class="n">NodeType</span><span class="o">.</span><span class="n">REL</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&lt;-&gt;</span><span class="si">{</span><span class="n">label</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
+
+                <span class="c1"># Log relation creation in MLFlow, if active</span>
+                <span class="n">simplified</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log_to_mlflow</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&lt;-&gt;</span><span class="si">{</span><span class="n">label</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># If only naming relationships, skip further processing</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">naming_only</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Group &lt;-&gt; Collection</span>
+            <span class="k">if</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">)</span> <span class="ow">and</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">COLL</span><span class="p">):</span>
+                <span class="n">group</span><span class="p">,</span> <span class="n">collection</span> <span class="o">=</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">elif</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">COLL</span><span class="p">)</span> <span class="ow">and</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">):</span>
+                <span class="n">collection</span><span class="p">,</span> <span class="n">group</span> <span class="o">=</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">subtree</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1"># If a valid Group-Collection pair is found, create relationships for each</span>
+            <span class="k">if</span> <span class="n">group</span> <span class="ow">and</span> <span class="n">collection</span> <span class="ow">and</span> <span class="n">has_type</span><span class="p">(</span><span class="n">collection</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">collection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">()</span> <span class="o">==</span> <span class="n">group</span><span class="o">.</span><span class="n">label</span><span class="p">():</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Create relationship nodes for each element in the collection</span>
+                <span class="k">for</span> <span class="n">coll_group</span> <span class="ow">in</span> <span class="n">collection</span><span class="p">:</span>
+                    <span class="n">label1</span><span class="p">,</span> <span class="n">label2</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">group</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">coll_group</span><span class="o">.</span><span class="n">label</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                    <span class="n">rel_label</span> <span class="o">=</span> <span class="n">NodeLabel</span><span class="p">(</span><span class="n">NodeType</span><span class="o">.</span><span class="n">REL</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">label1</span><span class="si">}</span><span class="s1">&lt;-&gt;</span><span class="si">{</span><span class="n">label2</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">rel_tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="p">(</span><span class="n">rel_label</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">([</span><span class="n">group</span><span class="p">,</span> <span class="n">coll_group</span><span class="p">]))</span>
+                    <span class="n">subtree</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_tree</span><span class="p">)</span>  <span class="c1"># Add new relationship to subtree</span>
+
+                    <span class="c1"># Log relation creation in MLFlow, if active</span>
+                    <span class="n">simplified</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_log_to_mlflow</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">rel_label</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+
+                <span class="n">subtree</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+                <span class="n">subtree</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tree</span><span class="p">,</span> <span class="n">simplified</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
