@@ -8,8 +8,8 @@ authors = [
     "Jacques Chabin <jchabin@univ-orleans.fr>"
 ]
 readme = "README.md"
-repository = "https://github.com/neplex/architxt"
-documentation = "https://neplex.github.io/architxt"
+repository = "https://github.com/neplex/ArchiTXT"
+documentation = "https://neplex.github.io/ArchiTXT"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
