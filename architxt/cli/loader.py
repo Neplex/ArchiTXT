@@ -8,7 +8,7 @@ import typer
 from rich.panel import Panel
 from sqlalchemy import create_engine
 
-from architxt.database import read_database, read_document
+from architxt.database.loader import read_database, read_document
 from architxt.generator import gen_instance
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.parser.corenlp import CoreNLPParser

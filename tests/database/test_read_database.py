@@ -1,5 +1,5 @@
 import pytest
-from architxt.database import read_database
+from architxt.database.loader import read_database
 from architxt.tree import Forest, Tree
 from sqlalchemy import Column, Connection, ForeignKey, Integer, MetaData, String, Table
 

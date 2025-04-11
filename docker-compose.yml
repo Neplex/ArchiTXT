@@ -16,3 +16,11 @@ services:
       context: corenlp
     ports:
       - "9000:9000"
+
+  neo4j:
+    image: neo4j:latest
+    environment:
+      - NEO4J_AUTH=none
+    ports:
+      - "7474:7474"
+      - "7687:7687"

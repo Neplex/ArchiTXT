@@ -18,6 +18,7 @@ from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 
+from .export import app as export_app
 from .loader import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
 from .loader import app as loader_app
 from .utils import console, load_forest, save_forest, show_metrics, show_schema
@@ -29,6 +30,7 @@ app = typer.Typer(
 )
 
 app.add_typer(loader_app, name="load")
+app.add_typer(export_app, name="export")
 
 
 @app.callback()
