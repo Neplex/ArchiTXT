@@ -35,15 +35,15 @@ class FindCollectionsOperation(Operation):
             tree.subtrees(
                 lambda x: not has_type(x) and any(has_type(y, {NodeType.GROUP, NodeType.REL, NodeType.COLL}) for y in x)
             ),
-            key=lambda x: x.depth(),
+            key=lambda x: x.depth,
             reverse=True,
         ):
             # Naming-only mode: apply labels without modifying tree structure
             if self.naming_only:
                 if has_type(subtree[0], {NodeType.GROUP, NodeType.REL}) and more_itertools.all_equal(
-                    subtree, key=lambda x: x.label()
+                    subtree, key=lambda x: x.label
                 ):
-                    subtree.set_label(NodeLabel(NodeType.COLL, subtree[0].label().name))
+                    subtree.label = NodeLabel(NodeType.COLL, subtree[0].label.name)
                     simplified = True
                 continue
 
@@ -52,16 +52,17 @@ class FindCollectionsOperation(Operation):
                 filter(
                     lambda x: len(x) > 1,
                     (
-                        sorted(equiv_set, key=lambda x: x.parent_index())
+                        sorted(equiv_set, key=lambda x: x.parent_index)
                         for _, equiv_set in groupby(
                             sorted(
-                                filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}), subtree)
+                                filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}), subtree),
+                                key=lambda x: x.label.name,
                             ),
-                            key=lambda x: x.label().name,
+                            key=lambda x: x.label.name,
                         )
                     ),
                 ),
-                key=lambda x: x[0].parent_index(),
+                key=lambda x: x[0].parent_index,
             ):
                 # Prepare a new collection of nodes (merging if some nodes are already collections)
                 coll_elements = []
@@ -72,7 +73,7 @@ class FindCollectionsOperation(Operation):
                         coll_elements.append(coll_tree)
 
                 # Prepare the collection node
-                label = NodeLabel(NodeType.COLL, coll_tree_set[0].label().name)
+                label = NodeLabel(NodeType.COLL, coll_tree_set[0].label.name)
                 children = [deepcopy(tree) for tree in coll_elements]
 
                 # Log the creation of a new collection in MLFlow, if active
@@ -86,16 +87,16 @@ class FindCollectionsOperation(Operation):
 
                 # If the entire subtree is a single collection, update its label and structure directly
                 if len(subtree) == len(coll_tree_set):
-                    subtree.set_label(label)
+                    subtree.label = label
                     subtree.clear()
                     subtree.extend(children)
 
                 else:
-                    index = coll_tree_set[0].parent_index()
+                    index = coll_tree_set[0].parent_index
 
                     # Remove nodes of the current collection set from the subtree
                     for coll_tree in coll_tree_set:
-                        subtree.pop(coll_tree.parent_index(), recursive=False)
+                        subtree.pop(coll_tree.parent_index, recursive=False)
 
                     # Insert the new collection node at the appropriate index
                     coll_tree = Tree(label, children=children)

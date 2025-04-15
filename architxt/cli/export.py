@@ -21,7 +21,8 @@ def export_graph(
     """Export the database as a property graph."""
     forest = load_forest(database)
 
-    with GraphDatabase.driver(uri, auth=(username, password)) as driver, driver.session() as session:
+    auth = (username, password) if username and password else None
+    with GraphDatabase.driver(uri, auth=auth) as driver, driver.session() as session:
         export.export_graph(forest, session=session)
 
     console.print('[green]Database exported successfully![/]')

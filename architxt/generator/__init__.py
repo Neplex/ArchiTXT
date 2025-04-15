@@ -21,7 +21,7 @@ def gen_group(schema: Schema, name: NodeLabel) -> Tree:
 
     >>> schema = Schema.from_description(groups={'Fruits': {'Apple', 'Banana', 'Cherry'}})
     >>> group_tree = gen_group(schema, NodeLabel(NodeType.GROUP, 'Fruits'))
-    >>> print(group_tree.pformat(margin=255))
+    >>> print(group_tree)
     (GROUP::Fruits (ENT::Apple data) (ENT::Banana data) (ENT::Cherry data))
 
     """
@@ -41,9 +41,8 @@ def gen_relation(schema: Schema, name: NodeLabel) -> Tree:
     ...     rels={'Preference': ('Fruits', 'Colors')}
     ... )
     >>> relation_tree = gen_relation(schema, NodeLabel(NodeType.REL, 'Preference'))
-    >>> print(relation_tree.pformat(margin=255))
+    >>> print(relation_tree)
     (REL::Preference (GROUP::Colors (ENT::Blue data) (ENT::Red data)) (GROUP::Fruits (ENT::Apple data) (ENT::Banana data)))
-
     """
     sub, obj = schema.relations[name]
     subject_tree = gen_group(schema, sub)
@@ -62,9 +61,8 @@ def gen_collection(name: str, elements: Iterable[Tree]) -> Tree:
     >>> from architxt.tree import Tree
     >>> elems = [Tree('Element1', []), Tree('Element2', [])]
     >>> collection_tree = gen_collection('Collection', elems)
-    >>> print(collection_tree.pformat(margin=255))
+    >>> print(collection_tree)
     (COLL::Collection (Element1 ) (Element2 ))
-
     """
     label = NodeLabel(NodeType.COLL, name)
     return Tree(label, elements)
@@ -72,7 +70,7 @@ def gen_collection(name: str, elements: Iterable[Tree]) -> Tree:
 
 def gen_instance(schema: Schema, *, size: int = 200, generate_collections: bool = True) -> Generator[Tree, None, None]:
     """
-    Generate a database instances as a tree based on the given groups and relations schema.
+    Generate a database instance as a tree, based on the given groups and relations schema.
 
     :param schema: A schema to guide the tree structure.
     :param size: An integer specifying the size of the generated trees.

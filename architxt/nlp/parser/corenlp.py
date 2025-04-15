@@ -24,6 +24,9 @@ class CoreNLPParser(Parser):
         """
         self.corenlp = NLTKParser(url=corenlp_url)
 
+        # patch CoreNLP client to use our Tree class instead of the NLTK one
+        self.corenlp.make_tree = lambda result: Tree.fromstring(result["parse"])
+
     def __exit__(
         self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
     ) -> None:
@@ -34,4 +37,4 @@ class CoreNLPParser(Parser):
             for tree in self.corenlp.raw_parse_sents(batch, properties={'tokenize.language': language}):
                 # CoreNLP return a list of candidates tree, we only select the first one.
                 # A parse tree may contain multiple sentence subtrees we select only one and convert it into a tree.
-                yield Tree.convert(next(tree)[0])
+                yield next(tree)[0]

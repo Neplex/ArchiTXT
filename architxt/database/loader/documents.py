@@ -179,21 +179,21 @@ def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
     """
     if has_type(tree, NodeType.ENT):
         # Encapsulate entities into a group
-        group_label = NodeLabel(NodeType.GROUP, tree.label().name)
-        group_node = Tree(group_label, [Tree.convert(tree)])
+        group_label = NodeLabel(NodeType.GROUP, tree.label.name)
+        group_node = Tree(group_label, [tree.copy()])
         return group_node, group_node
 
     if has_type(tree, NodeType.COLL):
         updated_children = [traverse_tree(child)[0] for child in tree]
-        updated_tree = Tree(tree.label(), updated_children)
+        updated_tree = Tree(tree.label, updated_children)
         return updated_tree, updated_tree
 
     # Separate entities and non-entities
-    entities = [Tree.convert(subtree) for subtree in tree if has_type(subtree, NodeType.ENT)]
+    entities = [subtree.copy() for subtree in tree if has_type(subtree, NodeType.ENT)]
     non_entities = [subtree for subtree in tree if not has_type(subtree, NodeType.ENT)]
 
     # Group node for entities
-    group_label = NodeLabel(NodeType.GROUP, tree.label())
+    group_label = NodeLabel(NodeType.GROUP, tree.label)
     group_node = Tree(group_label, entities)
 
     relationship_nodes: list[Tree] = []
@@ -201,18 +201,18 @@ def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
     for child in non_entities:
         child_group, child_tree = traverse_tree(child)
 
-        if child_tree.label() == 'ROOT':
+        if child_tree.label == 'ROOT':
             # extend relations recursively
-            relationship_nodes.extend(Tree.convert(grandchild) for grandchild in child_tree)
+            relationship_nodes.extend(grandchild.copy() for grandchild in child_tree)
 
         if has_type(child_group, NodeType.COLL):
             # Create relationships with each element in the collection
             for element in child_group:
-                rel_label = NodeLabel(NodeType.REL, f'{group_node.label().name}<->{element.label().name}')
-                relationship_nodes.append(Tree(rel_label, [group_node.copy(deep=True), Tree.convert(element)]))
+                rel_label = NodeLabel(NodeType.REL, f'{group_node.label.name}<->{element.label.name}')
+                relationship_nodes.append(Tree(rel_label, [group_node.copy(), element.copy()]))
         else:
-            rel_label = NodeLabel(NodeType.REL, f'{group_node.label().name}<->{child_group.label().name}')
-            relationship_nodes.append(Tree(rel_label, [group_node.copy(deep=True), Tree.convert(child_group)]))
+            rel_label = NodeLabel(NodeType.REL, f'{group_node.label.name}<->{child_group.label.name}')
+            relationship_nodes.append(Tree(rel_label, [group_node.copy(), child_group.copy()]))
 
     # Return the group node and either a tree of relations or just the group if there are no relations
     return group_node, Tree('ROOT', relationship_nodes) if relationship_nodes else group_node
