@@ -15,7 +15,7 @@ def test_find_subgroups_no_simplify() -> None:
     )
 
     assert not has_simplified
-    assert tree == Tree.fromstring('(SENT (1 (ENT::A 1) (ENT::B 2) (ENT::C 3)))')
+    assert str(tree) == '(SENT (1 (ENT::A 1) (ENT::B 2) (ENT::C 3)))'
 
 
 def test_find_subgroups_simple() -> None:
@@ -30,7 +30,7 @@ def test_find_subgroups_simple() -> None:
     )
 
     assert has_simplified
-    assert tree == Tree.fromstring('(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3)))')
+    assert str(tree) == '(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3)))'
 
 
 def test_find_subgroups_simple_group() -> None:
@@ -44,8 +44,10 @@ def test_find_subgroups_simple_group() -> None:
         },
     )
 
+    tree[0].label = 'XXX'
+
     assert has_simplified
-    assert tree == Tree.fromstring('(SENT ( (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3)))')
+    assert str(tree) == '(SENT (XXX (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3)))'
 
 
 def test_find_subgroups_largest() -> None:
@@ -61,7 +63,7 @@ def test_find_subgroups_largest() -> None:
     )
 
     assert has_simplified
-    assert tree == Tree.fromstring('(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3)) (ENT::D 4)))')
+    assert str(tree) == '(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3)) (ENT::D 4)))'
 
 
 def test_find_subgroups_multi() -> None:
@@ -77,9 +79,7 @@ def test_find_subgroups_multi() -> None:
     )
 
     assert has_simplified
-    assert tree == Tree.fromstring(
-        '(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3) (GROUP::3 (ENT::D 4) (ENT::E 5))))'
-    )
+    assert str(tree) == '(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3) (GROUP::3 (ENT::D 4) (ENT::E 5))))'
 
 
 def test_find_subgroups_root() -> None:
@@ -94,4 +94,4 @@ def test_find_subgroups_root() -> None:
     )
 
     assert has_simplified
-    assert tree == Tree.fromstring('(SENT (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3))')
+    assert str(tree) == '(SENT (GROUP::2 (ENT::A 1) (ENT::B 2)) (ENT::C 3))'

@@ -38,7 +38,5 @@ def test_extract_valid_trees() -> None:
     valid_trees = list(schema.extract_valid_trees(forest))
 
     assert len(valid_trees) == len(forest)
-    assert valid_trees[0] == Tree.fromstring('(ROOT (GROUP::1 (ENT::A AAA)))'), valid_trees[0].pformat()
-    assert valid_trees[1] == Tree.fromstring(
-        '(ROOT (GROUP::1 (ENT::A AAA)) (GROUP::1 (ENT::A AAA)) (GROUP::2 (ENT::C CCC)))'
-    ), valid_trees[1].pformat()
+    assert str(valid_trees[0]) == '(ROOT (GROUP::1 (ENT::A AAA)))'
+    assert str(valid_trees[1]) == '(ROOT (GROUP::1 (ENT::A AAA)) (GROUP::1 (ENT::A AAA)) (GROUP::2 (ENT::C CCC)))'

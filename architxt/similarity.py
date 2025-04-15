@@ -77,7 +77,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     assert x is not None
     assert y is not None
 
-    if x is y or x.label() == y.label():
+    if x is y or x.label == y.label:
         return 1.0
 
     weight_sum = 0.0
@@ -99,8 +99,8 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
         sim_sum += weight * metric(x_labels, y_labels)
 
         # Move to parent nodes
-        x = x.parent()
-        y = y.parent()
+        x = x.parent
+        y = y.parent
         distance += 1
 
     return min(max(sim_sum / weight_sum, 0), 1)  # Need to fix float issues
@@ -141,7 +141,7 @@ def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> n
     nb_combinations = math.comb(len(subtrees), 2)
 
     distances = (
-        (1 - similarity(x, y, metric=metric)) if abs(x.height() - y.height()) < 5 else 1.0
+        (1 - similarity(x, y, metric=metric)) if abs(x.height - y.height) < 5 else 1.0
         for x, y in combinations(subtrees, 2)
     )
 
@@ -202,7 +202,7 @@ def equiv_cluster(
     square_dist_matrix = squareform(dist_matrix)
 
     if mlflow.active_run() and _step is not None:
-        labels = [st.label() for st in subtrees]
+        labels = [st.label for st in subtrees]
 
         fig = ff.create_annotated_heatmap(z=square_dist_matrix, colorscale='Cividis', x=labels, y=labels)
         mlflow.log_figure(fig, f'similarity/{_step}/heatmap.html')
@@ -268,7 +268,7 @@ def get_equiv_of(
         if t in cluster or any(sim(x, t, tau, metric) for x in cluster):
             return cluster
 
-    # Return empty tuple if no similar cluster is found
+    # Return an empty tuple if no similar cluster is found
     return ()
 
 
@@ -292,14 +292,14 @@ def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DE
     if metric is None:
         equiv_subtrees_map: dict[str, list[Tree]] = defaultdict(list)
         for subtree in entity_parents:
-            equiv_subtrees_map[subtree.label()].append(subtree)
+            equiv_subtrees_map[subtree.label].append(subtree)
         equiv_subtrees = equiv_subtrees_map.values()
 
     else:
         equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
 
     return {
-        f"{child.label().name}${' '.join(child)}": i
+        f"{child.label.name}${' '.join(child)}": i
         for i, cluster in enumerate(equiv_subtrees)
         for subtree in cluster
         for child in subtree
