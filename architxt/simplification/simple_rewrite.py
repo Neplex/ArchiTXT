@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import Any
 
 from tqdm.auto import tqdm
@@ -34,9 +33,9 @@ def simple_rewrite(forest: Forest, **_: Any) -> Forest:
         group_entities: list[Tree] = []
 
         for entity in tree.entities():
-            if entity.label().name in entities:
-                group_entities.append(deepcopy(entity))
-                entities.remove(entity.label().name)
+            if entity.label.name in entities:
+                group_entities.append(entity.copy())
+                entities.remove(entity.label.name)
 
         group_tree = Tree(group_label, group_entities)
         tree = Tree('ROOT', [group_tree])

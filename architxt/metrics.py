@@ -131,12 +131,12 @@ class Metrics:
 
     def coverage(self) -> float:
         source_entities = {
-            f"{subtree.label().name}${' '.join(subtree)}"
+            f"{subtree.label.name}${' '.join(subtree)}"
             for tree in self._source
             for subtree in tree.subtrees(lambda x: has_type(x, NodeType.ENT))
         }
         destination_entities = {
-            f"{subtree.label().name}${' '.join(subtree)}"
+            f"{subtree.label.name}${' '.join(subtree)}"
             for tree in self._destination
             for subtree in tree.subtrees(lambda x: has_type(x, NodeType.ENT))
         }

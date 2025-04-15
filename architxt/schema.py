@@ -262,12 +262,12 @@ class Schema(CFG):
         valid_labels = self.entities | self.groups.keys() | self.relations.keys()
 
         for tree in valid_forest:
-            for subtree in reversed(list(tree.subtrees(lambda t: t.label() not in valid_labels))):
-                if not (parent := subtree.parent()):
-                    subtree.set_label('ROOT')
+            for subtree in reversed(list(tree.subtrees(lambda t: t.label not in valid_labels))):
+                if not (parent := subtree.parent):
+                    subtree.label = 'ROOT'
                     continue
 
-                children = [deepcopy(child) for child in subtree if isinstance(child, Tree)]
+                children = [child.copy() for child in subtree if isinstance(child, Tree)]
                 parent.remove(subtree, recursive=False)
                 parent.extend(children)
 

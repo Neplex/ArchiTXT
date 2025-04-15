@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import pytest
 from architxt.schema import Schema
 from architxt.similarity import METRIC_FUNC, equiv_cluster, jaccard, jaro, levenshtein
@@ -49,7 +47,7 @@ def test_operation_behavior(
     clusters = equiv_cluster([tree], tau=tau, metric=metric)
     operation = operation(tau=tau, min_support=min_support, metric=metric)
 
-    new_tree, simplified = operation.apply(deepcopy(tree), equiv_subtrees=clusters)
+    new_tree, simplified = operation.apply(tree.copy(), equiv_subtrees=clusters)
 
     # Check 1: Valid structure
     schema = Schema.from_forest([new_tree], keep_unlabelled=False)
@@ -58,6 +56,6 @@ def test_operation_behavior(
 
     # Check 2: Correct simplification flag
     if simplified:
-        assert new_tree.pformat() != tree.pformat(), "Simplification flag was True, but the tree remained unchanged."
+        assert str(new_tree) != str(tree), "Simplification flag was True, but the tree remained unchanged."
     else:
-        assert new_tree.pformat() == tree.pformat(), "Simplification flag was False, but the tree has been changed."
+        assert str(new_tree) == str(tree), "Simplification flag was False, but the tree has been changed."

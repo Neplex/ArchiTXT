@@ -62,5 +62,5 @@ class BeneparParser(Parser):
         for doc in nlp.pipe(sentences, batch_size=batch_size):
             sent = next(doc.sents)
             tree = Tree.fromstring(sent._.parse_string)
-            tree.set_label('SENT')
+            tree.label = 'SENT'
             yield tree

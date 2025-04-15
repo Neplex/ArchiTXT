@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from copy import deepcopy
 
 from architxt.similarity import TREE_CLUSTER
 from architxt.tree import Tree, has_type
@@ -28,19 +27,19 @@ class ReduceOperation(Operation, ABC):
 
         # Iterate through subtrees in reverse order to ensure bottom-up processing
         for subtree in self.subtrees_to_reduce(tree):
-            parent = subtree.parent()
-            position = subtree.treeposition()
-            label = subtree.label()
-            old_labels = tuple(str(child.label()) for child in parent)
+            parent = subtree.parent
+            position = subtree.position
+            label = subtree.label
+            old_labels = tuple(str(child.label) for child in parent)
 
             # Convert subtree's children into independent nodes
-            new_children = [deepcopy(child) for child in subtree]
+            new_children = [child.copy() for child in subtree]
 
             # Put children in the parent at the original subtree position
-            parent_pos = subtree.parent_index()
+            parent_pos = subtree.parent_index
             parent[parent_pos : parent_pos + 1] = new_children
 
-            new_labels = tuple(str(child.label()) for child in parent)
+            new_labels = tuple(str(child.label) for child in parent)
             self._log_to_mlflow(
                 {
                     'label': str(label),
@@ -65,7 +64,7 @@ class ReduceBottomOperation(ReduceOperation):
     """
 
     def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]:
-        yield from tree.subtrees(lambda x: x.parent() and x.has_entity_child() and not has_type(x))
+        yield from tree.subtrees(lambda x: x.parent and x.has_entity_child() and not has_type(x))
 
 
 class ReduceTopOperation(ReduceOperation):

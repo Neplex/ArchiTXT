@@ -1,3 +1,4 @@
+import uuid
 from copy import deepcopy
 from itertools import combinations
 
@@ -44,7 +45,7 @@ class FindSubGroupsOperation(Operation):
 
         # Remove the used entities from the original subtree
         # and insert the new GROUP node at the earliest index of the sub_group.
-        indices = sorted((ent.parent_index() for ent in sub_group), reverse=True)
+        indices = sorted((ent.parent_index for ent in sub_group), reverse=True)
         for idx in indices:
             new_subtree.pop(idx)
 
@@ -54,7 +55,7 @@ class FindSubGroupsOperation(Operation):
 
         # Reset label if subtree becomes invalid as a group
         if has_type(subtree, NodeType.GROUP):
-            new_subtree.set_label('')
+            new_subtree.label = f'UNDEF_{uuid.uuid4().hex}'
 
         # Compute support for the new subtree. It is a valid subgroup if its support exceeds the given threshold.
         new_group = new_subtree[insertion_index]
@@ -62,7 +63,7 @@ class FindSubGroupsOperation(Operation):
         support = len(equiv)
 
         if support >= min_support:
-            new_group.set_label(equiv[0].label())
+            new_group.label = equiv[0].label
             return new_subtree, support
 
         return None
@@ -73,28 +74,28 @@ class FindSubGroupsOperation(Operation):
         # Generate candidate subtrees that do not include ENT, REL, or COLL nodes as their children.
         candidate_subtrees = sorted(
             tree.subtrees(lambda sub: all(has_type(child, NodeType.ENT) for child in sub)),
-            key=lambda sub: sub.height(),
+            key=lambda sub: sub.height,
         )
 
         for subtree in candidate_subtrees:
-            parent = subtree.parent()
-            parent_idx = subtree.parent_index()
+            parent = subtree.parent
+            parent_idx = subtree.parent_index
 
             # Compute initial support for the subtree
             group_support = len(self.get_equiv_of(subtree, equiv_subtrees=equiv_subtrees))
             entity_trees = [child for child in subtree if has_type(child, NodeType.ENT)]
-            entity_labels = {ent.label() for ent in entity_trees}
+            entity_labels = {ent.label for ent in entity_trees}
 
             # To narrow down the search space, we focus on reducing the entity trees to consider.
             # We retain only those groups that appear in clusters with higher support than the actual subtree,
             # and where the entity set intersects with the current subtrees.
             # This allows us to reduce the set of entity labels to consider only those present in these selected groups.
             entity_groups = {
-                tuple(sorted(x.label() for x in subtree))
+                tuple(sorted(x.label for x in subtree))
                 for cluster in equiv_subtrees
                 if len(cluster) > group_support
                 for subtree in cluster
-                if entity_labels.intersection(x.label() for x in subtree)
+                if entity_labels.intersection(x.label for x in subtree)
             }
 
             if not entity_groups:
@@ -111,8 +112,8 @@ class FindSubGroupsOperation(Operation):
             # We can limit subgroup size to the largest group in the selected clusters
             # that contain a subset of the available entity labels within the subtree.
             # Larger groups could then be constructed by the merge_group operation.
-            entity_trees = [entity for entity in entity_trees if entity.label() in available_labels]
-            entity_labels = {ent.label() for ent in entity_trees}
+            entity_trees = [entity for entity in entity_trees if entity.label in available_labels]
+            entity_labels = {ent.label for ent in entity_trees}
 
             k = min(
                 len(entity_trees),
@@ -135,7 +136,7 @@ class FindSubGroupsOperation(Operation):
                         equiv_subtrees=equiv_subtrees,
                     )
                     for sub_group in combinations(entity_trees, k)
-                    if more_itertools.all_unique(ent.label() for ent in sub_group)
+                    if more_itertools.all_unique(ent.label for ent in sub_group)
                 )
 
                 # Select the subgroup with maximum support
@@ -152,7 +153,7 @@ class FindSubGroupsOperation(Operation):
                 self._log_to_mlflow(
                     {
                         'num_instance': max_support,
-                        'labels': [str(ent.label()) for ent in max_subtree],
+                        'labels': [str(ent.label) for ent in max_subtree],
                     }
                 )
 
@@ -217,22 +218,22 @@ class MergeGroupsOperation(Operation):
                     sub_group.extend(group_entity.entities())
 
         # Skip if invalid conditions are met: duplicates entities, empty groups, or no valid subgroups
-        if not sub_group or group_count == 0 or not more_itertools.all_unique(ent.label() for ent in sub_group):
+        if not sub_group or group_count == 0 or not more_itertools.all_unique(ent.label for ent in sub_group):
             return None
 
         # Copy the tree
-        new_tree = deepcopy(subtree.root())
-        new_subtree = new_tree[subtree.treeposition()]
+        new_tree = subtree.root.copy()
+        new_subtree = new_tree[subtree.position]
 
         # Create new `GROUP` node with selected entities
         group_tree = Tree(NodeLabel(NodeType.GROUP), children=[deepcopy(ent) for ent in sub_group])
 
         # Removed used entity trees from the subtree
-        for group_ent in sorted(combined_groups, key=lambda x: x.parent_index(), reverse=True):
-            new_subtree.pop(group_ent.parent_index(), recursive=False)
+        for group_ent in sorted(combined_groups, key=lambda x: x.parent_index, reverse=True):
+            new_subtree.pop(group_ent.parent_index, recursive=False)
 
         # Insert the newly created `GROUP` node at the appropriate position
-        group_position = min(group_entity.parent_index() for group_entity in combined_groups)
+        group_position = min(group_entity.parent_index for group_entity in combined_groups)
         new_subtree.insert(group_position, group_tree)
 
         # Compute support for the newly formed group
@@ -241,7 +242,7 @@ class MergeGroupsOperation(Operation):
 
         # Return the modified subtree and its support counts if support exceeds the threshold
         if support >= max_sub_group_support:
-            new_subtree[group_position].set_label(equiv[0].label())
+            new_subtree[group_position].label = equiv[0].label
             return new_subtree, support
 
         return None
@@ -251,14 +252,14 @@ class MergeGroupsOperation(Operation):
 
         for subtree in sorted(
             tree.subtrees(lambda x: not has_type(x) and any(has_type(y, NodeType.GROUP) for y in x)),
-            key=lambda x: x.height(),
+            key=lambda x: x.height,
         ):
             # Identify `GROUP` and `ENT` nodes in the subtree that could be merged
             group_ent_trees = tuple(filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.ENT}), subtree))
-            parent = subtree.parent()
-            parent_idx = subtree.parent_index()
+            parent = subtree.parent
+            parent_idx = subtree.parent_index
 
-            k = len({x.label() for x in group_ent_trees})
+            k = len({x.label for x in group_ent_trees})
 
             # Recursively creating k-sized groups, decreasing k if necessary
             while k > 1:
@@ -286,7 +287,7 @@ class MergeGroupsOperation(Operation):
                 self._log_to_mlflow(
                     {
                         'num_instance': max_support,
-                        'labels': [str(ent.label()) for ent in max_subtree],
+                        'labels': [str(ent.label) for ent in max_subtree],
                     }
                 )
 

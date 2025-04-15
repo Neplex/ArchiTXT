@@ -27,4 +27,6 @@ from architxt.tree import Tree
 def test_parse_document_tree(document_tree: Tree, expected: list[Tree]) -> None:
     forest = list(parse_document_tree(document_tree))
 
-    assert forest == expected
+    assert len(forest) == len(expected)
+    for tree, expected_tree in zip(forest, expected):
+        assert str(tree) == str(expected_tree)

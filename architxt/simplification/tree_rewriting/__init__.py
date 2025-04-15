@@ -15,7 +15,7 @@ from nltk import TreePrettyPrinter
 from tqdm.auto import tqdm, trange
 
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
-from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type, reduce_all
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type
 
 from .operations import (
     FindCollectionsOperation,
@@ -156,7 +156,7 @@ def _rewrite_step(
 
     with mlflow.start_span('reduce_all'):
         for tree in forest:
-            reduce_all(tree, {NodeType.ENT})
+            tree.reduce_all({NodeType.ENT})
 
     with mlflow.start_span('equiv_cluster'):
         equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric, _step=iteration if debug else None)
@@ -367,9 +367,9 @@ def create_group(subtree: Tree, group_index: int) -> None:
     :param group_index: The index to use for naming the group.
     """
     label = NodeLabel(NodeType.GROUP, str(group_index))
-    subtree.set_label(label)
+    subtree.label = label
 
-    new_children = [deepcopy(entity) for entity in subtree.entities()]
+    new_children = [entity.detach() for entity in subtree.entities()]
     subtree.clear()
     subtree.extend(new_children)
 
@@ -391,7 +391,7 @@ def find_groups(
         key=lambda cluster: (
             len(cluster),
             sum(len(st.entities()) for st in cluster) / len(cluster),
-            sum(st.depth() for st in cluster) / len(cluster),
+            sum(st.depth for st in cluster) / len(cluster),
         ),
         reverse=True,
     )
@@ -403,7 +403,7 @@ def find_groups(
             if (
                 len(subtree) < 2
                 or has_type(subtree)
-                or (subtree.parent() and has_type(subtree.parent(), NodeType.GROUP))
+                or (subtree.parent and has_type(subtree.parent, NodeType.GROUP))
                 or not all(has_type(node, NodeType.ENT) for node in subtree)
                 or subtree.has_duplicate_entity()
             ):
