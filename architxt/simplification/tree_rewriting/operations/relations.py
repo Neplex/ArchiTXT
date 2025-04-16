@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import Any
 
 from architxt.similarity import TREE_CLUSTER
@@ -38,7 +37,7 @@ class FindRelationsOperation(Operation):
                 and not has_type(x)
                 and all(has_type(y, {NodeType.GROUP, NodeType.COLL}) for y in x)
             ),
-            key=lambda x: x.depth(),
+            key=lambda x: x.depth,
             reverse=True,
         ):
             group = None
@@ -46,12 +45,12 @@ class FindRelationsOperation(Operation):
 
             # Group <-> Group
             if has_type(subtree[0], NodeType.GROUP) and has_type(subtree[1], NodeType.GROUP):
-                if subtree[0].label().name == subtree[1].label().name:
+                if subtree[0].label.name == subtree[1].label.name:
                     continue
 
-                # Create and set relationship label
-                label = sorted([subtree[0].label().name, subtree[1].label().name])
-                subtree.set_label(NodeLabel(NodeType.REL, f'{label[0]}<->{label[1]}'))
+                # Create and set the relationship label
+                label = sorted([subtree[0].label.name, subtree[1].label.name])
+                subtree.label = NodeLabel(NodeType.REL, f'{label[0]}<->{label[1]}')
 
                 # Log relation creation in MLFlow, if active
                 simplified = True
@@ -75,14 +74,14 @@ class FindRelationsOperation(Operation):
 
             # If a valid Group-Collection pair is found, create relationships for each
             if group and collection and has_type(collection[0], NodeType.GROUP):
-                if collection[0].label() == group.label():
+                if collection[0].label == group.label:
                     continue
 
                 # Create relationship nodes for each element in the collection
-                for coll_group in collection:
-                    label1, label2 = sorted([group.label().name, coll_group.label().name])
+                for coll_group in collection[:]:
+                    label1, label2 = sorted([group.label.name, coll_group.label.name])
                     rel_label = NodeLabel(NodeType.REL, f'{label1}<->{label2}')
-                    rel_tree = Tree(rel_label, children=deepcopy([group, coll_group]))
+                    rel_tree = Tree(rel_label, children=[group.copy(), coll_group.detach()])
                     subtree.append(rel_tree)  # Add new relationship to subtree
 
                     # Log relation creation in MLFlow, if active

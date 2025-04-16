@@ -79,7 +79,7 @@ def simplify(
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
-    forest = load_forest(files, sample=sample, shuffle=shuffle)
+    forest = load_forest(files, sample=sample or 0, shuffle=shuffle)
 
     console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
     new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
@@ -117,7 +117,7 @@ def corpus_stats(
     )
 
     # Entity Count
-    entity_count = Counter([ent.label().name for tree in forest for ent in tree.entities()])
+    entity_count = Counter([ent.label.name for tree in forest for ent in tree.entities()])
 
     tables = []
     for chunk in more_itertools.chunked_even(entity_count.most_common(), 10):
@@ -133,7 +133,7 @@ def corpus_stats(
     # Compute statistics
     total_trees = len(forest)
     total_entities = sum(len(tree.entities()) for tree in forest)
-    tree_heights = [tree.height() for tree in forest]
+    tree_heights = [tree.height for tree in forest]
     tree_sizes = [len(tree.leaves()) for tree in forest]
     avg_height = sum(tree_heights) / len(tree_heights) if tree_heights else 0
     max_height = max(tree_heights, default=0)
@@ -180,7 +180,7 @@ def largest_tree(
 
     if tree:
         sentence = " ".join(tree.leaves())
-        tree_display = tree.pformat(margin=255)
+        tree_display = tree.pformat(margin=console.width)
 
         console.print(Panel(sentence, title="Sentence"))
         console.print(Panel(tree_display, title="Tree"))

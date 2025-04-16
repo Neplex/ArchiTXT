@@ -15,7 +15,7 @@ def test_merge_groups_simple() -> None:
     )
 
     assert has_simplified
-    assert tree == Tree.fromstring('(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4))))')
+    assert str(tree) == '(SENT (1 (GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4))))'
 
 
 def test_merge_groups_extend() -> None:
@@ -31,6 +31,4 @@ def test_merge_groups_extend() -> None:
     )
 
     assert has_simplified
-    assert tree == Tree.fromstring(
-        '(SENT (1 (GROUP::4 (ENT::A 1) (ENT::B 2) (ENT::C 3)) (GROUP::3 (ENT::D 4) (ENT::E 5))))'
-    )
+    assert str(tree) == '(SENT (1 (GROUP::4 (ENT::A 1) (ENT::B 2) (ENT::C 3)) (GROUP::3 (ENT::D 4) (ENT::E 5))))'

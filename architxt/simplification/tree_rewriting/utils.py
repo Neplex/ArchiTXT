@@ -95,7 +95,7 @@ def log_metrics(iteration: int, forest: Forest, equiv_subtrees: TREE_CLUSTER | N
         return
 
     # Count labels for all nodes in the forest
-    label_counts = Counter(subtree.label() for tree in forest for subtree in tree.subtrees())
+    label_counts = Counter(subtree.label for tree in forest for subtree in tree.subtrees())
 
     # Calculate the number of unlabeled nodes
     num_unlabeled = sum(not has_type(label) for label in label_counts)
@@ -163,7 +163,7 @@ def log_clusters(iteration: int, equiv_subtrees: TREE_CLUSTER) -> None:
     max_len = []
 
     for equiv_class in equiv_subtrees:
-        elems.append({str(equiv_tree.label()) for equiv_tree in equiv_class})
+        elems.append({str(equiv_tree.label) for equiv_tree in equiv_class})
         count.append(len(equiv_class))
         max_len.append(len(max(equiv_class, key=len)))
 

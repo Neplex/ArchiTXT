@@ -21,8 +21,8 @@ def read_database(
     Read the database instance as a tree.
 
     :param conn: SQLAlchemy connection to the database.
-    :param simplify_association: Flag to simplify non attributed association tables.
-    :param search_all_instances: Flag to search for all instances of database.
+    :param simplify_association: Flag to simplify non-attributed association tables.
+    :param search_all_instances: Flag to search for all instances of the database.
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the database.
     """
@@ -47,7 +47,7 @@ def get_root_tables(tables: set[Table]) -> set[Table]:
     Retrieve the root tables in the database by identifying tables that are not referenced as foreign keys.
 
     :param tables: A collection of tables to analyze.
-    :return: A set of root table.
+    :return: A set of root tables.
     """
     referenced_tables = {fk.column.table for table in tables for fk in table.foreign_keys}
 
@@ -118,7 +118,7 @@ def read_table(
 
     :param table: The table to process.
     :param conn: SQLAlchemy connection.
-    :param simplify_association: Flag to simplify non attributed association tables.
+    :param simplify_association: Flag to simplify non-attributed association tables.
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the relations and data for the table.
     """
@@ -234,7 +234,7 @@ def parse_table(
 
     yield build_group(table, row)
 
-    for fk in table.foreign_keys:
+    for fk in sorted(table.foreign_keys, key=lambda fk: fk.parent.name):
         if fk in _visited_links:
             continue
 
@@ -288,9 +288,8 @@ def build_group(table: Table, row: Row) -> Tree:
     :param row: A row of the table.
     :return: A tree representing the table's structure and data.
     """
-    primary_keys = {column.name for column in table.primary_key.columns}
     group_name = table.name.replace(' ', '')
-    node_label = NodeLabel(NodeType.GROUP, group_name, {'primary_keys': primary_keys})
+    node_label = NodeLabel(NodeType.GROUP, group_name)
 
     entities = []
     for column in table.columns.values():
@@ -298,19 +297,25 @@ def build_group(table: Table, row: Row) -> Tree:
             continue
 
         entity_name = column.name.replace(' ', '')
-        entity_label = NodeLabel(
-            NodeType.ENT,
-            entity_name,
+        entity_label = NodeLabel(NodeType.ENT, entity_name)
+        entity_tree = Tree(
+            entity_label,
+            [str(entity_data)],
             {
                 'type': column.type,
                 'nullable': column.nullable,
                 'default': column.default,
             },
         )
-        entity_tree = Tree(entity_label, [str(entity_data)])
         entities.append(entity_tree)
 
-    return Tree(node_label, entities)
+    return Tree(
+        node_label,
+        entities,
+        {
+            'primary_keys': {column.name for column in table.primary_key.columns},
+        },
+    )
 
 
 def build_relation(
@@ -329,7 +334,7 @@ def build_relation(
     :param left_row: The left table row of the relation.
     :param right_row: The right table row of the relation.
     :param node_data: Dictionary containing relation data.
-    :param name: Name of the relation, if not set, it will be automatically generated.
+    :param name: The name of the relation, if not set, it will be automatically generated.
     :return: The tree of the relation.
     """
     if name:
@@ -341,9 +346,10 @@ def build_relation(
         rel_name = f"{left_name}<->{right_name}"
 
     return Tree(
-        NodeLabel(NodeType.REL, rel_name, node_data),
+        NodeLabel(NodeType.REL, rel_name),
         [
             build_group(left_table, left_row),
             build_group(right_table, right_row),
         ],
+        node_data,
     )

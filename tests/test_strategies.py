@@ -104,7 +104,7 @@ def group_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str | 
         label = NodeLabel(NodeType.GROUP, group_name)
 
     entity_strategy = entity_tree_st(schema=schema, group_name=label)
-    children = draw(st.lists(entity_strategy, min_size=2, unique_by=lambda tree: tree.label().name))
+    children = draw(st.lists(entity_strategy, min_size=2, unique_by=lambda tree: tree.label.name))
 
     return Tree(label, children)
 
@@ -138,7 +138,7 @@ def relation_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str
         relation_name = name or draw(LABEL_ST)
         label = NodeLabel(NodeType.REL, relation_name)
         children = draw(
-            st.lists(group_tree_st(schema=schema), min_size=2, max_size=2, unique_by=lambda tree: tree.label().name)
+            st.lists(group_tree_st(schema=schema), min_size=2, max_size=2, unique_by=lambda tree: tree.label.name)
         )
 
     return Tree(label, children)
@@ -218,7 +218,7 @@ def tree_st(draw: st.DrawFn, *, schema: Schema | None = None, has_parent: bool |
     if has_type(tree):
         tree = Tree('ROOT', [tree])
     else:
-        tree.set_label('ROOT')
+        tree.label = 'ROOT'
 
     note(f'== Generated Tree ==\n{tree.pformat()}\n============')
     return draw(st.sampled_from(list(tree.subtrees()))) if has_parent else tree
@@ -246,7 +246,7 @@ def test_entity_tree_generation(schema: Schema, data: st.DataObject) -> None:
     """
     entity_tree = data.draw(entity_tree_st(schema=schema))
     if schema.entities:
-        assert entity_tree.label() in schema.entities
+        assert entity_tree.label in schema.entities
 
 
 @given(schema=schema_st(), data=st.data())
@@ -260,10 +260,10 @@ def test_group_tree_generation(schema: Schema, data: st.DataObject) -> None:
     group_tree = data.draw(group_tree_st(schema=schema))
     if schema.groups:
         # Ensure the group tree's label is in the schema's groups
-        assert group_tree.label() in schema.groups
+        assert group_tree.label in schema.groups
         # Ensure the group tree's children are entities defined in the schema for that group
-        group_entities = {child.label() for child in group_tree}
-        assert group_entities.issubset(schema.groups[group_tree.label()])
+        group_entities = {child.label for child in group_tree}
+        assert group_entities.issubset(schema.groups[group_tree.label])
 
 
 @given(tree=tree_st(has_parent=False))
