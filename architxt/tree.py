@@ -1,5 +1,6 @@
 import contextlib
 import re
+import weakref
 from collections import Counter, UserList
 from collections.abc import Callable, Collection, Generator, Iterable, Sequence
 from copy import deepcopy
@@ -70,7 +71,7 @@ def _parse_label(label: NodeLabel | str) -> NodeLabel | str:
 
 
 class Tree(UserList):
-    _parent: 'Tree | None'
+    _parent: weakref.ReferenceType['Tree'] | None
     _label: NodeLabel | str
     _metadata: dict[str, Any]
 
@@ -91,7 +92,7 @@ class Tree(UserList):
 
         for child in self:
             if isinstance(child, Tree):
-                child._parent = self
+                child._parent = weakref.ref(self)
 
     def __eq__(self, other: object) -> bool:
         """
@@ -124,7 +125,7 @@ class Tree(UserList):
     @property
     def parent(self) -> 'Tree | None':
         """The parent of this tree, or None if it has no parent."""
-        return self._parent
+        return self._parent() if self._parent else None
 
     @property
     def parent_index(self) -> int | None:
@@ -144,7 +145,7 @@ class Tree(UserList):
         if self._parent is None:
             return None
 
-        for i, child in enumerate(self._parent):
+        for i, child in enumerate(self.parent):
             if child is self:
                 return i
 
@@ -638,7 +639,7 @@ class Tree(UserList):
             # reversing the elements in a tree.
             for i, child in enumerate(subtree):
                 if isinstance(child, Tree):
-                    child._parent = self
+                    child._parent = weakref.ref(self)
             # finally, update the content of the child list itself.
             super().__setitem__(pos, subtree)
 
@@ -654,7 +655,7 @@ class Tree(UserList):
                 return
             # Set the new child's parent pointer.
             if isinstance(subtree, Tree):
-                subtree._parent = self
+                subtree._parent = weakref.ref(self)
             # Remove the old child's parent pointer
             if isinstance(self[pos], Tree):
                 subtree._parent = None
@@ -723,7 +724,7 @@ class Tree(UserList):
                 msg = 'Can not insert a subtree that already has a parent.'
                 raise ValueError(msg)
 
-            child._parent = self
+            child._parent = weakref.ref(self)
 
         super().append(child)
 
@@ -731,7 +732,7 @@ class Tree(UserList):
         _check_children(children)
         for child in children:
             if isinstance(child, Tree):
-                child._parent = self
+                child._parent = weakref.ref(self)
 
         super().extend(children)
 
@@ -741,17 +742,17 @@ class Tree(UserList):
         if isinstance(child, Tree):
             child._parent = None
 
-        if recursive and len(self) == 0 and (parent := self._parent) is not None:
+        if recursive and len(self) == 0 and (parent := self.parent) is not None:
             parent.remove(self)
 
     def insert(self, pos: int, child: 'Tree | str') -> None:
         # Set the child's parent and update our child list.
         if isinstance(child, Tree):
-            if child._parent is not None:
+            if child.parent is not None:
                 msg = 'Can not insert a subtree that already has a parent.'
                 raise ValueError(msg)
 
-            child._parent = self
+            child._parent = weakref.ref(self)
 
         super().insert(pos, child)
 
@@ -759,7 +760,7 @@ class Tree(UserList):
         """
         Delete an element from the tree at the specified position `pos`.
 
-        If the parent tree becomes empty after the deletion, recursively deletes the parent node.
+        If the parent tree becomes empty after the deletion, parent nodes are recursively deleted.
 
         :param pos: The position (index) of the element to delete in the tree.
         :param recursive: If an empty tree should be removed from the parent.
@@ -784,7 +785,7 @@ class Tree(UserList):
         if isinstance(child, Tree):
             child._parent = None
 
-        if recursive and len(self) == 0 and (parent := self._parent) is not None:
+        if recursive and len(self) == 0 and (parent := self.parent) is not None:
             parent.remove(self)
 
         return child
