@@ -2,7 +2,7 @@ import warnings
 from collections.abc import Generator
 from typing import Any
 
-from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, exists
+from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, exists, func, select
 from tqdm.auto import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
@@ -122,14 +122,15 @@ def read_table(
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the relations and data for the table.
     """
-    association_table = simplify_association and is_association_table(table)
+    total_rows = conn.scalar(select(func.count()).select_from(table))
     query = table.select()
 
-    if sample > 0:
+    if total_rows > sample > 0:
         query = query.limit(sample)
+        total_rows = sample
 
-    for row in tqdm(conn.execute(query), desc=table.name):
-        if association_table:
+    for row in tqdm(conn.execute(query), desc=table.name, total=total_rows):
+        if simplify_association and is_association_table(table):
             children = parse_association_table(table, row, conn=conn)
         else:
             children = parse_table(table, row, conn=conn)

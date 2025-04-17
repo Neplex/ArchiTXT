@@ -77,9 +77,7 @@ class Schema(CFG):
         return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: _get_rank(p.lhs()))])
 
     @classmethod
-    def from_forest(
-        cls, forest: Forest | Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True
-    ) -> 'Schema':
+    def from_forest(cls, forest: Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True) -> 'Schema':
         """
         Create a Schema from a given forest of trees.
 
