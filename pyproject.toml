@@ -80,6 +80,8 @@ itables = "^2.3.0"
 xmltodict = "^0.14.2"
 xlrd = "^2.0.1"
 neo4j = "^5.28.1"
+zodb = "^6.0"
+relstorage = "^4.1.1"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]

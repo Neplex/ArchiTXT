@@ -118,6 +118,10 @@ intersphinx_mapping = {
     'sklearn': ('https://scikit-learn.org/stable/', None),
     'pandas': ('https://pandas.pydata.org/docs/', None),
     'nltk': ('https://www.nltk.org/', None),
+    'sqlalchemy': ('https://docs.sqlalchemy.org/en/20/', None),
+    'zodb': ('https://zodb.org/en/latest/', None),
+    'btrees': ('https://btrees.readthedocs.io/en/latest/', None),
+    'persistent': ('https://persistent.readthedocs.io/en/latest/', None),
 }
 
 # -- Options for copybutton extension ----------------------------------------

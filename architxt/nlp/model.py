@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from os.path import commonprefix
 
-from architxt.tree import TREE_POS
+from architxt.tree import TreePosition
 
 __all__ = ['AnnotatedSentence', 'Entity', 'Relation', 'TreeEntity', 'TreeRel']
 
@@ -36,7 +36,7 @@ class TreeEntity:
     """An entity in a tree, the name is associate with a list of leaf tree position."""
 
     name: str
-    positions: list[TREE_POS]
+    positions: list[TreePosition]
 
     @property
     def root_pos(self) -> tuple[int, ...]:
@@ -66,8 +66,8 @@ class Relation:
 class TreeRel:
     """A relation between two entities in a tree."""
 
-    pos_start: TREE_POS
-    pos_end: TREE_POS
+    pos_start: TreePosition
+    pos_end: TreePosition
     name: str
 
 
