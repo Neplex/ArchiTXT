@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import gc
 import re
@@ -7,6 +8,7 @@ import weakref
 from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import (
+    AsyncIterable,
     Callable,
     Collection,
     Generator,
@@ -29,6 +31,7 @@ import more_itertools
 import pandas as pd
 import transaction
 import ZODB.config
+from aiostream import stream
 from BTrees.OOBTree import OOBTree
 from cachetools import cachedmethod, keys
 from nltk import slice_bounds
@@ -1306,6 +1309,20 @@ class ZODBTreeBucket(TreeBucket):
             if is_memory_low(_memory_threshold_mb):
                 self._connection.cacheMinimize()
                 gc.collect()
+
+    async def async_update(self, trees: AsyncIterable[Tree], _memory_threshold_mb: int = 3_000) -> None:
+        """
+        Asynchronously add multiple :py:class:`Tree` to the bucket.
+
+        This method mirrors the behavior of :py:meth:`~ZODBTreeBucket.update` but supports asynchronous iteration.
+        Internally, it delegates each chunk to a background thread.
+
+        :param trees: Trees to add to the bucket.
+        :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
+        """
+        async with stream.chunks(trees, BATCH_SIZE).stream() as streamer:
+            async for chunk in streamer:
+                await asyncio.to_thread(self.update, chunk, _memory_threshold_mb=_memory_threshold_mb)
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`Tree` to the bucket."""

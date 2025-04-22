@@ -1,12 +1,7 @@
-import random
-from collections.abc import Iterable
-from io import BytesIO
+from collections.abc import Generator, Iterable
 from pathlib import Path
-from typing import BinaryIO
 
-import cloudpickle
 import mlflow
-import typer
 from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
@@ -15,9 +10,9 @@ from rich.table import Table
 
 from architxt.metrics import Metrics
 from architxt.schema import Schema
-from architxt.tree import Forest
+from architxt.tree import Forest, Tree, ZODBTreeBucket
 
-__all__ = ['console', 'load_forest', 'save_forest', 'show_metrics', 'show_schema']
+__all__ = ['console', 'load_forest', 'show_metrics', 'show_schema']
 
 
 console = Console()
@@ -70,53 +65,21 @@ def show_metrics(forest: Forest, new_forest: Forest, schema: Schema, tau: float)
         console.print(Columns([metrics_table, grammar_metrics_table]))
 
 
-def save_forest(forest: Forest, output: BytesIO | BinaryIO) -> None:
+def load_forest(files: Iterable[str | Path]) -> Generator[Tree, None, None]:
     """
-    Serialize and save the forest object to a buffer.
+    Load a forest from a list of zodb files.
 
-    :param forest: The forest object to be serialized and saved.
-    :param output: The buffer or file-like object where the forest  will be saved.
+    :param files: List of file paths to read into a forest.
+    :yield: Trees from the list of data files.
 
-    >>> with open('forest.pkl', 'wb') as f: # doctest: +SKIP
-    ...     save_forest(forest, f)
+    >>> forest = load_forest(['forest1.data', 'forest2.data']) # doctest: +SKIP
     """
-    with console.status(f"[cyan]Saving instance to {typer.format_filename(output.name)}..."):
-        cloudpickle.dump(forest, output)
-
-
-def load_forest(files: Iterable[str | Path], *, sample: int = 0, shuffle: bool = False) -> Forest:
-    """
-    Load a forest from a list of binary files.
-
-    :param files: List of file paths to read and deserialize into a forest.
-    :param sample: The number of trees to sample from the forest. If 0, the entire forest is loaded.
-    :param shuffle: Whether to shuffle the forest after loading.
-
-    :returns: A list containing the deserialized forest data.
-
-    >>> forest = load_forest(['forest1.pkl', 'forest2.pkl'], sample=100, shuffle=True) # doctest: +SKIP
-    """
-    forest = []
-
     with Progress() as progress:
         task_ids = [progress.add_task(f'Reading {file_path}...', start=False) for file_path in files]
 
         for file_path, task_id in zip(files, task_ids):
             progress.start_task(task_id)
 
-            with progress.open(file_path, 'rb', task_id=task_id) as file:
-                forest.extend(cloudpickle.load(file))
-
-    if sample:
-        if sample < len(forest):
-            forest = random.sample(list(forest), sample)
-        else:
-            console.print(
-                "[yellow] You have specified a sample size larger than the total population, "
-                "which would result in fewer results than expected."
-            )
-
-    if shuffle:
-        random.shuffle(forest)
-
-    return forest
+            with ZODBTreeBucket(storage_path=file_path, read_only=True) as forest:
+                for tree in progress.track(forest, task_id=task_id):
+                    yield tree.copy()

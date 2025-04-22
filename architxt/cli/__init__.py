@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -6,6 +7,7 @@ import more_itertools
 import typer
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
+from platformdirs import user_cache_path
 from rich.columns import Columns
 from rich.panel import Panel
 from rich.table import Table
@@ -15,10 +17,11 @@ from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
+from architxt.tree import ZODBTreeBucket
 
 from .export import app as export_app
 from .loader import app as loader_app
-from .utils import console, load_forest, save_forest, show_schema
+from .utils import console, load_forest, show_schema
 
 app = typer.Typer(
     help="ArchiTXT is a tool for structuring textual data into a valid database model. "
@@ -53,19 +56,17 @@ def ui(ctx: typer.Context) -> None:
         raise typer.Exit(code=1) from error
 
 
-@app.command(help="Simplify a bunch of databased together.", no_args_is_help=True)
+@app.command(help="Simplify a bunch of databased together.")
 def simplify(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
     epoch: int = typer.Option(100, help="Number of iteration for tree rewriting.", min=1),
     min_support: int = typer.Option(20, help="Minimum support for tree patterns.", min=1),
-    sample: int | None = typer.Option(None, help="Number of tree to use from the simplification.", min=1),
     workers: int | None = typer.Option(
         None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores.", min=1
     ),
     output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
-    shuffle: bool = typer.Option(False, help="Shuffle the data before processing to introduce randomness."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
@@ -76,21 +77,22 @@ def simplify(
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
-    forest = load_forest(files, sample=sample or 0, shuffle=shuffle)
+    with ZODBTreeBucket(storage_path=output) as forest:
+        forest.update(load_forest(files))
 
-    console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
-    rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+        console.print(
+            f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]'
+        )
+        rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+        # TODO(Nicolas H.): rewrite should return a metric object indicating the changed made  # noqa: TD003
 
-    if output:
-        save_forest(forest, output)
+        # Generate schema
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
+        show_schema(schema)
 
-    # Generate schema
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
-    show_schema(schema)
-
-    if metrics:
-        pass
-        # show_metrics(forest, new_forest, schema, tau)
+        if metrics:
+            pass
+            # show_metrics(forest, new_forest, schema, tau)
 
 
 @app.command(help="Display statistics of a dataset.")
@@ -136,7 +138,7 @@ def inspect(
     console.print(Columns([*tables, stats_table], equal=True))
 
 
-@app.command(name='generate', help="Generate synthetic instance.", no_args_is_help=True)
+@app.command(name='generate', help="Generate synthetic instance.")
 def instance_generator(
     *,
     sample: int = typer.Option(100, help="Number of sentences to sample from the corpus.", min=1),
@@ -156,13 +158,29 @@ def instance_generator(
     )
     show_schema(schema)
 
-    with console.status("[cyan]Generating synthetic instances..."):
-        forest = list(gen_instance(schema, size=sample, generate_collections=False))
+    with ZODBTreeBucket(storage_path=output) as forest:
+        with console.status("[cyan]Generating synthetic instances..."):
+            forest.update(gen_instance(schema, size=sample, generate_collections=False))
 
-    console.print(f'[green]Generated {sample} synthetic instances.[/]')
+        console.print(f'[green]Generated {len(forest)} synthetic instances.[/]')
 
-    if output is not None:
-        save_forest(forest, output)
+
+@app.command(name='cache-clear', help='Clear all the cache of ArchiTXT')
+def clear_cache(
+    *,
+    force: bool = typer.Option(False, help="Force the deletion of the cache without asking."),
+) -> None:
+    cache_path = user_cache_path('architxt')
+
+    if not cache_path.exists():
+        console.print("[yellow]Cache is already empty or does not exist. Doing nothing.[/]")
+        return
+
+    if not force and not typer.confirm('All the cache data will be deleted. Are you sure?'):
+        typer.Abort()
+
+    shutil.rmtree(cache_path)
+    console.print("[green]Cache cleared.[/]")
 
 
 # Click command used for Sphinx documentation
