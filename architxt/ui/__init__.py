@@ -10,7 +10,7 @@ from streamlit_agraph import Edge as _Edge
 from streamlit_agraph import Node as _Node
 from streamlit_tags import st_tags
 
-from architxt.cli import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
+from architxt.cli.loader import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
