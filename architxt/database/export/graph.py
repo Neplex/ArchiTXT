@@ -1,7 +1,6 @@
 from collections.abc import Iterable
 
 import neo4j
-from tqdm.auto import tqdm
 
 from architxt.tree import NodeType, Tree, has_type
 
@@ -18,7 +17,7 @@ def export_graph(
     :param forest: The forest to export.
     :return: A generator that yields dictionaries representing the graph.
     """
-    for tree in tqdm(forest, desc="Exporting graph"):
+    for tree in forest:
         export_tree(tree, session=session)
 
 

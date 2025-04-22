@@ -1,6 +1,6 @@
-import asyncio
 import subprocess
 from collections import Counter
+from io import StringIO
 from pathlib import Path
 
 import mlflow
@@ -13,13 +13,11 @@ from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
-from architxt.nlp import raw_load_corpus
-from architxt.nlp.parser.corenlp import CoreNLPParser
+from architxt.generator import gen_instance
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
-from .loader import ENTITIES_FILTER, ENTITIES_MAPPING, RELATIONS_FILTER
 from .loader import app as loader_app
 from .utils import console, load_forest, save_forest, show_metrics, show_schema
 
@@ -95,26 +93,27 @@ def simplify(
         show_metrics(forest, new_forest, schema, tau)
 
 
-@app.command(help="Display overall statistics for the corpus.")
-def corpus_stats(
-    corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
-    language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
-    *,
-    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
-    cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
+@app.command(help="Display statistics of a dataset.")
+def inspect(
+    files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
 ) -> None:
-    """Display overall corpus statistics."""
-    forest = asyncio.run(
-        raw_load_corpus(
-            corpus_path,
-            language,
-            parser=CoreNLPParser(corenlp_url=corenlp_url),
-            cache=cache,
-            entities_filter=ENTITIES_FILTER,
-            relations_filter=RELATIONS_FILTER,
-            entities_mapping=ENTITIES_MAPPING,
-        )
-    )
+    """Display overall statistics."""
+    forest = list(load_forest(files))
+
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
+    show_schema(schema)
+
+    # Find the largest tree
+    tree = max(forest, key=lambda t: len(t.leaves()), default=None)
+
+    if not tree:
+        console.print("[yellow]No trees found in the corpus.[/]")
+        return
+
+    stream = StringIO()
+    tree.pretty_print(stream=stream)
+    stream.seek(0)
+    console.print(Panel(stream.read(), title="Largest Tree"))
 
     # Entity Count
     entity_count = Counter([ent.label.name for tree in forest for ent in tree.entities()])
@@ -154,39 +153,33 @@ def corpus_stats(
     console.print(Columns([*tables, stats_table], equal=True))
 
 
-@app.command(help="Display details about the largest tree in the corpus.")
-def largest_tree(
-    corpus_path: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path to the input corpus."),
-    language: list[str] = typer.Option(['French'], help="Language of the input corpus."),
+@app.command(name='generate', help="Generate synthetic instance.", no_args_is_help=True)
+def instance_generator(
     *,
-    corenlp_url: str = typer.Option('http://localhost:9000', help="URL of the CoreNLP server."),
-    cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
+    sample: int = typer.Option(100, help="Number of sentences to sample from the corpus.", min=1),
+    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
 ) -> None:
-    """Display the largest tree in the corpus along with its sentence and structure."""
-    forest = asyncio.run(
-        raw_load_corpus(
-            corpus_path,
-            language,
-            parser=CoreNLPParser(corenlp_url=corenlp_url),
-            cache=cache,
-            entities_filter=ENTITIES_FILTER,
-            relations_filter=RELATIONS_FILTER,
-            entities_mapping=ENTITIES_MAPPING,
-        )
+    """Generate synthetic database instances."""
+    schema = Schema.from_description(
+        groups={
+            'SOSY': {'SOSY', 'ANATOMIE', 'SUBSTANCE'},
+            'TREATMENT': {'SUBSTANCE', 'DOSAGE', 'ADMINISTRATION', 'FREQUENCY'},
+            'EXAM': {'DIAGNOSTIC_PROCEDURE', 'ANATOMIE'},
+        },
+        rels={
+            'PRESCRIPTION': ('SOSY', 'TREATMENT'),
+            'EXAM_RESULT': ('EXAM', 'SOSY'),
+        },
     )
+    show_schema(schema)
 
-    # Find the largest tree
-    tree = max(forest, key=lambda t: len(t.leaves()), default=None)
+    with console.status("[cyan]Generating synthetic instances..."):
+        forest = list(gen_instance(schema, size=sample, generate_collections=False))
 
-    if tree:
-        sentence = " ".join(tree.leaves())
-        tree_display = tree.pformat(margin=console.width)
+    console.print(f'[green]Generated {sample} synthetic instances.[/]')
 
-        console.print(Panel(sentence, title="Sentence"))
-        console.print(Panel(tree_display, title="Tree"))
-
-    else:
-        console.print("[yellow]No trees found in the corpus.[/]")
+    if output is not None:
+        save_forest(forest, output)
 
 
 # Click command used for Sphinx documentation
