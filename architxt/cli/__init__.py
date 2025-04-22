@@ -13,6 +13,7 @@ from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
+from architxt.generator import gen_instance
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 
@@ -150,6 +151,35 @@ def inspect(
     stats_table.add_row("Maximum Tree size", str(max_size))
 
     console.print(Columns([*tables, stats_table], equal=True))
+
+
+@app.command(name='generate', help="Generate synthetic instance.", no_args_is_help=True)
+def instance_generator(
+    *,
+    sample: int = typer.Option(100, help="Number of sentences to sample from the corpus.", min=1),
+    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+) -> None:
+    """Generate synthetic database instances."""
+    schema = Schema.from_description(
+        groups={
+            'SOSY': {'SOSY', 'ANATOMIE', 'SUBSTANCE'},
+            'TREATMENT': {'SUBSTANCE', 'DOSAGE', 'ADMINISTRATION', 'FREQUENCY'},
+            'EXAM': {'DIAGNOSTIC_PROCEDURE', 'ANATOMIE'},
+        },
+        rels={
+            'PRESCRIPTION': ('SOSY', 'TREATMENT'),
+            'EXAM_RESULT': ('EXAM', 'SOSY'),
+        },
+    )
+    show_schema(schema)
+
+    with console.status("[cyan]Generating synthetic instances..."):
+        forest = list(gen_instance(schema, size=sample, generate_collections=False))
+
+    console.print(f'[green]Generated {sample} synthetic instances.[/]')
+
+    if output is not None:
+        save_forest(forest, output)
 
 
 # Click command used for Sphinx documentation
