@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, BinaryIO
 
+import more_itertools
 import pandas as pd
 import toml
 import xmltodict
@@ -28,15 +29,18 @@ def read_document(
     *,
     raw_read: bool = False,
     root_name: str = 'ROOT',
+    sample: int = 0,
 ) -> Generator[Tree, None, None]:
     """
     Read the file as a data tree.
 
-    XML are parsed according to https://www.xml.com/pub/a/2006/05/31/converting-between-xml-and-json.html
+    XML is parsed according to https://www.xml.com/pub/a/2006/05/31/converting-between-xml-and-json.html
 
     :param file: The document file to read.
     :param raw_read: If enabled, the tree corresponds to the document without any transformation applied.
     :param root_name: The root node name.
+    :param sample: Maximum number of samples to get for each collection.
+        If 0, all samples are returned.
     :return: A list of trees representing the database.
     """
     raw_data = read_document_file(file)
@@ -46,7 +50,7 @@ def read_document(
         yield document_tree
         return
 
-    yield from parse_document_tree(document_tree)
+    yield from parse_document_tree(document_tree, sample=sample)
 
 
 def read_document_file(file: str | Path | BytesIO | BinaryIO) -> dict[str, Any] | list[Any]:
@@ -143,7 +147,7 @@ def read_tree(data: dict[str, Any] | list[Any], *, root_name: str = 'ROOT') -> T
     return Tree(label, children)
 
 
-def parse_document_tree(tree: Tree) -> Generator[Tree, None, None]:
+def parse_document_tree(tree: Tree, *, sample: int = 0) -> Generator[Tree, None, None]:
     """
     Parse a document tree and yields processed subtrees based on collection grouping.
 
@@ -155,17 +159,19 @@ def parse_document_tree(tree: Tree) -> Generator[Tree, None, None]:
         collection and duplicating the path to the root for each collection element.
 
     :param tree: The nested tree to be parsed.
+    :param sample: Maximum number of samples to get for each collection.
+        If 0, all samples are returned.
     :yield: Trees representing the database.
     """
     trees = tree if has_type(tree, NodeType.COLL) else [tree]
 
     for tree in trees:
-        parsed_tree = traverse_tree(tree)[1]
+        _group, parsed_tree = traverse_tree(tree, sample=sample)
         if len(parsed_tree):
             yield parsed_tree
 
 
-def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
+def traverse_tree(tree: Tree, *, sample: int = 0) -> tuple[Tree, Tree]:
     """
     Recursively traverses and transforms a nested tree into a valid metamodel structure.
 
@@ -173,6 +179,8 @@ def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
     It then establishes relations between this group and any nested subgroups.
 
     :param tree: The tree to traverse and transform.
+    :param sample: Maximum number of samples to get for each collection.
+        If 0, all samples are returned.
     :returns: A tuple containing:
         - The group to anchor too for parent relationship.
         - The transformed tree converting subgroup to relations.
@@ -184,7 +192,8 @@ def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
         return group_node, group_node
 
     if has_type(tree, NodeType.COLL):
-        updated_children = [traverse_tree(child)[0] for child in tree]
+        children = more_itertools.sample(tree, sample) if sample else tree
+        updated_children = [traverse_tree(child, sample=sample)[0] for child in children]
         updated_tree = Tree(tree.label, updated_children)
         return updated_tree, updated_tree
 
@@ -199,7 +208,7 @@ def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
     relationship_nodes: list[Tree] = []
 
     for child in non_entities:
-        child_group, child_tree = traverse_tree(child)
+        child_group, child_tree = traverse_tree(child, sample=sample)
 
         if child_tree.label == 'ROOT':
             # extend relations recursively
@@ -207,6 +216,8 @@ def traverse_tree(tree: Tree) -> tuple[Tree, Tree]:
 
         if has_type(child_group, NodeType.COLL):
             # Create relationships with each element in the collection
+            if sample:
+                child_group = more_itertools.sample(child_group, sample)
             for element in child_group:
                 rel_label = NodeLabel(NodeType.REL, f'{group_node.label.name}<->{element.label.name}')
                 relationship_nodes.append(Tree(rel_label, [group_node.copy(), element.copy()]))
