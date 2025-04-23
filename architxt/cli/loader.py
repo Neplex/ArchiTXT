@@ -56,10 +56,7 @@ def load_document(
     output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
 ) -> None:
     """Read a parse a document file to a structured tree."""
-    forest = list(read_document(file, raw_read=raw, root_name=root_name))
-
-    if sample:
-        forest = random.sample(forest, sample)
+    forest = list(read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
 
     if output is not None:
         save_forest(forest, output)
