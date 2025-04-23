@@ -191,7 +191,7 @@ class Tree(UserList):
         >>> t[0, 0].height
         2
         """
-        return 1 + max((child.height if isinstance(child, Tree) else 1) for child in self)
+        return 1 + max((child.height if isinstance(child, Tree) else 1 for child in self), default=0)
 
     @property
     def depth(self) -> int:
