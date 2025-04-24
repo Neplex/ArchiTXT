@@ -6,6 +6,7 @@ from collections.abc import Callable, Collection, Generator, Iterable, Sequence
 from copy import deepcopy
 from enum import Enum
 from typing import Any, Literal, TextIO, TypeAlias, overload
+from urllib.parse import quote, unquote
 
 import pandas as pd
 from nltk import slice_bounds
@@ -843,7 +844,7 @@ class Tree(UserList):
             if token.startswith('('):
                 if len(stack) == 1 and len(stack[0][1]) > 0:
                     cls._parse_error(text, 'end-of-string', match)
-                label = token[1:].lstrip()
+                label = unquote(token[1:].lstrip())
                 stack.append((label, []))
 
             # End of a tree/subtree
@@ -860,7 +861,7 @@ class Tree(UserList):
             else:
                 if len(stack) == 1:
                     cls._parse_error(text, '(', match)
-                stack[-1][1].append(token)
+                stack[-1][1].append(unquote(token))
 
         # check that we got exactly one complete tree.
         if len(stack) > 1:
@@ -902,7 +903,9 @@ class Tree(UserList):
         msg += '\n{}"{}"\n{}^'.format(" " * 16, text, " " * (17 + offset))
         raise ValueError(msg)
 
-    def pretty_print(self, highlight: Sequence['Tree | int'] = (), stream: TextIO | None = None) -> None:
+    def pretty_print(
+        self, highlight: Sequence['Tree | int'] = (), stream: TextIO | None = None, maxwidth: int = 32
+    ) -> None:
         """
         Pretty-print this tree as ASCII or Unicode art.
 
@@ -911,12 +914,19 @@ class Tree(UserList):
         :param stream:  The file to print to.
         :param highlight: Optionally, a sequence of Tree objects in `tree` which should be highlighted.
             Has the effect of only applying colors to nodes in this sequence.
+        :param maxwidth: maximum number of characters before a label starts to wrap.
+            Leaf with more than `maxwidth` characters will be truncated.
         """
         from nltk.tree import Tree as NLTKTree
         from nltk.tree.prettyprinter import TreePrettyPrinter
 
         nltk_tree = NLTKTree.fromstring(str(self))
-        print(TreePrettyPrinter(nltk_tree, highlight=highlight).text(unicodelines=True), file=stream)
+
+        for tree_position in nltk_tree.treepositions(order='leaves'):
+            if len(nltk_tree[tree_position]) > maxwidth:
+                nltk_tree[tree_position] = nltk_tree[tree_position][: maxwidth - 3] + '...'
+
+        print(TreePrettyPrinter(nltk_tree, highlight=highlight).text(unicodelines=True, maxwidth=maxwidth), file=stream)
 
     def pformat(self, margin: int | None = None, indent: int = 0) -> str:
         """
@@ -931,13 +941,13 @@ class Tree(UserList):
         '(S (X xxx) (Y yyy))'
         """
         pad = ' ' * indent
-        text = f"{pad}({self._label} {' '.join(str(child) for child in self)})"
+        text = f"{pad}({self._label} {' '.join(str(child) if isinstance(child, Tree) else quote(child) for child in self)})"
 
         if margin is None or len(text) + indent < margin:
             return text
 
         child_lines = '\n'.join(
-            child.pformat(margin, indent + 2) if isinstance(child, Tree) else f'{pad}  {child}' for child in self
+            child.pformat(margin, indent + 2) if isinstance(child, Tree) else f'{pad}  {quote(child)}' for child in self
         )
         return f"{pad}({self._label} {child_lines})"
 

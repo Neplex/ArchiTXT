@@ -76,7 +76,15 @@ def entity_tree_st(
         entity_name = name or draw(LABEL_ST)
         label = NodeLabel(NodeType.ENT, entity_name)
 
-    return Tree(label, ['word'])
+    words = draw(
+        st.lists(
+            st.text(string.digits + string.ascii_letters + string.punctuation, min_size=1, max_size=6),
+            min_size=1,
+            max_size=3,
+        )
+    )
+
+    return Tree(label, words)
 
 
 @st.composite
