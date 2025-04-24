@@ -1,6 +1,4 @@
 import subprocess
-from collections import Counter
-from io import StringIO
 from pathlib import Path
 
 import mlflow
@@ -14,6 +12,7 @@ from rich.table import Table
 from typer.main import get_command
 
 from architxt.generator import gen_instance
+from architxt.inspector import ForestInspector
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
 
@@ -98,28 +97,20 @@ def inspect(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
 ) -> None:
     """Display overall statistics."""
-    forest = list(load_forest(files))
+    inspector = ForestInspector()
+    forest = load_forest(files)
+    forest = inspector(forest)
 
+    # Display the schema
     schema = Schema.from_forest(forest, keep_unlabelled=False)
     show_schema(schema)
 
-    # Find the largest tree
-    tree = max(forest, key=lambda t: len(t.leaves()), default=None)
-
-    if not tree:
-        console.print("[yellow]No trees found in the corpus.[/]")
-        return
-
-    stream = StringIO()
-    tree.pretty_print(stream=stream)
-    stream.seek(0)
-    console.print(Panel(stream.read(), title="Largest Tree"))
+    # Display the largest tree
+    console.print(Panel(str(inspector.largest_tree), title="Largest Tree"))
 
     # Entity Count
-    entity_count = Counter([ent.label.name for tree in forest for ent in tree.entities()])
-
     tables = []
-    for chunk in more_itertools.chunked_even(entity_count.most_common(), 10):
+    for chunk in more_itertools.chunked_even(inspector.entity_count.most_common(), 10):
         entity_table = Table()
         entity_table.add_column("Entity", style="cyan", no_wrap=True)
         entity_table.add_column("Count", style="magenta")
@@ -129,26 +120,17 @@ def inspect(
 
         tables.append(entity_table)
 
-    # Compute statistics
-    total_trees = len(forest)
-    total_entities = sum(len(tree.entities()) for tree in forest)
-    tree_heights = [tree.height for tree in forest]
-    tree_sizes = [len(tree.leaves()) for tree in forest]
-    avg_height = sum(tree_heights) / len(tree_heights) if tree_heights else 0
-    max_height = max(tree_heights, default=0)
-    avg_size = sum(tree_sizes) / len(tree_sizes) if tree_sizes else 0
-    max_size = max(tree_sizes, default=0)
-
+    # Display statistics
     stats_table = Table()
     stats_table.add_column("Metric", style="cyan", no_wrap=True)
     stats_table.add_column("Value", style="magenta")
 
-    stats_table.add_row("Total Trees", str(total_trees))
-    stats_table.add_row("Total Entities", str(total_entities))
-    stats_table.add_row("Average Tree Height", f"{avg_height:.3f}")
-    stats_table.add_row("Maximum Tree Height", str(max_height))
-    stats_table.add_row("Average Tree size", f"{avg_size:.3f}")
-    stats_table.add_row("Maximum Tree size", str(max_size))
+    stats_table.add_row("Total Trees", str(inspector.total_trees))
+    stats_table.add_row("Total Entities", str(inspector.total_entities))
+    stats_table.add_row("Average Tree Height", f"{inspector.avg_height:.3f}")
+    stats_table.add_row("Maximum Tree Height", str(inspector.max_height))
+    stats_table.add_row("Average Tree size", f"{inspector.avg_size:.3f}")
+    stats_table.add_row("Maximum Tree size", str(inspector.max_size))
 
     console.print(Columns([*tables, stats_table], equal=True))
 
