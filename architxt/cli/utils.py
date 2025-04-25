@@ -99,8 +99,12 @@ def load_forest(files: Iterable[str | Path], *, sample: int = 0, shuffle: bool =
     forest = []
 
     with Progress() as progress:
-        for path in files:
-            with progress.open(path, 'rb', description=f'Reading {path}...') as file:
+        task_ids = [progress.add_task(f'Reading {file_path}...', start=False) for file_path in files]
+
+        for file_path, task_id in zip(files, task_ids):
+            progress.start_task(task_id)
+
+            with progress.open(file_path, 'rb', task_id=task_id) as file:
                 forest.extend(cloudpickle.load(file))
 
     if sample:
