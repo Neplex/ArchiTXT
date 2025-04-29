@@ -1,54 +1,18 @@
 from collections import Counter
-from collections.abc import Collection
 
 import mlflow
 
 from architxt.metrics import Metrics
 from architxt.schema import Schema
 from architxt.similarity import METRIC_FUNC, TREE_CLUSTER
-from architxt.tree import Forest, NodeType, Tree, has_type
+from architxt.tree import Forest, NodeType, has_type
 
 __all__ = [
-    'distribute_evenly',
     'log_clusters',
     'log_instance_comparison_metrics',
     'log_metrics',
     'log_schema',
 ]
-
-
-def distribute_evenly(trees: Collection[Tree], n: int) -> list[list[Tree]]:
-    """
-    Distribute a collection of trees into `n` sub-collections with approximately equal total complexity.
-
-    Complexity is determined by the number of leaves in each tree.
-    The function attempts to create `n` chunks, but if there are fewer elements than `n`,
-    it will create one chunk per element.
-
-    :param trees: A collection of trees.
-    :param n: The number of sub-collections to create.
-    :return: A list of `n` sub-collections, with trees distributed to balance complexity.
-    :raises ValueError: If `n` is less than 1.
-    """
-    if n < 1:
-        msg = "The number of sub-collections 'n' must be at least 1."
-        raise ValueError(msg)
-
-    n = min(n, len(trees))
-
-    # Sort trees in descending order of their leaf count for a greedy allocation.
-    sorted_trees = sorted(trees, key=lambda tree: len(tree.leaves()), reverse=True)
-
-    chunks: list[list[Tree]] = [[] for _ in range(n)]
-    chunk_complexities = [0] * n
-
-    # Greedy distribution: Assign each tree to the chunk with the smallest current complexity.
-    for tree in sorted_trees:
-        least_complex_chunk_index = chunk_complexities.index(min(chunk_complexities))
-        chunks[least_complex_chunk_index].append(tree)
-        chunk_complexities[least_complex_chunk_index] += len(tree.leaves())
-
-    return chunks
 
 
 def log_instance_comparison_metrics(

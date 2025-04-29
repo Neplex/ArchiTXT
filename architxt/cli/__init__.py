@@ -18,7 +18,7 @@ from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
 from .loader import app as loader_app
-from .utils import console, load_forest, save_forest, show_metrics, show_schema
+from .utils import console, load_forest, save_forest, show_schema
 
 app = typer.Typer(
     help="ArchiTXT is a tool for structuring textual data into a valid database model. "
@@ -79,17 +79,18 @@ def simplify(
     forest = load_forest(files, sample=sample or 0, shuffle=shuffle)
 
     console.print(f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]')
-    new_forest = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+    rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
     if output:
-        save_forest(new_forest, output)
+        save_forest(forest, output)
 
     # Generate schema
-    schema = Schema.from_forest(new_forest, keep_unlabelled=False)
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
     show_schema(schema)
 
     if metrics:
-        show_metrics(forest, new_forest, schema, tau)
+        pass
+        # show_metrics(forest, new_forest, schema, tau)
 
 
 @app.command(help="Display statistics of a dataset.")

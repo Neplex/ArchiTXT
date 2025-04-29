@@ -1,44 +1,65 @@
-from typing import Any
+from collections.abc import Iterable
+from contextlib import nullcontext
 
+import more_itertools
 from tqdm.auto import tqdm
 
-from architxt.tree import Forest, NodeLabel, NodeType, Tree
+from architxt.tree import NodeLabel, NodeType, Tree, TreeBucket
+from architxt.utils import BATCH_SIZE
+
+__all__ = ['simple_rewrite']
 
 
-def simple_rewrite(forest: Forest, **_: Any) -> Forest:
+def _simple_rewrite_tree(tree: Tree, group_ids: dict[tuple[str, ...], str]) -> None:
+    """Rewrite of a single tree."""
+    if not tree.has_unlabelled_nodes():
+        return
+
+    entities = tree.entity_labels()
+    group_key = tuple(sorted(entities))
+
+    if group_key not in group_ids:
+        group_ids[group_key] = str(len(group_ids) + 1)
+
+    group_label = NodeLabel(NodeType.GROUP, group_ids[group_key])
+    group_entities: list[Tree] = []
+
+    for entity in tree.entities():
+        if entity.label.name in entities:
+            group_entities.append(entity.detach())
+            entities.remove(entity.label.name)
+
+    group_tree = Tree(group_label, group_entities)
+    tree[:] = [group_tree]
+
+
+def simple_rewrite(forest: Iterable[Tree], *, commit: bool | int = BATCH_SIZE) -> None:
     """
-    Rewrite a given forest into a valid schema, treating each tree as a distinct group.
+    Rewrite a forest into a valid schema, treating each tree as a distinct group.
 
-    Entities within a tree are grouped together, and duplicate entities are discarded.
-    The function creates a unique group name for each distinct set of entities.
+    This function processes each tree in the forest, collapsing its entities into a single
+    group node if the tree contains unlabelled nodes.
+    Each unique combination of entity labels is assigned a consistent group ID.
+    Duplicate entities are removed.
 
-    :param forest: Input forest consisting of a list of Tree objects.
-    :return: A new forest where each tree is restructured as a valid group. Already valid trees are kept as is.
+    :param forest: A forest to be rewritten in place.
+    :param commit: When working with a `TreeBucket`, changes can be committed automatically .
+        - If False, no commits are made. Use this for small forests where you want to commit manually later.
+        - If True, commits after processing the entire forest in one transaction.
+        - If an integer, commits after processing every N tree.
+        To avoid memory issues with large forests, we recommend using batch commit on large forests.
     """
-    new_forest: list[Tree] = []
     group_ids: dict[tuple[str, ...], str] = {}
+    forest = tqdm(forest, desc="Rewriting trees")
+    use_transaction = commit and isinstance(forest, TreeBucket)
 
-    for tree in tqdm(forest):
-        if not tree.has_unlabelled_nodes():
-            new_forest.append(tree)
-            continue
+    if use_transaction and isinstance(commit, int):
+        for chunk in more_itertools.ichunked(forest, commit):
+            with forest.transaction():
+                for tree in chunk:
+                    _simple_rewrite_tree(tree, group_ids)
 
-        entities = tree.entity_labels()
-        group_key = tuple(sorted(entities))
-
-        if group_key not in group_ids:
-            group_ids[group_key] = str(len(group_ids) + 1)
-
-        group_label = NodeLabel(NodeType.GROUP, group_ids[group_key])
-        group_entities: list[Tree] = []
-
-        for entity in tree.entities():
-            if entity.label.name in entities:
-                group_entities.append(entity.copy())
-                entities.remove(entity.label.name)
-
-        group_tree = Tree(group_label, group_entities)
-        tree = Tree('ROOT', [group_tree])
-        new_forest.append(tree)
-
-    return new_forest
+    else:
+        with forest.transaction() if use_transaction else nullcontext():
+            for tree in forest:
+                _simple_rewrite_tree(tree, group_ids)

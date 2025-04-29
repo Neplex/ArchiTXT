@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 import ctypes
 import functools
 import multiprocessing
-from collections.abc import Sequence
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import nullcontext
-from copy import deepcopy
-from multiprocessing import Manager, cpu_count
-from multiprocessing.managers import ValueProxy
-from multiprocessing.synchronize import Barrier
+from multiprocessing import Barrier, Manager, Queue, cpu_count
+from queue import Full
+from typing import TYPE_CHECKING
 
 import mlflow
+import more_itertools
 from mlflow.entities import SpanEvent
-from nltk import TreePrettyPrinter
 from tqdm.auto import tqdm, trange
 
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
-from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeBucket, TreeOID, has_type
+from architxt.utils import BATCH_SIZE
 
 from .operations import (
     FindCollectionsOperation,
@@ -26,7 +28,21 @@ from .operations import (
     ReduceBottomOperation,
     ReduceTopOperation,
 )
-from .utils import distribute_evenly, log_clusters, log_instance_comparison_metrics, log_metrics, log_schema
+from .utils import log_clusters, log_metrics, log_schema
+
+if sys.version_info < (3, 11):
+
+    class ExceptionGroup(BaseException):
+        def __init__(self, message: str, exceptions: Sequence[BaseException]) -> None:
+            message += '\n'.join(f'  ({i}) {exc!r}' for i, exc in enumerate(exceptions, 1))
+            super().__init__(message)
+else:
+    from builtins import ExceptionGroup
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from concurrent.futures import Future
+    from multiprocessing.managers import ValueProxy
 
 __all__ = ['apply_operations', 'create_group', 'find_groups', 'rewrite']
 
@@ -51,7 +67,8 @@ def rewrite(
     edit_ops: Sequence[type[Operation]] = DEFAULT_OPERATIONS,
     debug: bool = False,
     max_workers: int | None = None,
-) -> Forest:
+    commit: bool | int = BATCH_SIZE,
+) -> None:
     """
     Rewrite a forest by applying edit operations iteratively.
 
@@ -59,18 +76,24 @@ def rewrite(
     :param tau: Threshold for subtree similarity when clustering.
     :param epoch: Maximum number of rewriting steps.
     :param min_support: Minimum support of groups.
-    :param metric:  The metric function used to compute similarity between subtrees.
+    :param metric: The metric function used to compute similarity between subtrees.
     :param edit_ops: The list of operations to perform on the forest.
     :param debug: Whether to enable debug logging.
     :param max_workers: Number of parallel worker processes to use.
+    :param commit: When working with a `TreeBucket`, changes can be committed automatically .
+        - If False, no commits are made. Use this for small forests where you want to commit manually later.
+        - If True, commits after processing the entire forest in one transaction.
+        - If an integer, commits after processing every N tree.
+        To avoid memory issues with large forests, we recommend using batch commit on large forests.
 
     :return: The rewritten forest.
     """
-    if not forest:
-        return forest
+    if not len(forest):
+        return
 
+    batch_size = commit if isinstance(commit, int) and commit > 0 else BATCH_SIZE
     min_support = min_support or max((len(forest) // 10), 2)
-    max_workers = min(len(forest) // 100, max_workers or (cpu_count() - 2)) or 1  # Cannot have less than 100 trees
+    max_workers = min(len(forest) // batch_size, max_workers or (cpu_count() - 2)) or 1
 
     if mlflow.active_run():
         mlflow.log_params(
@@ -88,40 +111,50 @@ def rewrite(
         log_metrics(0, forest, equiv_subtrees)
         log_schema(0, forest)
         log_clusters(0, equiv_subtrees)
-        log_instance_comparison_metrics(0, forest, forest, tau, metric)
+        # log_instance_comparison_metrics(0, forest, forest, tau, metric)
 
         if debug:
             # Log the forest as SVG
-            rooted_forest = Tree('ROOT', deepcopy(forest))
-            mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), 'debug/0/tree.html')
+            rooted_forest = Tree('ROOT', (tree.copy() for tree in forest))
+            mlflow.log_text(rooted_forest.to_svg(), 'debug/0/tree.html')
 
-    new_forest = deepcopy(forest)
-    mp_ctx = multiprocessing.get_context('spawn')
+    mp_ctx = multiprocessing.get_context('spawn' if sys.platform == 'win32' else 'forkserver')
 
-    with mlflow.start_span('rewriting'), ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as executor:
+    with (
+        mlflow.start_span('rewriting') if mlflow.active_run() else nullcontext(),
+        ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as executor,
+    ):
         for iteration in trange(1, epoch, desc='rewrite trees'):
-            with mlflow.start_span('iteration', attributes={'step': iteration}):
-                new_forest, has_simplified = _rewrite_step(
+            with (
+                mlflow.start_span(
+                    'iteration',
+                    attributes={
+                        'step': iteration,
+                    },
+                )
+                if mlflow.active_run()
+                else nullcontext()
+            ):
+                has_simplified = _rewrite_step(
                     iteration,
-                    new_forest,
+                    forest,
                     tau=tau,
                     min_support=min_support,
                     metric=metric,
                     edit_ops=edit_ops,
                     debug=debug,
                     executor=executor,
+                    batch_size=batch_size,
                 )
 
-                log_instance_comparison_metrics(iteration, forest, new_forest, tau, metric)
+                # log_instance_comparison_metrics(iteration, forest, new_forest, tau, metric)
 
                 # Stop if no further simplifications are made
                 if iteration > 0 and not has_simplified:
                     break
 
-        new_forest, _ = _post_process(new_forest, tau=tau, metric=metric, executor=executor)
-        log_instance_comparison_metrics(iteration + 1, forest, new_forest, tau, metric)
-
-    return new_forest
+        # log_instance_comparison_metrics(iteration + 1, forest, new_forest, tau, metric)
+    _post_process(forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size)
 
 
 def _rewrite_step(
@@ -134,7 +167,8 @@ def _rewrite_step(
     edit_ops: Sequence[type[Operation]],
     debug: bool,
     executor: ProcessPoolExecutor,
-) -> tuple[Forest, bool]:
+    batch_size: int,
+) -> bool:
     """
     Perform a single rewrite step on the forest.
 
@@ -146,42 +180,46 @@ def _rewrite_step(
     :param edit_ops: The list of operations to perform on the forest.
     :param debug: Whether to enable debug logging.
     :param executor: A pool executor to parallelize the processing of the forest.
+    :param batch_size: The number of trees to process in each batch.
 
-    :return: The updated forest and a flag indicating if simplifications occurred.
+    :return: A flag indicating if any simplifications occurred.
     """
     if mlflow.active_run() and debug:
         # Log the forest as SVG
-        rooted_forest = Tree('ROOT', deepcopy(forest))
-        mlflow.log_text(TreePrettyPrinter(rooted_forest).svg(), f'debug/{iteration}/tree.html')
+        rooted_forest = Tree('ROOT', (tree.copy() for tree in forest))
+        mlflow.log_text(rooted_forest.to_svg(), f'debug/{iteration}/tree.html')
 
-    with mlflow.start_span('reduce_all'):
+    with mlflow.start_span('reduce_all') if mlflow.active_run() else nullcontext():
         for tree in forest:
             tree.reduce_all({NodeType.ENT})
 
-    with mlflow.start_span('equiv_cluster'):
+    with mlflow.start_span('equiv_cluster') if mlflow.active_run() else nullcontext():
         equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric, _step=iteration if debug else None)
         if debug:
             log_clusters(iteration, equiv_subtrees)
 
-    with mlflow.start_span('find_groups'):
+    with mlflow.start_span('find_groups') if mlflow.active_run() else nullcontext():
         find_groups(equiv_subtrees, min_support)
 
-    forest, op_id = apply_operations(
+    op_id = apply_operations(
         [operation(tau=tau, min_support=min_support, metric=metric) for operation in edit_ops],
         forest,
+        batch_size=batch_size,
         equiv_subtrees=equiv_subtrees,
         executor=executor,
     )
 
-    if op_id is not None:
+    if mlflow.active_run() and op_id is not None:
         mlflow.log_metric('edit_op', op_id, step=iteration)
 
     if mlflow.active_run():
-        renamed_forest, equiv_subtrees = _post_process(forest, tau=tau, metric=metric, executor=executor)
+        renamed_forest, equiv_subtrees = _post_process(
+            forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size
+        )
         log_schema(iteration, renamed_forest)
         log_metrics(iteration, renamed_forest, equiv_subtrees)
 
-    return forest, op_id is not None
+    return op_id is not None
 
 
 def _post_process(
@@ -190,7 +228,8 @@ def _post_process(
     tau: float,
     metric: METRIC_FUNC,
     executor: ProcessPoolExecutor,
-) -> tuple[Forest, TREE_CLUSTER]:
+    batch_size: int,
+) -> None:
     """
     Post-process the forest to find and name relations and collections.
 
@@ -198,12 +237,11 @@ def _post_process(
     :param tau: Threshold for subtree similarity when clustering.
     :param metric: The metric function used to compute similarity between subtrees.
     :param executor: A pool executor to parallelize the processing of the forest.
-
-    :returns: The processed forest with named relations and collections.
+    :param batch_size: The number of trees to process in each batch.
     """
     equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
 
-    forest, _ = apply_operations(
+    apply_operations(
         [
             (
                 '[post-process] name_relations',
@@ -218,9 +256,8 @@ def _post_process(
         equiv_subtrees=equiv_subtrees,
         early_exit=False,
         executor=executor,
+        batch_size=batch_size,
     )
-
-    return forest, equiv_subtrees
 
 
 def apply_operations(
@@ -230,7 +267,8 @@ def apply_operations(
     equiv_subtrees: TREE_CLUSTER,
     early_exit: bool = True,
     executor: ProcessPoolExecutor,
-) -> tuple[Forest, int | None]:
+    batch_size: int,
+) -> int | None:
     """
     Apply a sequence of edit operations to a forest, potentially simplifying its structure.
 
@@ -246,64 +284,138 @@ def apply_operations(
     :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
                        If `False`, all operations are applied.
     :param executor: A pool executor to parallelize the processing of the forest.
+    :param batch_size: The number of trees to process in each batch.
 
-    :return: A tuple composed of:
-        - The updated forest after applying the operations.
-        - The index of the operation that successfully simplified a tree, or `None` if no operation succeeded.
+    :return: The index of the operation that successfully simplified a tree, or `None` if no operation succeeded.
     """
     if not edit_ops:
-        return forest, None
-
-    edit_ops_names = [(op.name, op) if isinstance(op, Operation) else op for op in edit_ops]
-    chunks = distribute_evenly(forest, executor._max_workers)
+        return None
 
     run_id = mlflow.active_run().info.run_id if mlflow.active_run() else None
+    edit_ops_names = [(op.name, op) if isinstance(op, Operation) else op for op in edit_ops]
+    workers_count = executor._max_workers
+    futures: list[Future]
 
     with Manager() as manager:
         shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees, lock=False)
         simplification_operation = manager.Value(ctypes.c_int, -1, lock=False)
-        barrier = manager.Barrier(len(chunks))
+        barrier = manager.Barrier(workers_count + isinstance(forest, TreeBucket))
+        queue = manager.Queue(maxsize=workers_count * 3) if isinstance(forest, TreeBucket) else None
 
-        futures = [
-            executor.submit(
-                _apply_operations_worker,
-                idx,
-                edit_ops_names,
-                tuple(chunk),
-                shared_equiv,
-                early_exit,
-                simplification_operation,
-                barrier,
-                run_id,
-            )
-            for idx, chunk in enumerate(chunks)
-        ]
+        worker_fn = functools.partial(
+            _apply_operations_worker,
+            edit_ops=edit_ops_names,
+            shared_equiv_subtrees=shared_equiv,
+            early_exit=early_exit,
+            simplification_operation=simplification_operation,
+            barrier=barrier,
+            run_id=run_id,
+            batch_size=batch_size,
+            queue=queue,
+        )
 
-        forest = []
+        if queue is not None:
+            futures = [executor.submit(worker_fn, idx=idx, forest=forest) for idx in range(workers_count)]
+            _fill_queue(futures, forest, simplification_operation, barrier, queue, edit_ops_names, early_exit)
+
+        else:
+            futures = [
+                executor.submit(worker_fn, idx=idx, forest=tuple(batch))
+                for idx, batch in enumerate(more_itertools.distribute(workers_count, forest))
+            ]
+
+        new_forest = []
         for future in as_completed(futures):
-            trees, request_id = future.result()
-            forest.extend(trees)
+            request_id, trees = future.result()
+
+            if trees:
+                new_forest.extend(trees)
 
             worker_trace = mlflow.get_trace(request_id)
             mlflow.add_trace(worker_trace)
 
+        if new_forest:
+            forest[:] = new_forest
+
         op_id = simplification_operation.get()
 
-    return forest, op_id if op_id >= 0 else None
+    return op_id if op_id >= 0 else None
+
+
+def _check_worker_health(futures: Sequence[Future], barrier: Barrier, error: Exception | None = None) -> None:
+    if errors := [future.exception() for future in futures if not future.running()]:
+        barrier.abort()
+
+        msg = 'Some workers has failed'
+        raise ExceptionGroup(msg, errors) from error
+
+
+def _fill_queue(
+    futures: Sequence[Future],
+    forest: TreeBucket,
+    simplification_operation: ValueProxy[int],
+    barrier: Barrier,
+    queue: Queue[TreeOID],
+    edit_ops: Sequence[tuple[str, Operation]],
+    early_exit: bool,
+    timeout: int = 1,
+) -> None:
+    for op_name, _ in edit_ops:
+        # Refill the queue with a new batch of object IDs from the bucket.
+        # This avoids holding all IDs in memory at once, which could cause OOM issues.
+        for oid in tqdm(forest.oids(), total=len(forest), desc=op_name, leave=False):
+            while True:
+                try:
+                    queue.put(oid, timeout=timeout)
+                    break
+
+                except Full as error:
+                    # As we wait, we check for worker failures to avoid deadlocks.
+                    _check_worker_health(futures, barrier, error)
+
+        # Signal to each worker that the current batch is complete.
+        # One sentinel per worker to ensure a clean exit or sync point.
+        for _ in range(len(futures)):
+            queue.put(None)
+
+        # Synchronize with all worker processes:
+        # - If a simplification occurred, workers will exit early.
+        # - Otherwise, the main process will continue to the next batch.
+        while True:
+            try:
+                barrier.wait(timeout=timeout)
+                break
+
+            except TimeoutError as error:
+                # As we wait, we check for worker failures to avoid deadlocks.
+                _check_worker_health(futures, barrier, error)
+
+        # If simplification has occurred in any worker, stop processing further operations.
+        if early_exit and simplification_operation.value != -1:
+            break
 
 
 def _apply_operations_worker(
     idx: int,
     edit_ops: Sequence[tuple[str, Operation]],
-    forest: Forest,
+    forest: TreeBucket | Forest,
+    queue: Queue[TreeOID] | None,
     shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
     run_id: str | None,
-) -> tuple[Forest, str]:
+    batch_size: int,
+) -> tuple[str, Forest | None]:
     """
-    Apply the given operation to the forest.
+    Apply the given operations to a forest.
+
+    - In TreeBucket mode, tree IDs are consumed from a shared queue.
+      A sentinel value (None) signals the end of the input.
+      Each worker processes trees incrementally and commits changes in batches.
+    - In list-based mode (plain Forest), the entire collection is processed in a single pass.
+
+    Workers synchronize using a barrier after each operation.
 
     MLflow's tracing buffers spans in memory and exports the entire trace only when the root span concludes.
     This design does not inherently support multiprocessing, as spans created in separate processes are isolated
@@ -316,26 +428,23 @@ def _apply_operations_worker(
 
     :param idx: The index of the worker.
     :param edit_ops: The list of operations to perform on the forest.
-    :param forest: The forest to perform on.
+    :param forest: The forest or bucket of trees to process.
+    :param queue: A shared queue of tree IDs still waiting to be processed (for bucket use).
     :param shared_equiv_subtrees: The shared set of equivalent subtrees.
     :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
                        If `False`, all operations are applied.
     :param simplification_operation: A shared integer value to store the index of the operation that simplified a tree.
     :param barrier: A barrier to synchronize the workers before starting the next operation.
     :param run_id: The Mlflow run_id to link to.
-    :return: The rewritten forest and the execution trace.
+    :param batch_size: Number of trees to process before committing changes in bucket mode.
+    :return: Tuple of (MLflow request ID, modified forest or None if using a bucket).
     """
     equiv_subtrees = shared_equiv_subtrees.get()
 
     with (
+        forest if isinstance(forest, TreeBucket) else nullcontext(),
         mlflow.start_run(run_id=run_id) if run_id else nullcontext(),
-        mlflow.start_span(
-            "worker",
-            attributes={
-                'worker_id': idx,
-                'batch': len(forest),
-            },
-        ) as span,
+        mlflow.start_span('worker', attributes={'worker_id': idx}) as span,
     ):
         request_id = span.request_id
 
@@ -343,9 +452,28 @@ def _apply_operations_worker(
             op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees)
 
             with mlflow.start_span(name):
-                simplified = map(op_fn, tqdm(forest, desc=name, leave=False, position=idx + 1))
+                if queue is None:
+                    # List-based mode: apply operation directly
+                    forest_iterator = tqdm(forest, desc=name, total=len(forest), leave=False, position=idx + 1)
+                    simplified = any(map(op_fn, forest_iterator))
 
-            if any(simplified):
+                else:
+                    # Bucket-based mode: apply operation for each tree in the queue and commit in batches
+                    simplified = False
+                    count = 0
+
+                    while (oid := queue.get()) is not None:
+                        simplified |= op_fn(forest[oid])
+                        count += 1
+
+                        if count >= batch_size:
+                            forest.commit()
+                            count = 0
+
+                    if count > 0:
+                        forest.commit()
+
+            if simplified:
                 simplification_operation.set(op_id)
 
             barrier.wait()  # Wait for all workers to finish this operation
@@ -354,7 +482,7 @@ def _apply_operations_worker(
             if early_exit and simplification_operation.value != -1:
                 break
 
-    return forest, request_id
+    return request_id, None if isinstance(forest, TreeBucket) else forest
 
 
 def create_group(subtree: Tree, group_index: int) -> None:
@@ -364,12 +492,8 @@ def create_group(subtree: Tree, group_index: int) -> None:
     :param subtree: The subtree to convert into a group.
     :param group_index: The index to use for naming the group.
     """
-    label = NodeLabel(NodeType.GROUP, str(group_index))
-    subtree.label = label
-
-    new_children = [entity.detach() for entity in subtree.entities()]
-    subtree.clear()
-    subtree.extend(new_children)
+    subtree.label = NodeLabel(NodeType.GROUP, str(group_index))
+    subtree[:] = [entity.detach() for entity in subtree.entities()]
 
 
 def find_groups(
