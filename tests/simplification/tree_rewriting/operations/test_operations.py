@@ -44,18 +44,19 @@ def test_operation_behavior(
     1. Operations should construct valid labeled structures.
     2. Simplification flags should correctly indicate whether a simplification occurred.
     """
+    original_tree = str(tree)
     clusters = equiv_cluster([tree], tau=tau, metric=metric)
     operation = operation(tau=tau, min_support=min_support, metric=metric)
 
-    new_tree, simplified = operation.apply(tree.copy(), equiv_subtrees=clusters)
+    simplified = operation.apply(tree, equiv_subtrees=clusters)
 
     # Check 1: Valid structure
-    schema = Schema.from_forest([new_tree], keep_unlabelled=False)
+    schema = Schema.from_forest([tree], keep_unlabelled=False)
     note(f'== Schema ==\n{schema.as_cfg()}\n============')
     assert schema.verify(), "Schema verification failed. The operation produced an invalid structure."
 
     # Check 2: Correct simplification flag
     if simplified:
-        assert str(new_tree) != str(tree), "Simplification flag was True, but the tree remained unchanged."
+        assert str(tree) != original_tree, "Simplification flag was True, but the tree remained unchanged."
     else:
-        assert str(new_tree) == str(tree), "Simplification flag was False, but the tree has been changed."
+        assert str(tree) == original_tree, "Simplification flag was False, but the tree has been changed."

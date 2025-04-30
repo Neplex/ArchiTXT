@@ -22,7 +22,7 @@ class ReduceOperation(Operation, ABC):
     @abstractmethod
     def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]: ...
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:  # noqa: ARG002
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
         reduced = False
 
         # Iterate through subtrees in reverse order to ensure bottom-up processing
@@ -33,7 +33,7 @@ class ReduceOperation(Operation, ABC):
             old_labels = tuple(str(child.label) for child in parent)
 
             # Convert subtree's children into independent nodes
-            new_children = [child.copy() for child in subtree]
+            new_children = (child.detach() for child in subtree[:])
 
             # Put children in the parent at the original subtree position
             parent_pos = subtree.parent_index
@@ -51,7 +51,7 @@ class ReduceOperation(Operation, ABC):
 
             reduced = True
 
-        return tree, reduced
+        return reduced
 
 
 class ReduceBottomOperation(ReduceOperation):

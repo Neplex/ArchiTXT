@@ -68,7 +68,7 @@ class FindSubGroupsOperation(Operation):
 
         return None
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:
         simplified = False
 
         # Generate candidate subtrees that do not include ENT, REL, or COLL nodes as their children.
@@ -108,7 +108,7 @@ class FindSubGroupsOperation(Operation):
             # This helps prevent combinatorial explosion by avoiding the evaluation of excessively large groups.
             #
             # In one hane, we know that subgroups should be smaller than the actual subtree.
-            # On another hand, similarity is unlikely when groups differ significantly in size.
+            # On the other hand, similarity is unlikely when groups differ significantly in size.
             # We can limit subgroup size to the largest group in the selected clusters
             # that contain a subset of the available entity labels within the subtree.
             # Larger groups could then be constructed by the merge_group operation.
@@ -157,25 +157,24 @@ class FindSubGroupsOperation(Operation):
                     }
                 )
 
-                # Replace subtree with the newly constructed one
+                # Replace the subtree with the newly constructed one
                 if parent:
                     subtree = parent[parent_idx] = max_subtree
                 else:
-                    subtree.clear()
-                    subtree.extend(deepcopy(max_subtree[:]))
+                    subtree[:] = [child.detach() for child in max_subtree[:]]
 
                 # Reset entity trees and k
                 entity_trees = [child for child in subtree if has_type(child, NodeType.ENT)]
                 k = min(len(entity_trees), k)
 
-        return tree, simplified
+        return simplified
 
 
 class MergeGroupsOperation(Operation):
     """
-    Attempt to add `ENT` to existing `GROUP` within a tree.
+    Attempt to add `ENT` to an existing ` GROUP ` within a tree.
 
-    It tries to form a new `GROUP` nodes that does not reduce the support of the given group.
+    It tries to form a new `GROUP` node that does not reduce the support of the given group.
     """
 
     def _merge_groups_inner(
@@ -247,7 +246,7 @@ class MergeGroupsOperation(Operation):
 
         return None
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:
         simplified = False
 
         for subtree in sorted(
@@ -291,15 +290,14 @@ class MergeGroupsOperation(Operation):
                     }
                 )
 
-                # Replace subtree with the newly constructed one
+                # Replace the subtree with the newly constructed one
                 if parent:
                     subtree = parent[parent_idx] = deepcopy(max_subtree)
                 else:
-                    subtree.clear()
-                    subtree.extend(deepcopy(max_subtree[:]))
+                    subtree[:] = [child.detach() for child in max_subtree[:]]
 
                 # Update entity trees and reset k for remaining entities
                 group_ent_trees = tuple(filter(lambda child: has_type(child, {NodeType.GROUP, NodeType.ENT}), subtree))
                 k = min(len(group_ent_trees), k)
 
-        return tree, simplified
+        return simplified

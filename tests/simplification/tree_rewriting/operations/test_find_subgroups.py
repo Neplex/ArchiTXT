@@ -7,7 +7,7 @@ def test_find_subgroups_no_simplify() -> None:
     tree = Tree.fromstring('(SENT (1 (ENT::A 1) (ENT::B 2) (ENT::C 3)))')
 
     operation = FindSubGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(
+    has_simplified = operation.apply(
         tree,
         equiv_subtrees={
             (Tree.fromstring('(GROUP::2 (ENT::X 1) (ENT::Y 2))'),),
@@ -22,7 +22,7 @@ def test_find_subgroups_simple() -> None:
     tree = Tree.fromstring('(SENT (1 (ENT::A 1) (ENT::B 2) (ENT::C 3)))')
 
     operation = FindSubGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(
+    has_simplified = operation.apply(
         tree,
         equiv_subtrees={
             (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
@@ -37,7 +37,7 @@ def test_find_subgroups_simple_group() -> None:
     tree = Tree.fromstring('(SENT (GROUP::1 (ENT::A 1) (ENT::B 2) (ENT::C 3)))')
 
     operation = FindSubGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(
+    has_simplified = operation.apply(
         tree,
         equiv_subtrees={
             (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'), Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))')),
@@ -54,7 +54,7 @@ def test_find_subgroups_largest() -> None:
     tree = Tree.fromstring('(SENT (1 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4)))')
 
     operation = FindSubGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(
+    has_simplified = operation.apply(
         tree,
         equiv_subtrees={
             (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3))'),),
@@ -70,7 +70,7 @@ def test_find_subgroups_multi() -> None:
     tree = Tree.fromstring('(SENT (1 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4) (ENT::E 5)))')
 
     operation = FindSubGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(
+    has_simplified = operation.apply(
         tree,
         equiv_subtrees={
             (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
@@ -86,7 +86,7 @@ def test_find_subgroups_root() -> None:
     tree = Tree.fromstring('(SENT (ENT::A 1) (ENT::B 2) (ENT::C 3))')
 
     operation = FindSubGroupsOperation(tau=0.8, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(
+    has_simplified = operation.apply(
         tree,
         equiv_subtrees={
             (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),

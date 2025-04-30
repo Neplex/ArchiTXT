@@ -343,9 +343,7 @@ def _apply_operations_worker(
             op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees)
 
             with mlflow.start_span(name):
-                forest, simplified = zip(
-                    *map(op_fn, tqdm(forest, desc=name, leave=False, position=idx + 1)), strict=False
-                )
+                simplified = map(op_fn, tqdm(forest, desc=name, leave=False, position=idx + 1))
 
             if any(simplified):
                 simplification_operation.set(op_id)

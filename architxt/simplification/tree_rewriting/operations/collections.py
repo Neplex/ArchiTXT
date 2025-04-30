@@ -1,4 +1,3 @@
-from copy import deepcopy
 from itertools import groupby
 from typing import Any
 
@@ -28,7 +27,7 @@ class FindCollectionsOperation(Operation):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:  # noqa: ARG002
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
         simplified = False
 
         for subtree in sorted(
@@ -38,7 +37,7 @@ class FindCollectionsOperation(Operation):
             key=lambda x: x.depth,
             reverse=True,
         ):
-            # Naming-only mode: apply labels without modifying tree structure
+            # Naming-only mode: apply labels without modifying the tree structure
             if self.naming_only:
                 if has_type(subtree[0], {NodeType.GROUP, NodeType.REL}) and more_itertools.all_equal(
                     subtree, key=lambda x: x.label
@@ -64,17 +63,19 @@ class FindCollectionsOperation(Operation):
                 ),
                 key=lambda x: x[0].parent_index,
             ):
+                index = coll_tree_set[0].parent_index
+                label = NodeLabel(NodeType.COLL, coll_tree_set[0].label.name)
+
                 # Prepare a new collection of nodes (merging if some nodes are already collections)
-                coll_elements = []
+                children = []
                 for coll_tree in coll_tree_set:
                     if has_type(coll_tree, NodeType.COLL):
-                        coll_elements.extend(coll_tree)  # Merge collection elements
-                    else:
-                        coll_elements.append(coll_tree)
+                        # Merge collection elements
+                        children.extend(child.detach() for child in coll_tree[:])
+                        coll_tree.detach()
 
-                # Prepare the collection node
-                label = NodeLabel(NodeType.COLL, coll_tree_set[0].label.name)
-                children = [deepcopy(tree) for tree in coll_elements]
+                    else:
+                        children.append(coll_tree.detach())
 
                 # Log the creation of a new collection in MLFlow, if active
                 self._log_to_mlflow(
@@ -86,20 +87,13 @@ class FindCollectionsOperation(Operation):
                 simplified = True
 
                 # If the entire subtree is a single collection, update its label and structure directly
-                if len(subtree) == len(coll_tree_set):
+                if len(subtree) == 0:
                     subtree.label = label
-                    subtree.clear()
-                    subtree.extend(children)
+                    subtree[:] = children
 
                 else:
-                    index = coll_tree_set[0].parent_index
-
-                    # Remove nodes of the current collection set from the subtree
-                    for coll_tree in coll_tree_set:
-                        subtree.pop(coll_tree.parent_index, recursive=False)
-
                     # Insert the new collection node at the appropriate index
                     coll_tree = Tree(label, children=children)
                     subtree.insert(index, coll_tree)
 
-        return tree, simplified
+        return simplified

@@ -27,7 +27,7 @@ class FindRelationsOperation(Operation):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:  # noqa: ARG002
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
         simplified = False
 
         # Traverse subtrees, starting with the deepest, containing exactly 2 children
@@ -95,4 +95,4 @@ class FindRelationsOperation(Operation):
                 subtree.remove(group)
                 subtree.remove(collection)
 
-        return tree, simplified
+        return simplified

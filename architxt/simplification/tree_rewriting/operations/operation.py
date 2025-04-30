@@ -20,7 +20,7 @@ class Operation(ABC):
 
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: The minimum support value for a structure to be considered frequent.
-    :param metric: The metric function used to compute similarity between subtrees.
+    :param metric: The metric function to use for computing the similarity between subtrees.
     """
 
     def __init__(self, *, tau: float, min_support: int, metric: METRIC_FUNC) -> None:
@@ -49,13 +49,11 @@ class Operation(ABC):
         return get_equiv_of(tree, equiv_subtrees, tau=self.tau, metric=self.metric)
 
     @abstractmethod
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, bool]:
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:
         """
         Apply the rewriting operation on the given tree.
 
         :param tree: The tree to perform the reduction on.
         :param equiv_subtrees: The cluster of equivalent subtrees in the forest.
-        :return: A tuple containing the transformed tree and a boolean flag. The
-                 boolean flag typically indicates whether the operation modified
-                 the tree (True) or left it unaltered (False).
+        :return: A boolean indicating whether the operation modified the tree (True) or left it unaltered (False).
         """

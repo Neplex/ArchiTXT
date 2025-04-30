@@ -7,7 +7,7 @@ def test_find_collections_simple() -> None:
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::A y))')
 
     operation = FindCollectionsOperation(tau=0.0, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(tree, equiv_subtrees=set())
+    has_simplified = operation.apply(tree, equiv_subtrees=set())
 
     assert has_simplified
     assert str(tree) == '(COLL::A (GROUP::A x) (GROUP::A y))'
@@ -19,7 +19,7 @@ def test_find_collections_multi() -> None:
     )
 
     operation = FindCollectionsOperation(tau=0.0, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(tree, equiv_subtrees=set())
+    has_simplified = operation.apply(tree, equiv_subtrees=set())
 
     assert has_simplified
     assert (
@@ -34,7 +34,7 @@ def test_find_collections_merge() -> None:
     )
 
     operation = FindCollectionsOperation(tau=0.0, min_support=0, metric=jaccard)
-    tree, has_simplified = operation.apply(tree, equiv_subtrees=set())
+    has_simplified = operation.apply(tree, equiv_subtrees=set())
 
     assert has_simplified
     assert str(tree) == '(COLL::A (GROUP::A 1) (GROUP::A 2) (GROUP::A 3) (GROUP::A 4) (GROUP::A 5) (GROUP::A 6))'
@@ -45,7 +45,7 @@ def test_find_collections_naming_only() -> None:
 
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::A y))')
 
-    tree, has_simplified = operation.apply(tree, equiv_subtrees=set())
+    has_simplified = operation.apply(tree, equiv_subtrees=set())
 
     assert has_simplified
     assert str(tree) == '(COLL::A (GROUP::A x) (GROUP::A y))'
@@ -54,7 +54,7 @@ def test_find_collections_naming_only() -> None:
 
     tree = Tree.fromstring('(SENT (GROUP::A x) (GROUP::A y) (GROUP::B z))')
 
-    tree, has_simplified = operation.apply(tree, equiv_subtrees=set())
+    has_simplified = operation.apply(tree, equiv_subtrees=set())
 
     assert not has_simplified
     assert str(tree) == '(SENT (GROUP::A x) (GROUP::A y) (GROUP::B z))'
