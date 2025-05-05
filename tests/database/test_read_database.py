@@ -1,6 +1,14 @@
+import random
+import uuid
+from collections import OrderedDict
+from typing import Any
+
 import pytest
 from architxt.database.loader import read_database
+from architxt.database.loader.sql import get_oid
 from architxt.tree import Forest, Tree
+from hypothesis import given
+from hypothesis import strategies as st
 from sqlalchemy import Column, Connection, ForeignKey, Integer, MetaData, String, Table
 
 from . import get_connection  # noqa: F401
@@ -106,3 +114,42 @@ def test_read_database(include_unreferenced: bool, connection: Connection) -> No
 
     for tree, expected in zip(forest, expected_forest):
         assert str(tree) == str(expected)
+
+
+@given(
+    namespace=st.uuids(),
+    name=st.text(min_size=1, max_size=100),
+    data=st.dictionaries(
+        keys=st.text(min_size=1),
+        values=st.one_of(st.integers(), st.text(), st.floats(allow_nan=False, allow_infinity=False), st.booleans()),
+    ),
+)
+def test_oid(namespace: uuid.UUID, name: str, data: dict[str, Any]) -> None:
+    # Create initial OID
+    oid = get_oid(namespace, name, data)
+
+    # Property 1 - Deterministic: same inputs produce the same OID
+    assert get_oid(namespace, name, data) == oid
+
+    # Property 2 - Order independence: key order shouldn't matter
+    items = list(data.items())
+    random.shuffle(items)
+    shuffled_data = OrderedDict(items)
+    assert get_oid(namespace, name, shuffled_data) == oid
+
+    # Property 3 - Namespace isolation: different database namespaces produce different OIDs
+    assert get_oid(uuid.uuid4(), name, data) != oid
+
+    # Property 4 - Table name isolation: different table names produce different OIDs
+    assert get_oid(namespace, name + '_different', data) != oid
+
+    # Property 5 - Data isolation: different data produces different OIDs
+    modified_data = data.copy()
+    if data:
+        # Modify the first key's value
+        first_key = next(iter(data))
+        modified_data[first_key] = str(modified_data[first_key]) + '_modified'
+    else:
+        # Add a key if dict is empty
+        modified_data["test_key"] = "test_value"
+    assert get_oid(namespace, name, modified_data) != oid
