@@ -1,5 +1,6 @@
 import contextlib
 import re
+import uuid
 import weakref
 from collections import Counter, UserList
 from collections.abc import Callable, Collection, Generator, Iterable, Sequence
@@ -75,19 +76,22 @@ class Tree(UserList):
     _parent: weakref.ReferenceType['Tree'] | None
     _label: NodeLabel | str
     _metadata: dict[str, Any]
+    _oid: uuid.UUID
 
-    __slots__ = ('_label', '_metadata', '_parent')
+    __slots__ = ('_label', '_metadata', '_oid', '_parent')
 
     def __init__(
         self,
         label: NodeLabel | str,
         children: Iterable['Tree | str'] | None = None,
         metadata: dict[str, Any] | None = None,
+        oid: uuid.UUID | None = None,
     ) -> None:
         super().__init__(children)
         self._parent = None
         self._label = _parse_label(label)
         self._metadata = metadata or {}
+        self._oid = oid or uuid.uuid4()
 
         _check_children(self)
 
@@ -108,7 +112,7 @@ class Tree(UserList):
         return self.__class__ is other.__class__ and self.label == other.label and super().__eq__(other)
 
     def __hash__(self) -> int:
-        return id(self)
+        return self._oid.int
 
     def __repr__(self) -> str:
         return f'{type(self)}(len={len(self)})'
@@ -117,7 +121,11 @@ class Tree(UserList):
         return self.pformat()
 
     def __reduce__(self) -> tuple[Callable[..., 'Tree'], tuple[Any, ...]]:
-        return type(self), (self.label, tuple(self), self.metadata)
+        return type(self), (self.label, tuple(self), self.metadata, self._oid)
+
+    @property
+    def oid(self) -> uuid.UUID:
+        return self._oid
 
     @property
     def metadata(self) -> dict[str, Any]:

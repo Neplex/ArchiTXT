@@ -1,4 +1,6 @@
-from architxt.tree import Tree
+import uuid
+
+from architxt.tree import NodeLabel, NodeType, Tree
 from hypothesis import given
 
 from tests.test_strategies import tree_st
@@ -15,3 +17,29 @@ def test_serialization(tree: Tree) -> None:
     """
     new_tree = Tree.fromstring(str(tree))
     assert new_tree == tree
+
+
+def test_valid_tree_create_with_id() -> None:
+    """Test the creation of a valid tree with an id."""
+    namespace = uuid.uuid4()
+
+    ent = Tree(NodeLabel(NodeType.ENT, 'A'), [])
+    id1 = uuid.uuid5(namespace, '1' + str(ent))
+    group1 = Tree(NodeLabel(NodeType.GROUP, '1'), [ent], oid=id1)
+
+    ent2 = Tree(NodeLabel(NodeType.ENT, 'A'), [])
+    id2 = uuid.uuid5(namespace, '1' + str(ent2))
+    group2 = Tree(NodeLabel(NodeType.GROUP, '1'), [ent2], oid=id2)
+
+    assert group1.oid == group2.oid
+
+
+def test_valid_tree_create_without_id() -> None:
+    """Test the creation of a valid tree without id."""
+    ent = Tree(NodeLabel(NodeType.ENT, 'A'), [])
+    group1 = Tree(NodeLabel(NodeType.GROUP, '1'), [ent])
+
+    ent2 = Tree(NodeLabel(NodeType.ENT, 'A'), [])
+    group2 = Tree(NodeLabel(NodeType.GROUP, '1'), [ent2])
+
+    assert group1.oid != group2.oid
