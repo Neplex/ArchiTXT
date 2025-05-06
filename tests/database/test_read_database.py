@@ -70,28 +70,28 @@ def _get_expected_trees(include_unreferenced: bool) -> Forest:
     trees = [
         Tree.fromstring(
             """(ROOT
-            (GROUP::Order (ENT::product_id 1) (ENT::consumer_id 1) (ENT::quantity 2))
-            (REL::Order<->Consumer (GROUP::Order (ENT::product_id 1) (ENT::consumer_id 1) (ENT::quantity 2)) (GROUP::Consumer (ENT::id 1) (ENT::name Alice) (ENT::age 30)))
+            (GROUP::Order (ENT::quantity 2))
+            (REL::Order<->Consumer (GROUP::Order (ENT::quantity 2)) (GROUP::Consumer (ENT::id 1) (ENT::name Alice) (ENT::age 30)))
             (GROUP::Consumer (ENT::id 1) (ENT::name Alice) (ENT::age 30))
-            (REL::Order<->Product (GROUP::Order (ENT::product_id 1) (ENT::consumer_id 1) (ENT::quantity 2)) (GROUP::Product (ENT::id 1) (ENT::name Laptop) (ENT::price 1000)))
+            (REL::Order<->Product (GROUP::Order (ENT::quantity 2)) (GROUP::Product (ENT::id 1) (ENT::name Laptop) (ENT::price 1000)))
             (GROUP::Product (ENT::id 1) (ENT::name Laptop) (ENT::price 1000))
             )"""
         ),
         Tree.fromstring(
             """(ROOT
-            (GROUP::Order (ENT::product_id 2) (ENT::consumer_id 2) (ENT::quantity 1))
-            (REL::Order<->Consumer (GROUP::Order (ENT::product_id 2) (ENT::consumer_id 2) (ENT::quantity 1)) (GROUP::Consumer (ENT::id 2) (ENT::name Bob) (ENT::age 25)))
+            (GROUP::Order (ENT::quantity 1))
+            (REL::Order<->Consumer (GROUP::Order (ENT::quantity 1)) (GROUP::Consumer (ENT::id 2) (ENT::name Bob) (ENT::age 25)))
             (GROUP::Consumer (ENT::id 2) (ENT::name Bob) (ENT::age 25))
-            (REL::Order<->Product  (GROUP::Order (ENT::product_id 2) (ENT::consumer_id 2) (ENT::quantity 1)) (GROUP::Product (ENT::id 2) (ENT::name Smartphone) (ENT::price 500)))
+            (REL::Order<->Product  (GROUP::Order (ENT::quantity 1)) (GROUP::Product (ENT::id 2) (ENT::name Smartphone) (ENT::price 500)))
             (GROUP::Product (ENT::id 2) (ENT::name Smartphone) (ENT::price 500))
             )"""
         ),
         Tree.fromstring(
             """(ROOT
-            (GROUP::Order (ENT::product_id 1) (ENT::consumer_id 2) (ENT::quantity 1))
-            (REL::Order<->Consumer (GROUP::Order (ENT::product_id 1) (ENT::consumer_id 2) (ENT::quantity 1)) (GROUP::Consumer (ENT::id 2) (ENT::name Bob) (ENT::age 25)))
+            (GROUP::Order (ENT::quantity 1))
+            (REL::Order<->Consumer (GROUP::Order (ENT::quantity 1)) (GROUP::Consumer (ENT::id 2) (ENT::name Bob) (ENT::age 25)))
             (GROUP::Consumer (ENT::id 2) (ENT::name Bob) (ENT::age 25))
-            (REL::Order<->Product  (GROUP::Order (ENT::product_id 1) (ENT::consumer_id 2) (ENT::quantity 1)) (GROUP::Product (ENT::id 1) (ENT::name Laptop) (ENT::price 1000)))
+            (REL::Order<->Product  (GROUP::Order (ENT::quantity 1)) (GROUP::Product (ENT::id 1) (ENT::name Laptop) (ENT::price 1000)))
             (GROUP::Product (ENT::id 1) (ENT::name Laptop) (ENT::price 1000))
             )"""
         ),
