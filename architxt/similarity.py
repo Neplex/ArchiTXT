@@ -13,7 +13,7 @@ from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 from tqdm.auto import tqdm
 
-from architxt.tree import Forest, NodeType, Tree, has_type
+from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
 
 METRIC_FUNC = Callable[[Collection[str], Collection[str]], float]
 TREE_CLUSTER = set[tuple[Tree, ...]]
@@ -272,7 +272,7 @@ def get_equiv_of(
     return ()
 
 
-def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DEFAULT_METRIC) -> dict[str, int]:
+def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DEFAULT_METRIC) -> dict[TreeOID, int]:
     """
     Process the given forest to assign labels to entities based on clustering of their ancestor.
 
@@ -299,7 +299,7 @@ def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DE
         equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
 
     return {
-        f"{child.label.name}${' '.join(child)}": i
+        child.oid: i
         for i, cluster in enumerate(equiv_subtrees)
         for subtree in cluster
         for child in subtree

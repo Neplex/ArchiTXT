@@ -15,6 +15,7 @@ import more_itertools
 from mlflow.entities import SpanEvent
 from tqdm.auto import tqdm, trange
 
+from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeBucket, TreeOID, has_type
 from architxt.utils import BATCH_SIZE
@@ -28,7 +29,6 @@ from .operations import (
     ReduceBottomOperation,
     ReduceTopOperation,
 )
-from .utils import log_clusters, log_metrics, log_schema
 
 if sys.version_info < (3, 11):
 
@@ -68,7 +68,7 @@ def rewrite(
     debug: bool = False,
     max_workers: int | None = None,
     commit: bool | int = BATCH_SIZE,
-) -> None:
+) -> Metrics:
     """
     Rewrite a forest by applying edit operations iteratively.
 
@@ -88,8 +88,10 @@ def rewrite(
 
     :return: The rewritten forest.
     """
+    metrics = Metrics(forest, tau=tau, metric=metric)
+
     if not len(forest):
-        return
+        return metrics
 
     batch_size = commit if isinstance(commit, int) and commit > 0 else BATCH_SIZE
     min_support = min_support or max((len(forest) // 10), 2)
@@ -106,17 +108,7 @@ def rewrite(
                 'edit_ops': ', '.join(f"{op_id}: {edit_op.__name__}" for op_id, edit_op in enumerate(edit_ops)),
             }
         )
-
-        equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
-        log_metrics(0, forest, equiv_subtrees)
-        log_schema(0, forest)
-        log_clusters(0, equiv_subtrees)
-        # log_instance_comparison_metrics(0, forest, forest, tau, metric)
-
-        if debug:
-            # Log the forest as SVG
-            rooted_forest = Tree('ROOT', (tree.copy() for tree in forest))
-            mlflow.log_text(rooted_forest.to_svg(), 'debug/0/tree.html')
+        metrics.log_to_mlflow(0, debug=debug)
 
     mp_ctx = multiprocessing.get_context('spawn' if sys.platform == 'win32' else 'forkserver')
 
@@ -147,14 +139,21 @@ def rewrite(
                     batch_size=batch_size,
                 )
 
-                # log_instance_comparison_metrics(iteration, forest, new_forest, tau, metric)
+                if mlflow.active_run():
+                    metrics.update()
+                    metrics.log_to_mlflow(iteration, debug=debug)
 
                 # Stop if no further simplifications are made
                 if iteration > 0 and not has_simplified:
                     break
 
-        # log_instance_comparison_metrics(iteration + 1, forest, new_forest, tau, metric)
-    _post_process(forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size)
+        _post_process(forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size)
+        metrics.update()
+
+    if mlflow.active_run():
+        metrics.log_to_mlflow(iteration + 1, debug=debug)
+
+    return metrics
 
 
 def _rewrite_step(
@@ -184,19 +183,12 @@ def _rewrite_step(
 
     :return: A flag indicating if any simplifications occurred.
     """
-    if mlflow.active_run() and debug:
-        # Log the forest as SVG
-        rooted_forest = Tree('ROOT', (tree.copy() for tree in forest))
-        mlflow.log_text(rooted_forest.to_svg(), f'debug/{iteration}/tree.html')
-
     with mlflow.start_span('reduce_all') if mlflow.active_run() else nullcontext():
         for tree in forest:
             tree.reduce_all({NodeType.ENT})
 
     with mlflow.start_span('equiv_cluster') if mlflow.active_run() else nullcontext():
         equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric, _step=iteration if debug else None)
-        if debug:
-            log_clusters(iteration, equiv_subtrees)
 
     with mlflow.start_span('find_groups') if mlflow.active_run() else nullcontext():
         find_groups(equiv_subtrees, min_support)
@@ -211,13 +203,6 @@ def _rewrite_step(
 
     if mlflow.active_run() and op_id is not None:
         mlflow.log_metric('edit_op', op_id, step=iteration)
-
-    if mlflow.active_run():
-        renamed_forest, equiv_subtrees = _post_process(
-            forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size
-        )
-        log_schema(iteration, renamed_forest)
-        log_metrics(iteration, renamed_forest, equiv_subtrees)
 
     return op_id is not None
 

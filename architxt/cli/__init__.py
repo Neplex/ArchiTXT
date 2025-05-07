@@ -21,7 +21,7 @@ from architxt.tree import ZODBTreeBucket
 
 from .export import app as export_app
 from .loader import app as loader_app
-from .utils import console, load_forest, show_schema
+from .utils import console, load_forest, show_metrics, show_schema
 
 app = typer.Typer(
     help="ArchiTXT is a tool for structuring textual data into a valid database model. "
@@ -83,16 +83,14 @@ def simplify(
         console.print(
             f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]'
         )
-        rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
-        # TODO(Nicolas H.): rewrite should return a metric object indicating the changed made  # noqa: TD003
+        metrics = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
 
         # Generate schema
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
         if metrics:
-            pass
-            # show_metrics(forest, new_forest, schema, tau)
+            show_metrics(metrics)
 
 
 @app.command(help="Display statistics of a dataset.")
@@ -134,6 +132,8 @@ def inspect(
     stats_table.add_row("Maximum Tree Height", str(inspector.max_height))
     stats_table.add_row("Average Tree size", f"{inspector.avg_size:.3f}")
     stats_table.add_row("Maximum Tree size", str(inspector.max_size))
+    stats_table.add_row("Average Branching", f"{inspector.avg_branching:.3f}")
+    stats_table.add_row("Maximum Branching", str(inspector.max_children))
 
     console.print(Columns([*tables, stats_table], equal=True))
 
