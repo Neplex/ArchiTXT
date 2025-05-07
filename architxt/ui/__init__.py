@@ -155,7 +155,7 @@ if submitted and file_language:
             if shuffle:
                 random.shuffle(forest)
 
-            rewrite_forest = rewrite(
+            rewrite(
                 forest,
                 tau=tau,
                 epoch=epoch,
@@ -201,7 +201,7 @@ if submitted and file_language:
 
             st.bar_chart([x.value for x in client.get_metric_history(run_id, 'edit_op')])
 
-        schema = Schema.from_forest(rewrite_forest, keep_unlabelled=False)
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
 
         # Display schema graph
         with schema_tab:
@@ -209,7 +209,7 @@ if submitted and file_language:
 
         # Display instance data
         with instance_tab:
-            clean_forest = schema.extract_valid_trees(rewrite_forest)
+            clean_forest = schema.extract_valid_trees(forest)
             dataframe(clean_forest)
 
     except Exception as e:

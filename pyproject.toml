@@ -68,7 +68,6 @@ psutil = "^7.0.0"
 typer = "^0.15.1"
 rich = ">=13.9.4,<15.0.0"
 antlr4-python3-runtime = ">=4.13,<5"
-apted = "^1.0.3"
 cachetools = "^5.5.0"
 googletrans = "^4.0.2"
 aiostream = "^0.6.4"
@@ -80,6 +79,8 @@ itables = "^2.3.0"
 xmltodict = "^0.14.2"
 xlrd = "^2.0.1"
 neo4j = "^5.28.1"
+zodb = "^6.0"
+relstorage = "^4.1.1"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]

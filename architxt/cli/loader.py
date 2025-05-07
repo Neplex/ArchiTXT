@@ -1,5 +1,4 @@
 import asyncio
-import random
 from pathlib import Path
 
 import click
@@ -11,8 +10,9 @@ from architxt.database.loader import read_database, read_document
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
+from architxt.tree import ZODBTreeBucket
 
-from .utils import console, save_forest, show_schema
+from .utils import console, show_schema
 
 __all__ = ['app']
 
@@ -52,17 +52,24 @@ def load_document(
         False, help="Enable row reading, skipping any transformation to convert it to the metamodel."
     ),
     root_name: str = typer.Option('ROOT', help="The root node name."),
-    sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
-    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+    sample: int | None = typer.Option(None, help="Number of element to sample from the document.", min=1),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
+    merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
 ) -> None:
     """Read a parse a document file to a structured tree."""
-    forest = list(read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
+    if (
+        output is not None
+        and output.exists()
+        and not merge_existing
+        and not typer.confirm("The storage path already exists. Merge existing data?")
+    ):
+        console.print("[red]Cannot store data due to conflict.[/]")
+        raise typer.Abort()
 
-    if output is not None:
-        save_forest(forest, output)
-
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
-    show_schema(schema)
+    with ZODBTreeBucket(storage_path=output) as bucket:
+        bucket.update(read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
+        schema = Schema.from_forest(bucket, keep_unlabelled=False)
+        show_schema(schema)
 
 
 @app.command(name='database', help="Extract the database information into a formatted tree.")
@@ -71,17 +78,26 @@ def load_database(
     *,
     simplify_association: bool = typer.Option(True, help="Simplify association tables."),
     sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
-    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
+    merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
 ) -> None:
     """Extract the database schema and relations to a tree format."""
-    with create_engine(db_connection).connect() as connection:
-        forest = list(read_database(connection, simplify_association=simplify_association, sample=sample or 0))
+    if (
+        output is not None
+        and output.exists()
+        and not merge_existing
+        and not typer.confirm("The storage path already exists. Merge existing data?")
+    ):
+        console.print("[red]Cannot store data due to conflict.[/]")
+        raise typer.Abort()
 
-    if output is not None:
-        save_forest(forest, output)
-
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
-    show_schema(schema)
+    with (
+        create_engine(db_connection).connect() as connection,
+        ZODBTreeBucket(storage_path=output) as forest,
+    ):
+        forest.update(read_database(connection, simplify_association=simplify_association, sample=sample or 0))
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
+        show_schema(schema)
 
 
 @app.command(name='corpus', help="Extract a database schema form a corpus.", no_args_is_help=True)
@@ -98,43 +114,41 @@ def load_corpus(
         help="The entity resolver to use when loading the corpus.",
         click_type=click.Choice(['umls', 'mesh', 'rxnorm', 'go', 'hpo'], case_sensitive=False),
     ),
-    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
+    merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
     cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
 ) -> None:
     """Load a corpus and print the database schema as a CFG."""
+    if (
+        output is not None
+        and output.exists()
+        and not merge_existing
+        and not typer.confirm("The storage path already exists. Merge existing data?")
+    ):
+        console.print("[red]Cannot store data due to conflict.[/]")
+        raise typer.Abort()
+
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
         mlflow.start_run(description='corpus_processing')
 
-    try:
-        forest = asyncio.run(
-            raw_load_corpus(
-                corpus_path,
-                language,
-                parser=CoreNLPParser(corenlp_url=corenlp_url),
-                resolver_name=resolver,
-                cache=cache,
-                entities_filter=ENTITIES_FILTER,
-                relations_filter=RELATIONS_FILTER,
-                entities_mapping=ENTITIES_MAPPING,
+    with ZODBTreeBucket(storage_path=output) as bucket:
+        asyncio.run(
+            bucket.async_update(
+                raw_load_corpus(
+                    corpus_path,
+                    language,
+                    parser=CoreNLPParser(corenlp_url=corenlp_url),
+                    resolver_name=resolver,
+                    cache=cache,
+                    entities_filter=ENTITIES_FILTER,
+                    relations_filter=RELATIONS_FILTER,
+                    entities_mapping=ENTITIES_MAPPING,
+                    sample=sample,
+                )
             )
         )
-    except Exception as error:
-        console.print_exception()
-        raise typer.Exit(code=1) from error
 
-    if sample:
-        if sample < len(forest):
-            forest = random.sample(list(forest), sample)
-        else:
-            console.print(
-                "[yellow] You have specified a sample size larger than the total population, "
-                "which would result in fewer results than expected."
-            )
-
-    if output is not None:
-        save_forest(forest, output)
-
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
-    show_schema(schema)
+        schema = Schema.from_forest(bucket, keep_unlabelled=False)
+        show_schema(schema)

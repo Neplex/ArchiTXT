@@ -1,29 +1,62 @@
+import asyncio
 import contextlib
+import gc
 import re
+import tempfile
 import uuid
 import weakref
-from collections import Counter, UserList
-from collections.abc import Callable, Collection, Generator, Iterable, Sequence
+from abc import ABC, abstractmethod
+from collections import Counter
+from collections.abc import (
+    AsyncIterable,
+    Callable,
+    Collection,
+    Generator,
+    Iterable,
+    Iterator,
+    MutableMapping,
+    MutableSet,
+    Sequence,
+)
+from contextlib import AbstractContextManager
 from copy import deepcopy
 from enum import Enum
+from functools import partial, total_ordering
+from pathlib import Path
+from types import TracebackType
 from typing import Any, Literal, TextIO, TypeAlias, overload
 from urllib.parse import quote, unquote
 
+import more_itertools
 import pandas as pd
+import transaction
+import ZODB.config
+from aiostream import stream
+from BTrees.OOBTree import OOBTree
+from cachetools import cachedmethod, keys
 from nltk import slice_bounds
 from nltk.grammar import Nonterminal, Production
+from persistent.list import PersistentList
+from persistent.mapping import PersistentMapping
+from ZODB.Connection import Connection
+
+from architxt.utils import BATCH_SIZE, is_memory_low
 
 __all__ = [
-    'TREE_POS',
     'Forest',
     'NodeLabel',
     'NodeType',
     'Tree',
+    'TreeBucket',
+    'TreeOID',
+    'TreePosition',
+    'ZODBTreeBucket',
     'has_type',
 ]
 
+TreePosition: TypeAlias = tuple[int, ...]
+TreeOID: TypeAlias = uuid.UUID
 
-TREE_POS = tuple[int, ...]
 TREE_PARSER_RE = re.compile(r"\(\s*[^\s()]+|[()]|[^\s()]+")
 
 
@@ -72,32 +105,42 @@ def _parse_label(label: NodeLabel | str) -> NodeLabel | str:
     return label
 
 
-class Tree(UserList):
-    _parent: weakref.ReferenceType['Tree'] | None
+@total_ordering
+class Tree(PersistentList):
     _label: NodeLabel | str
-    _metadata: dict[str, Any]
-    _oid: uuid.UUID
+    _metadata: MutableMapping[str, Any]
+    _oid: TreeOID
 
-    __slots__ = ('_label', '_metadata', '_oid', '_parent')
+    _v_parent: weakref.ReferenceType['Tree'] | None
+    _v_cache: MutableMapping
+
+    __slots__ = ('_label', '_metadata', '_oid', '_v_cache', '_v_parent')
 
     def __init__(
         self,
         label: NodeLabel | str,
         children: Iterable['Tree | str'] | None = None,
         metadata: dict[str, Any] | None = None,
-        oid: uuid.UUID | None = None,
+        oid: TreeOID | None = None,
     ) -> None:
         super().__init__(children)
-        self._parent = None
         self._label = _parse_label(label)
-        self._metadata = metadata or {}
+        self._metadata = PersistentMapping(metadata or {})
         self._oid = oid or uuid.uuid4()
+        self._v_parent = None
+        self._v_cache = {}
 
         _check_children(self)
 
         for child in self:
             if isinstance(child, Tree):
-                child._parent = weakref.ref(self)
+                child._v_parent = weakref.ref(self)
+
+    def _invalidate_cache(self) -> None:
+        self._v_cache.clear()
+
+        if parent := self.parent:
+            parent._invalidate_cache()
 
     def __eq__(self, other: object) -> bool:
         """
@@ -109,7 +152,7 @@ class Tree(UserList):
         :param other: The other object to compare against.
         :return: True if the two subtrees are identical in terms of label and children, False otherwise.
         """
-        return self.__class__ is other.__class__ and self.label == other.label and super().__eq__(other)
+        return isinstance(other, Tree) and self.label == other.label and super().__eq__(other)
 
     def __hash__(self) -> int:
         return self._oid.int
@@ -120,21 +163,33 @@ class Tree(UserList):
     def __str__(self) -> str:
         return self.pformat()
 
-    def __reduce__(self) -> tuple[Callable[..., 'Tree'], tuple[Any, ...]]:
-        return type(self), (self.label, tuple(self), self.metadata, self._oid)
+    def __setstate__(self, state: object) -> None:
+        super().__setstate__(state)
+        self._v_parent = None
+        self._v_cache = {}
+
+        for child in self:
+            if isinstance(child, Tree):
+                child._v_parent = weakref.ref(self)
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, Tree):
+            return (len(self), self.label) < (len(other), other.label)
+
+        return str(self.label) < str(other)
 
     @property
-    def oid(self) -> uuid.UUID:
+    def oid(self) -> TreeOID:
         return self._oid
 
     @property
-    def metadata(self) -> dict[str, Any]:
+    def metadata(self) -> MutableMapping[str, Any]:
         return self._metadata
 
     @property
     def parent(self) -> 'Tree | None':
         """The parent of this tree, or None if it has no parent."""
-        return self._parent() if self._parent else None
+        return self._v_parent() if self._v_parent else None
 
     @property
     def parent_index(self) -> int | None:
@@ -151,7 +206,7 @@ class Tree(UserList):
         >>> t[1].parent_index
         1
         """
-        if self._parent is None:
+        if self.parent is None:
             return None
 
         for i, child in enumerate(self.parent):
@@ -169,8 +224,10 @@ class Tree(UserList):
     @label.setter
     def label(self, label: NodeLabel | str) -> None:
         self._label = label
+        self._invalidate_cache()
 
     @property
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='root'))
     def root(self) -> 'Tree':
         """
         The root of this tree.
@@ -188,6 +245,7 @@ class Tree(UserList):
         return node
 
     @property
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='height'))
     def height(self) -> int:
         """
         Get the height of the tree.
@@ -203,6 +261,7 @@ class Tree(UserList):
         return 1 + max((child.height if isinstance(child, Tree) else 1 for child in self), default=0)
 
     @property
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='depth'))
     def depth(self) -> int:
         """
         Get the depth of the tree.
@@ -218,7 +277,8 @@ class Tree(UserList):
         return len(self.position) + 1
 
     @property
-    def position(self) -> TREE_POS:
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='position'))
+    def position(self) -> TreePosition:
         """
         The tree position of this tree, relative to the root of the tree.
 
@@ -235,7 +295,7 @@ class Tree(UserList):
 
     def positions(
         self, *, order: Literal['preorder', 'postorder', 'bothorder', 'leaves'] = 'preorder'
-    ) -> Generator[TREE_POS, None, None]:
+    ) -> Generator[TreePosition, None, None]:
         """
         Get all the positions in the tree.
 
@@ -262,6 +322,7 @@ class Tree(UserList):
         if order in ('postorder', 'bothorder'):
             yield ()
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='leaves'))
     def leaves(self) -> list[str]:
         """
         Return the leaves of the tree.
@@ -324,7 +385,7 @@ class Tree(UserList):
 
         return productions
 
-    def leaf_position(self, index: int) -> TREE_POS:
+    def leaf_position(self, index: int) -> TreePosition:
         """
         Return the tree position of the `index`-th leaf in this tree.
 
@@ -363,6 +424,7 @@ class Tree(UserList):
         msg = "index must be less than or equal to len(self)"
         raise IndexError(msg)
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='groups'))
     def groups(self) -> set[str]:
         """
         Get the set of group names present within the tree.
@@ -434,6 +496,7 @@ class Tree(UserList):
 
         return pd.concat(dataframes, ignore_index=True).drop_duplicates()
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entities'))
     def entities(self) -> tuple['Tree', ...]:
         """
         Get a tuple of subtrees that are entities.
@@ -449,6 +512,7 @@ class Tree(UserList):
         """
         return tuple(self.subtrees(lambda ent: has_type(ent, NodeType.ENT)))
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entity_labels'))
     def entity_labels(self) -> set[str]:
         """
         Get the set of entity labels present in the tree.
@@ -464,6 +528,7 @@ class Tree(UserList):
         """
         return {node.label.name for node in self.entities()}
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entity_label_count'))
     def entity_label_count(self) -> Counter[str]:
         """
         Return a Counter object that counts the labels of entity subtrees.
@@ -474,6 +539,7 @@ class Tree(UserList):
         """
         return Counter(ent.label.name for ent in self.entities())
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='has_duplicate_entity'))
     def has_duplicate_entity(self) -> bool:
         """
         Check if there are duplicate entity labels.
@@ -486,6 +552,7 @@ class Tree(UserList):
         """
         return any(v > 1 for v in self.entity_label_count().values())
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='has_entity_child'))
     def has_entity_child(self) -> bool:
         """
         Check if there is at least one entity as direct children.
@@ -498,6 +565,7 @@ class Tree(UserList):
         """
         return any(has_type(child, NodeType.ENT) for child in self)
 
+    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='has_unlabelled_nodes'))
     def has_unlabelled_nodes(self) -> bool:
         """
         Check if any child has a non-typed label.
@@ -520,7 +588,7 @@ class Tree(UserList):
 
         The root of both trees becomes one while maintaining the level of each subtree.
         """
-        children = []
+        children: list[Tree] = []
 
         if self.label == 'ROOT':
             children.extend(self)
@@ -590,12 +658,12 @@ class Tree(UserList):
                     break
 
     @overload
-    def __getitem__(self, pos: TREE_POS | int) -> 'Tree | str': ...
+    def __getitem__(self, pos: TreePosition | int) -> 'Tree | str': ...
 
     @overload
     def __getitem__(self, pos: slice) -> 'list[Tree | str]': ...
 
-    def __getitem__(self, pos: TREE_POS | int | slice) -> 'Tree | str | list[Tree | str]':
+    def __getitem__(self, pos: TreePosition | int | slice) -> 'Tree | str | list[Tree | str]':
         """
         Retrieve a child or subtree using an index, a slice, or a tree position.
 
@@ -624,12 +692,12 @@ class Tree(UserList):
         raise TypeError(msg)
 
     @overload
-    def __setitem__(self, pos: TREE_POS | int, subtree: 'Tree | str') -> None: ...
+    def __setitem__(self, pos: TreePosition | int, subtree: 'Tree | str') -> None: ...
 
     @overload
     def __setitem__(self, pos: slice, subtree: 'list[Tree | str]') -> None: ...
 
-    def __setitem__(self, pos: TREE_POS | int | slice, subtree: 'Tree | str | Iterable[Tree | str]') -> None:  # noqa: C901
+    def __setitem__(self, pos: TreePosition | int | slice, subtree: 'Tree | str | Iterable[Tree | str]') -> None:  # noqa: C901
         # ptree[start:stop] = subtree
         if isinstance(pos, slice):
             start, stop, step = slice_bounds(self, pos, allow_step=True)
@@ -642,13 +710,13 @@ class Tree(UserList):
             # clear the child pointers of all parents we're removing
             for i in range(start, stop, step):
                 if isinstance(self[i], Tree):
-                    self[i]._parent = None
+                    self[i]._v_parent = None
             # set the child pointers of the new children. We do this
             # after clearing *all* child pointers, in case we're e.g.
             # reversing the elements in a tree.
             for i, child in enumerate(subtree):
                 if isinstance(child, Tree):
-                    child._parent = weakref.ref(self)
+                    child._v_parent = weakref.ref(self)
             # finally, update the content of the child list itself.
             super().__setitem__(pos, subtree)
 
@@ -664,10 +732,10 @@ class Tree(UserList):
                 return
             # Set the new child's parent pointer.
             if isinstance(subtree, Tree):
-                subtree._parent = weakref.ref(self)
+                subtree._v_parent = weakref.ref(self)
             # Remove the old child's parent pointer
             if isinstance(self[pos], Tree):
-                subtree._parent = None
+                subtree._v_parent = None
             # Update our child list.
             super().__setitem__(pos, subtree)
 
@@ -687,14 +755,16 @@ class Tree(UserList):
             msg = f'{type(self).__name__} indices must be integers, not {type(pos).__name__}'
             raise TypeError(msg)
 
-    def __delitem__(self, pos: TREE_POS | int | slice) -> None:  # noqa: C901
+        self._invalidate_cache()
+
+    def __delitem__(self, pos: TreePosition | int | slice) -> None:  # noqa: C901
         # del ptree[start:stop]
         if isinstance(pos, slice):
             start, stop, step = slice_bounds(self, pos, allow_step=True)
             # Clear all the children pointers.
             for i in range(start, stop, step):
                 if isinstance(self[i], Tree):
-                    self[i]._parent = None
+                    self[i]._v_parent = None
             # Delete the children from our child list.
             super().__delitem__(pos)
 
@@ -707,7 +777,7 @@ class Tree(UserList):
                 raise IndexError(msg)
             # Clear the child's parent pointer.
             if isinstance(self[pos], Tree):
-                self[pos]._parent = None
+                self[pos]._v_parent = None
             # Remove the child from our child list.
             super().__delitem__(pos)
 
@@ -727,32 +797,42 @@ class Tree(UserList):
             msg = f'{type(self).__name__} indices must be integers, not {type(pos).__name__}'
             raise TypeError(msg)
 
+        self._invalidate_cache()
+
+    def clear(self) -> None:
+        super().clear()
+        self._invalidate_cache()
+
     def append(self, child: 'Tree | str') -> None:
         if isinstance(child, Tree):
-            if child._parent is not None:
+            if child._v_parent is not None:
                 msg = 'Can not insert a subtree that already has a parent.'
                 raise ValueError(msg)
 
-            child._parent = weakref.ref(self)
+            child._v_parent = weakref.ref(self)
 
         super().append(child)
+        self._invalidate_cache()
 
     def extend(self, children: 'Iterable[Tree | str]') -> None:
         _check_children(children)
         for child in children:
             if isinstance(child, Tree):
-                child._parent = weakref.ref(self)
+                child._v_parent = weakref.ref(self)
 
         super().extend(children)
+        self._invalidate_cache()
 
     def remove(self, child: 'Tree | str', *, recursive: bool = True) -> None:
         super().remove(child)
 
         if isinstance(child, Tree):
-            child._parent = None
+            child._v_parent = None
 
         if recursive and len(self) == 0 and (parent := self.parent) is not None:
             parent.remove(self)
+
+        self._invalidate_cache()
 
     def insert(self, pos: int, child: 'Tree | str') -> None:
         # Set the child's parent and update our child list.
@@ -761,9 +841,10 @@ class Tree(UserList):
                 msg = 'Can not insert a subtree that already has a parent.'
                 raise ValueError(msg)
 
-            child._parent = weakref.ref(self)
+            child._v_parent = weakref.ref(self)
 
         super().insert(pos, child)
+        self._invalidate_cache()
 
     def pop(self, pos: int = -1, *, recursive: bool = True) -> 'Tree | str':
         """
@@ -792,10 +873,12 @@ class Tree(UserList):
         child = super().pop(pos)
 
         if isinstance(child, Tree):
-            child._parent = None
+            child._v_parent = None
 
         if recursive and len(self) == 0 and (parent := self.parent) is not None:
             parent.remove(self)
+
+        self._invalidate_cache()
 
         return child
 
@@ -823,9 +906,7 @@ class Tree(UserList):
 
         :return: A new copy of the tree.
         """
-        new_tree = deepcopy(self)
-        new_tree._parent = None
-        return new_tree
+        return Tree.fromstring(str(self))
 
     @classmethod
     def fromstring(cls, text: str) -> 'Tree':
@@ -936,6 +1017,21 @@ class Tree(UserList):
 
         print(TreePrettyPrinter(nltk_tree, highlight=highlight).text(unicodelines=True, maxwidth=maxwidth), file=stream)
 
+    def to_svg(self, highlight: Sequence['Tree | int'] = ()) -> str:
+        """
+        Pretty-print this tree as SVG.
+
+        It relies on :py:class:`nltk.tree.prettyprinter.TreePrettyPrinter`.
+
+        :param highlight: Optionally, a sequence of Tree objects in `tree` which should be highlighted.
+            Has the effect of only applying colors to nodes in this sequence.
+        """
+        from nltk.tree import Tree as NLTKTree
+        from nltk.tree.prettyprinter import TreePrettyPrinter
+
+        nltk_tree = NLTKTree.fromstring(str(self))
+        return TreePrettyPrinter(nltk_tree, highlight=highlight).svg()
+
     def pformat(self, margin: int | None = None, indent: int = 0) -> str:
         """
         Get a pretty-printed string representation of this tree.
@@ -958,9 +1054,6 @@ class Tree(UserList):
             child.pformat(margin, indent + 2) if isinstance(child, Tree) else f'{pad}  {quote(child)}' for child in self
         )
         return f"{pad}({self._label} {child_lines})"
-
-
-Forest: TypeAlias = Collection[Tree]
 
 
 def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool:
@@ -1007,3 +1100,272 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
         return False
 
     return isinstance(label, NodeLabel) and label.type.value in types
+
+
+Forest: TypeAlias = Collection[Tree]
+
+
+class TreeBucket(ABC, MutableSet[Tree], Forest):
+    """
+    A scalable, persistent, set-like container for :py:class:`Tree`.
+
+    The :py:class:`TreeBucket` behaves like a mutable set and provides persistent storage.
+    It is designed to handle large collections of trees efficiently,
+    supporting standard set operations and transactional updates.
+
+    Transaction Management:
+
+    - Automatically handles transactions when adding or removing :py:class:`Tree` from the bucket.
+    - If a :py:class:`Tree` is modified after being added to the bucket, you must call :py:meth:`~TreeBucket.commit` to persist those changes.
+    """
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close the underlying storage and release any associated resources."""
+
+    @abstractmethod
+    def transaction(self) -> AbstractContextManager[None]:
+        """
+        Return a context manager for managing a transaction.
+
+        Upon exiting the context, the transaction is automatically committed.
+        If an exception occurs within the context, the transaction is rolled back.
+        """
+
+    @abstractmethod
+    def commit(self) -> None:
+        """Persist any in-memory changes to :py:class:`Tree` in the bucket."""
+
+    @abstractmethod
+    def oids(self) -> Generator[TreeOID, None, None]:
+        """Yield the object IDs (OIDs) of all trees stored in the bucket."""
+
+    @overload
+    def __getitem__(self, key: TreeOID) -> Tree: ...
+
+    @overload
+    def __getitem__(self, key: Iterable[TreeOID]) -> Iterable[Tree]: ...
+
+    @abstractmethod
+    def __getitem__(self, key: TreeOID | Iterable[TreeOID]) -> Tree | Iterable[Tree]:
+        """
+        Retrieve one or more :py:class:`Tree` by their OID(s).
+
+        :param key: A single object ID or a collection of object IDs to retrieve.
+        :return: A single :py:class:`Tree` or a collection of :py:class:`Tree` objects.
+            - bucket[oid] -> tree
+            - bucket[[oid1, oid2, ...]] -> [tree1, tree2, ...]
+        """
+
+    def __enter__(self) -> 'TreeBucket':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+
+class ZODBTreeBucket(TreeBucket):
+    """
+    A persistent, scalable container for :py:class:`Tree` objects backed by ZODB and RelStorage using SQLite.
+
+    Internally, this container uses `ZODB <https://zodb.org/en/latest/>`_'s :py:class:`~BTrees.OOBTree.OOBTree`,
+    using Tree OIDs as keys.
+    Tree OIDs (UUIDs) are stored as raw bytes to enable efficient storage and fast comparisons,
+    avoiding the overhead of instantiating UUID objects during lookups.
+
+    .. note::
+        UUIDs are stored as bytes instead of integers, because ZODB only supports integers up to
+        64 bits, while UUIDs require 128 bits.
+
+    Without a specified storage path, the container creates a temporary database automatically deleted upon closing.
+
+    >>> bucket = ZODBTreeBucket()
+    >>> tree = Tree.fromstring('(S (NP Alice) (VP (VB like) (NNS apples)))')
+    >>> bucket.add(tree)
+    >>> len(bucket)
+    1
+    >>> tree.label = 'ROOT'
+    >>> transaction.commit()  # Persist changes made to the tree
+    >>> tree.label
+    'ROOT'
+    >>> tree.label = 'S'
+    >>> transaction.abort()  # Cancel changes made to the tree
+    >>> tree.label
+    'ROOT'
+    >>> bucket.discard(tree)
+    >>> len(bucket)
+    0
+    >>> bucket.close()
+    """
+
+    _db: ZODB.DB
+    _connection: Connection
+    _data: MutableMapping[bytes, Tree]
+    _temp_dir: tempfile.TemporaryDirectory | None
+
+    def __init__(
+        self,
+        storage_path: Path | None = None,
+        bucket_name: str = 'architxt',
+        read_only: bool = False,
+    ) -> None:
+        """
+        Initialize the bucket and connect to the underlying ZODB storage.
+
+        :param storage_path: Path to the storage directory.
+            If None, a temporary location is used to store the database.
+        :param bucket_name: Name of the root key under which the internal OOBTree is stored.
+        :param read_only: Whether to open the database in read-only mode.
+        """
+        if storage_path is None:
+            self._temp_dir = tempfile.TemporaryDirectory(prefix='architxt')
+            self._storage_path = Path(self._temp_dir.name)
+
+        else:
+            self._temp_dir = None
+            self._storage_path = storage_path
+
+        self._bucket_name = bucket_name
+        self._read_only = read_only
+        self._db = ZODB.config.databaseFromString(f"""
+            %import relstorage
+
+            <zodb main>
+                <relstorage>
+                    keep-history false
+                    pack-gc true
+                    read-only {'true' if self._read_only else 'false'}
+                    <sqlite3>
+                        data-dir {self._storage_path}
+                        <pragmas>
+                            synchronous off
+                            foreign_keys off
+                            defer_foreign_keys on
+                            temp_store memory
+                        </pragmas>
+                    </sqlite3>
+                </relstorage>
+            </zodb>
+        """)
+        self._connection = self._db.open()
+        root = self._connection.root()
+
+        if self._bucket_name not in root:
+            root[self._bucket_name] = OOBTree()
+            transaction.commit()
+
+        self._data = root[self._bucket_name]
+
+    def __reduce__(self) -> tuple[type, tuple[Path, str, bool]]:
+        return self.__class__, (self._storage_path, self._bucket_name, self._read_only)
+
+    def close(self) -> None:
+        """
+        Close the database connection and release associated resources.
+
+        This will:
+
+        - Abort any uncommitted transaction.
+        - Close the active database connection.
+        - Clean up temporary storage if one was created.
+        """
+        self._connection.transaction_manager.abort()
+        self._connection.close()
+        self._db.close()
+
+        if self._temp_dir is not None:  # If a temporary directory was used, clean it up
+            self._temp_dir.cleanup()
+
+    def transaction(self) -> transaction.TransactionManager:
+        return self._connection.transaction_manager
+
+    def commit(self) -> None:
+        self._connection.transaction_manager.commit()
+
+    def update(self, trees: Iterable[Tree], _memory_threshold_mb: int = 3_000) -> None:
+        """
+        Add multiple :py:class:`Tree` to the bucket, managing memory via chunked transactions.
+
+        Trees are added in batches to reduce memory footprint.
+        When available system memory falls below the threshold,
+        the connection cache is minimized and garbage collection is triggered.
+
+        .. warning::
+            Only the last chunk is rolled back on error.
+            Prior chunks remain committed, potentially leaving the database in a partially updated state.
+
+        :param trees: Trees to add to the bucket.
+        :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
+        """
+        for chunk in more_itertools.chunked(trees, BATCH_SIZE):
+            with self.transaction():
+                self._data.update({tree.oid.bytes: tree for tree in chunk})
+
+            if is_memory_low(_memory_threshold_mb):
+                self._connection.cacheMinimize()
+                gc.collect()
+
+    async def async_update(self, trees: AsyncIterable[Tree], _memory_threshold_mb: int = 3_000) -> None:
+        """
+        Asynchronously add multiple :py:class:`Tree` to the bucket.
+
+        This method mirrors the behavior of :py:meth:`~ZODBTreeBucket.update` but supports asynchronous iteration.
+        Internally, it delegates each chunk to a background thread.
+
+        :param trees: Trees to add to the bucket.
+        :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
+        """
+        async with stream.chunks(trees, BATCH_SIZE).stream() as streamer:
+            async for chunk in streamer:
+                await asyncio.to_thread(self.update, chunk, _memory_threshold_mb=_memory_threshold_mb)
+
+    def add(self, tree: Tree) -> None:
+        """Add a single :py:class:`Tree` to the bucket."""
+        with self.transaction():
+            self._data[tree.oid.bytes] = tree
+
+    def discard(self, tree: Tree) -> None:
+        """Remove a :py:class:`Tree` from the bucket if it exists."""
+        with self.transaction():
+            self._data.pop(tree.oid.bytes)
+
+    def clear(self) -> None:
+        """Remove all :py:class:`Tree` objects from the bucket."""
+        with self.transaction():
+            self._data.clear()
+
+    def oids(self) -> Generator[TreeOID, None, None]:
+        for key in self._data:
+            yield uuid.UUID(bytes=key)
+
+    @overload
+    def __getitem__(self, key: TreeOID) -> Tree: ...
+
+    @overload
+    def __getitem__(self, key: Iterable[TreeOID]) -> Iterable[Tree]: ...
+
+    def __getitem__(self, key: TreeOID | Iterable[TreeOID]) -> Tree | Iterable[Tree]:
+        if isinstance(key, uuid.UUID):
+            return self._data[key.bytes]
+
+        return (self._data[oid.bytes] for oid in key)
+
+    def __contains__(self, item: object) -> bool:
+        if isinstance(item, Tree):
+            return item.oid.bytes in self._data
+
+        if isinstance(item, uuid.UUID):
+            return item.bytes in self._data
+
+        return False
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __iter__(self) -> Iterator[Tree]:
+        return self._data.itervalues()

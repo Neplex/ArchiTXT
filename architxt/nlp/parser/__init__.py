@@ -43,7 +43,7 @@ class Parser(abc.ABC):
         :param resolver: An optional entity resolver used to resolve entities within the parsed trees.
             If `None`, no entity resolution is performed.
         :param batch_size: The maximum number of concurrent parsing tasks that can run at once.
-            It will only load at most `batch_size` element from the input iterable.
+            It will only load at most `batch_size` elements from the input iterable.
 
         :yields: A tuple of the original `AnnotatedSentence` and its enriched `Tree`.
             Each sentence is parsed independently, and results are yielded as they become available.
@@ -477,7 +477,7 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
         entity_index = child_pos[anchor_pos_len] + 1
 
     elif (
-        tree[tree_ent.root_pos].parent is None
+        not tree_ent.root_pos
         or child_pos[anchor_pos_len] > 0
         or tree_ent.positions[-1][anchor_pos_len] < (len(tree[tree_ent.root_pos]) - 1)
     ):
@@ -490,7 +490,7 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
         anchor_pos = tree_ent.root_pos[:-1]
 
         # Adjust the anchor position upwards if necessary
-        while len(tree[anchor_pos]) == 1 and tree[anchor_pos].parent:
+        while anchor_pos and len(tree[anchor_pos]) == 1:
             entity_index = anchor_pos[-1]
             anchor_pos = anchor_pos[:-1]
 
