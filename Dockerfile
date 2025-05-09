@@ -1,4 +1,4 @@
-FROM python:3.12 AS builder
+FROM python:3.13 AS builder
 
 RUN pip install poetry==1.8.2
 
@@ -13,7 +13,7 @@ COPY pyproject.toml ./
 
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --extras all --without dev --no-root
 
-FROM python:3.12-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app
 
