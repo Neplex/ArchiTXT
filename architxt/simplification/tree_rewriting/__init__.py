@@ -18,7 +18,7 @@ from tqdm.auto import tqdm, trange
 from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeBucket, TreeOID, has_type
-from architxt.utils import BATCH_SIZE
+from architxt.utils import BATCH_SIZE, ExceptionGroup
 
 from .operations import (
     FindCollectionsOperation,
@@ -29,15 +29,6 @@ from .operations import (
     ReduceBottomOperation,
     ReduceTopOperation,
 )
-
-if sys.version_info < (3, 11):
-
-    class ExceptionGroup(BaseException):
-        def __init__(self, message: str, exceptions: Sequence[BaseException]) -> None:
-            message += '\n'.join(f'  ({i}) {exc!r}' for i, exc in enumerate(exceptions, 1))
-            super().__init__(message)
-else:
-    from builtins import ExceptionGroup
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

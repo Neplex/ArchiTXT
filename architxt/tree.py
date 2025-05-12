@@ -40,7 +40,7 @@ from persistent.list import PersistentList
 from persistent.mapping import PersistentMapping
 from ZODB.Connection import Connection
 
-from architxt.utils import BATCH_SIZE, is_memory_low
+from architxt.utils import BATCH_SIZE, ExceptionGroup, is_memory_low
 
 __all__ = [
     'Forest',
@@ -84,25 +84,19 @@ class NodeLabel(str):
     def __reduce__(self) -> tuple[Callable[..., 'NodeLabel'], tuple[Any, ...]]:
         return NodeLabel, (self.type, self.name)
 
+    @classmethod
+    def fromstring(cls, label: 'NodeLabel | str') -> 'NodeLabel':
+        if isinstance(label, str):
+            if '::' in label:
+                node_type, _, name = label.partition('::')
+                with contextlib.suppress(ValueError):
+                    label = NodeLabel(NodeType(node_type), name)
 
-def _check_children(children: 'Iterable[Tree | str]') -> None:
-    if any(isinstance(child, Tree) and child.parent is not None for child in children):
-        msg = 'Can not insert a subtree that already has a parent.'
-        raise ValueError(msg)
+            else:
+                with contextlib.suppress(ValueError):
+                    label = NodeLabel(NodeType(label))
 
-
-def _parse_label(label: NodeLabel | str) -> NodeLabel | str:
-    if isinstance(label, str):
-        if '::' in label:
-            node_type, _, name = label.partition('::')
-            with contextlib.suppress(ValueError):
-                label = NodeLabel(NodeType(node_type), name)
-
-        else:
-            with contextlib.suppress(ValueError):
-                label = NodeLabel(NodeType(label))
-
-    return label
+        return label
 
 
 @total_ordering
@@ -124,17 +118,36 @@ class Tree(PersistentList):
         oid: TreeOID | None = None,
     ) -> None:
         super().__init__(children)
-        self._label = _parse_label(label)
+        self._label = NodeLabel.fromstring(label)
         self._metadata = PersistentMapping(metadata or {})
         self._oid = oid or uuid.uuid4()
         self._v_parent = None
         self._v_cache = {}
 
-        _check_children(self)
+        self._check_children(self)
 
         for child in self:
             if isinstance(child, Tree):
                 child._v_parent = weakref.ref(self)
+
+    def _check_children(self, children: 'Iterable[Tree | str]') -> None:
+        errors = []
+
+        for index, child in enumerate(children):
+            if not isinstance(child, Tree):
+                continue
+
+            if self in child.subtrees():
+                msg = f'Child at index {index} creates a cyclic reference: a tree cannot contain itself.'
+                errors.append(ValueError(msg))
+
+            if child.parent is not None and child.parent is not self:
+                msg = f'Child at index {index} is already attached to another parent: {child.parent}.'
+                errors.append(ValueError(msg))
+
+        if errors:
+            msg = 'Invalid tree children detected'
+            raise ExceptionGroup(msg, errors)
 
     def _invalidate_cache(self) -> None:
         self._v_cache.clear()
@@ -706,7 +719,7 @@ class Tree(PersistentList):
                 subtree = list(subtree)
             # Check for any error conditions, so we can avoid ending
             # up in an inconsistent state if an error does occur.
-            _check_children(subtree)
+            self._check_children(subtree)
             # clear the child pointers of all parents we're removing
             for i in range(start, stop, step):
                 if isinstance(self[i], Tree):
@@ -815,7 +828,7 @@ class Tree(PersistentList):
         self._invalidate_cache()
 
     def extend(self, children: 'Iterable[Tree | str]') -> None:
-        _check_children(children)
+        self._check_children(children)
         for child in children:
             if isinstance(child, Tree):
                 child._v_parent = weakref.ref(self)
