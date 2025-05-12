@@ -19,7 +19,7 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import AbstractContextManager
-from copy import deepcopy
+from copy import copy, deepcopy
 from enum import Enum
 from functools import partial, total_ordering
 from pathlib import Path
@@ -114,7 +114,7 @@ class Tree(PersistentList):
         self,
         label: NodeLabel | str,
         children: Iterable['Tree | str'] | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: MutableMapping[str, Any] | None = None,
         oid: TreeOID | None = None,
     ) -> None:
         super().__init__(children)
@@ -184,6 +184,14 @@ class Tree(PersistentList):
         for child in self:
             if isinstance(child, Tree):
                 child._v_parent = weakref.ref(self)
+
+    def __copy__(self) -> 'Tree':
+        """Support for the copy.copy() interface."""
+        return self.copy()
+
+    def __deepcopy__(self, _memo: dict[int, Any]) -> 'Tree':
+        """Support for the copy.deepcopy() interface."""
+        return self.copy()
 
     def __lt__(self, other: Any) -> bool:
         if isinstance(other, Tree):
@@ -919,7 +927,12 @@ class Tree(PersistentList):
 
         :return: A new copy of the tree.
         """
-        return Tree.fromstring(str(self))
+        return Tree(
+            label=copy(self.label),
+            children=[child.copy() if isinstance(child, Tree) else child for child in self],
+            metadata=self.metadata,
+            oid=self.oid,
+        )
 
     @classmethod
     def fromstring(cls, text: str) -> 'Tree':
