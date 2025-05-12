@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Iterable
 from contextlib import nullcontext
 
@@ -26,10 +27,17 @@ def _simple_rewrite_tree(tree: Tree, group_ids: dict[tuple[str, ...], str]) -> N
 
     for entity in tree.entities():
         if entity.label.name in entities:
-            group_entities.append(entity.detach())
+            group_entities.append(entity.copy())
             entities.remove(entity.label.name)
 
     group_tree = Tree(group_label, group_entities)
+
+    if tree.label != 'ROOT':
+        # Convert the node into a proper root by updating its label and OID
+        # to reflect that it's a newly created node, as the tree is modified in place.
+        tree._oid = uuid.uuid4()
+        tree.label = 'ROOT'
+
     tree[:] = [group_tree]
 
 
