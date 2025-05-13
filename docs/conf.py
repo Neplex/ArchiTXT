@@ -136,3 +136,4 @@ copybutton_prompt_is_regexp = True
 nb_execution_timeout = 600
 nb_merge_streams = True
 nb_execution_raise_on_error = True
+nb_execution_show_tb = True

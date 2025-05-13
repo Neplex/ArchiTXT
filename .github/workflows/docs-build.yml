@@ -15,8 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Python
+      - id: setup_python
+        name: Install Python
         uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: cache-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: cache-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v3
@@ -24,10 +34,18 @@ jobs:
       - name: Install Dependencies
         run: poetry install
 
+      - name: Cache Jupyter/MyST notebook execution cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/architxt
+          key: doc-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('docs/**/*.ipynb', '**/poetry.lock') }}
+          restore-keys: doc-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-
+
       - name: Build Documentation
-        run: poetry run sphinx-build -M html docs _build
+        run: poetry run sphinx-build -M html docs _build -v
         env:
           TOKENIZERS_PARALLELISM: false
+          TQDM_DISABLE: 1
 
       - name: Deploy (GitHub Pages)
         uses: peaceiris/actions-gh-pages@v3
