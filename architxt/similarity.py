@@ -77,7 +77,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     assert x is not None
     assert y is not None
 
-    if x is y or x.label == y.label:
+    if x.oid == y.oid or x.label == y.label:
         return 1.0
 
     weight_sum = 0.0

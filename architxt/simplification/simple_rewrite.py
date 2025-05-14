@@ -1,11 +1,10 @@
-import uuid
 from collections.abc import Iterable
 from contextlib import nullcontext
 
 import more_itertools
 from tqdm.auto import tqdm
 
-from architxt.tree import NodeLabel, NodeType, Tree, TreeBucket
+from architxt.tree import NodeLabel, NodeType, Tree, TreeBucket, has_type
 from architxt.utils import BATCH_SIZE
 
 __all__ = ['simple_rewrite']
@@ -13,7 +12,7 @@ __all__ = ['simple_rewrite']
 
 def _simple_rewrite_tree(tree: Tree, group_ids: dict[tuple[str, ...], str]) -> None:
     """Rewrite of a single tree."""
-    if not tree.has_unlabelled_nodes():
+    if has_type(tree, NodeType.ENT) or not tree.has_unlabelled_nodes():
         return
 
     entities = tree.entity_labels()
@@ -31,13 +30,6 @@ def _simple_rewrite_tree(tree: Tree, group_ids: dict[tuple[str, ...], str]) -> N
             entities.remove(entity.label.name)
 
     group_tree = Tree(group_label, group_entities)
-
-    if tree.label != 'ROOT':
-        # Convert the node into a proper root by updating its label and OID
-        # to reflect that it's a newly created node, as the tree is modified in place.
-        tree._oid = uuid.uuid4()
-        tree.label = 'ROOT'
-
     tree[:] = [group_tree]
 
 
