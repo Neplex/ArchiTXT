@@ -17,8 +17,8 @@ class ForestInspector:
         self.max_height = 0
         self.sum_size = 0
         self.max_size = 0
-        self.entity_count = Counter()
-        self.largest_tree = None
+        self.entity_count = Counter[str]()
+        self.largest_tree: Tree | None = None
 
     @property
     def avg_height(self) -> float:
@@ -53,7 +53,7 @@ class ForestInspector:
                 self.max_size = size
 
             # Count entities
-            entities = [ent.label.name for ent in tree.entities()]
+            entities = [ent.label for ent in tree.entities()]
             self.total_entities += len(entities)
             self.entity_count.update(entities)
 

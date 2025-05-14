@@ -50,16 +50,14 @@ def simple_rewrite(forest: Iterable[Tree], *, commit: bool | int = BATCH_SIZE) -
         To avoid memory issues with large forests, we recommend using batch commit on large forests.
     """
     group_ids: dict[tuple[str, ...], str] = {}
-    forest = tqdm(forest, desc="Rewriting trees")
-    use_transaction = commit and isinstance(forest, TreeBucket)
 
-    if use_transaction and isinstance(commit, int):
-        for chunk in more_itertools.ichunked(forest, commit):
+    if commit and isinstance(forest, TreeBucket) and isinstance(commit, int):
+        for chunk in more_itertools.ichunked(tqdm(forest, desc="Rewriting trees"), commit):
             with forest.transaction():
                 for tree in chunk:
                     _simple_rewrite_tree(tree, group_ids)
 
     else:
-        with forest.transaction() if use_transaction else nullcontext():
-            for tree in forest:
+        with forest.transaction() if commit and isinstance(forest, TreeBucket) else nullcontext():
+            for tree in tqdm(forest, desc="Rewriting trees"):
                 _simple_rewrite_tree(tree, group_ids)

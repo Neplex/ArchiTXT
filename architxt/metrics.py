@@ -1,7 +1,8 @@
 from collections import Counter
-from collections.abc import Collection
+from collections.abc import Collection, Hashable
 from itertools import combinations
 from operator import attrgetter
+from typing import Any
 
 import pandas as pd
 from cachetools import cachedmethod
@@ -124,7 +125,7 @@ class Metrics:
     """
 
     def __init__(self, forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> None:
-        self._cache = {}
+        self._cache: dict[Hashable, Any] = {}
         self._forest = forest
         self._tau = tau
         self._metric = metric

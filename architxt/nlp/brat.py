@@ -123,7 +123,7 @@ def convert_brat_example(
     :return: A generator yielding `AnnotatedSentence` objects for each sentence in the text.
     """
     # Split the text into sentences
-    sentences = list(split_sentences(example.text))
+    sentences = list(split_sentences(example.text) if isinstance(example.text, str) else example.text)
 
     # Convert and filter entities, split by sentences
     entities = list(
