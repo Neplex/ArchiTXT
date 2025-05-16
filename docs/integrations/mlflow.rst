@@ -6,7 +6,8 @@ With ArchiTXT’s integration, you can effortlessly log experiment executions, t
 
 .. seealso::
 
-    `MLFlow Documentation <https://www.mlflow.org/docs/latest/index.html>`_ for more details on MLFlow and its capabilities.
+    `MLFlow Documentation <https://www.mlflow.org/docs/latest/index.html>`_
+        The official documentation of MLFlow.
 
 ArchiTXT creates a dedicated MLFlow experiment for logging and every simplification process is recorded as a separate run in this experiment.
 This detailed logging allows you to:

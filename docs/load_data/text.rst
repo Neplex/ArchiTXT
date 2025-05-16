@@ -3,11 +3,15 @@ Loading textual datas
 
 ArchiTXT enables seamless integration of textual data by representing it as a hierarchical tree structure, derived from the syntax tree.
 Through its built-in simplification algorithm, ArchiTXT organizes this data into structured instances, which can be easily combined with existing database instances.
+All tools for manipulating textual data are available in the :py:mod:`architxt.nlp` module.
 
 .. seealso::
 
-    - :doc:`../getting_started/corpus` for more information on BRAT format support.
-    - :doc:`../examples/corpus_exploration` for real-case usage examples.
+    :doc:`../getting_started/corpus`
+        More information on BRAT format support.
+
+    :doc:`../examples/corpus_exploration`
+        A real-case usage examples.
 
 
 Annotations
@@ -18,9 +22,11 @@ These annotations can be directly provided to ArchiTXT or loaded from corpora fo
 
 Supported annotation types include:
 
-- **Named Entities**: Specific segments of text representing objects or concepts with distinct names or types. For example, the sentence "Alice likes apples", "Alice" can be annotated as a Person entity, and "apples" as a Fruit entity.
+Named Entities
+    Specific segments of text representing objects or concepts with distinct names or types. For example, the sentence "Alice likes apples", "Alice" can be annotated as a Person entity, and "apples" as a Fruit entity.
 
-- **Relations**: Binary connections between two entities that express semantic relationships. In "Alice likes apples", the word "likes" indicates a possible relation between the Person entity "Alice" and the Fruit entity "apples".
+Relations
+    Binary connections between two entities that express semantic relationships. In "Alice likes apples", the word "likes" indicates a possible relation between the Person entity "Alice" and the Fruit entity "apples".
 
 Named entities are interpreted as entities within the ArchiTXT meta-model.
 
@@ -29,7 +35,7 @@ Text to trees
 
 Consider the example sentence:
 
-> The heart rate was 100 bpm
+    The heart rate was 100 bpm
 
 With the following named entities:
 
@@ -42,6 +48,7 @@ The raw syntax tree for the example sentence is as follows:
 
 .. mermaid::
     :alt: Syntax tree
+    :align: center
 
     ---
     config:
@@ -68,6 +75,7 @@ Entities are then embedded into the tree:
 
 .. mermaid::
     :alt: Syntax tree with entities
+    :align: center
 
     ---
     config:
@@ -78,7 +86,7 @@ Entities are then embedded into the tree:
         S --> VP
         NP1 --> DT
         DT --> The
-        NP1 --> sosy["ENTITY SOSY"]
+        NP1 --> sosy["ENT SOSY"]
         sosy --> NN1["NN"]
         sosy --> NN2["NN"]
         NN1 --> heart
@@ -87,16 +95,17 @@ Entities are then embedded into the tree:
         VBD --> was
         VP --> NP2["NP"]
         NP2 --> CD
-        CD --> value["ENTITY VALUE"]
+        CD --> value["ENT VALUE"]
         value --> 100
         NP2 --> NN3["NN"]
-        NN3 --> unit["ENTITY UNIT"]
+        NN3 --> unit["ENT UNIT"]
         unit --> bpm
 
 The tree is then simplified by removing unnecessary branches, focusing only on meaningful entities:
 
 .. mermaid::
     :alt: Simplified syntax tree
+    :align: center
 
     ---
     config:
@@ -105,36 +114,37 @@ The tree is then simplified by removing unnecessary branches, focusing only on m
     graph TD;
         S --> NP1["NP"]
         S --> VP
-        NP1 --> sosy["ENTITY SOSY"]
+        NP1 --> sosy["ENT SOSY"]
         sosy --> NN1["NN"]
         sosy --> NN2["NN"]
         NN1 --> heart
         NN2 --> rate
         VP --> NP2["NP"]
         NP2 --> CD
-        CD --> value["ENTITY VALUE"]
+        CD --> value["ENT VALUE"]
         value --> 100
         NP2 --> NN3["NN"]
-        NN3 --> unit["ENTITY UNIT"]
+        NN3 --> unit["ENT UNIT"]
         unit --> bpm
 
 Finally, the tree is reduced by eliminating unnecessary nodes:
 
 .. mermaid::
     :alt: Final syntax tree
+    :align: center
 
     ---
     config:
       theme: neutral
     ---
     graph TD;
-        S --> sosy["ENTITY SOSY"]
+        S --> sosy["ENT SOSY"]
         sosy --> heart
         sosy --> rate
         S --> VP
-        VP --> value["ENTITY VALUE"]
+        VP --> value["ENT VALUE"]
         value --> 100
-        VP --> unit["ENTITY UNIT"]
+        VP --> unit["ENT UNIT"]
         unit --> bpm
 
 

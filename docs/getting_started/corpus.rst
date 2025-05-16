@@ -59,4 +59,5 @@ In this example:
 
 .. seealso::
 
-    `BRAT Rapid Annotation Tool website <https://brat.nlplab.org/standoff.html>`_ for more information about the standoff format
+    `BRAT Rapid Annotation Tool website <https://brat.nlplab.org/standoff.html>`_
+        BRAT documentation of the standoff format
