@@ -12,6 +12,7 @@ from collections.abc import (
     Callable,
     Collection,
     Generator,
+    Hashable,
     Iterable,
     Iterator,
     MutableMapping,
@@ -24,7 +25,7 @@ from enum import Enum
 from functools import partial, total_ordering
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Literal, TextIO, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, Literal, TextIO, TypeAlias, TypeGuard, overload
 from urllib.parse import quote, unquote
 
 import more_itertools
@@ -41,6 +42,9 @@ from persistent.mapping import PersistentMapping
 from ZODB.Connection import Connection
 
 from architxt.utils import BATCH_SIZE, ExceptionGroup, is_memory_low
+
+if TYPE_CHECKING:
+    from aiostream.core import Stream
 
 __all__ = [
     'Forest',
@@ -75,7 +79,7 @@ class NodeLabel(str):
 
     def __new__(cls, label_type: NodeType, label: str = '') -> 'NodeLabel':
         string_value = f'{label_type.value}::{label}' if label else label_type.value
-        return super().__new__(cls, string_value)  # type: ignore
+        return super().__new__(cls, string_value)
 
     def __init__(self, label_type: NodeType, label: str = '') -> None:
         self.name = label
@@ -85,28 +89,30 @@ class NodeLabel(str):
         return NodeLabel, (self.type, self.name)
 
     @classmethod
-    def fromstring(cls, label: 'NodeLabel | str') -> 'NodeLabel':
-        if isinstance(label, str):
-            if '::' in label:
-                node_type, _, name = label.partition('::')
-                with contextlib.suppress(ValueError):
-                    label = NodeLabel(NodeType(node_type), name)
+    def fromstring(cls, label: 'NodeLabel | str') -> 'NodeLabel | str':
+        if isinstance(label, NodeLabel):
+            return label
 
-            else:
-                with contextlib.suppress(ValueError):
-                    label = NodeLabel(NodeType(label))
+        if '::' in label:
+            node_type, _, name = label.partition('::')
+            with contextlib.suppress(ValueError):
+                label = NodeLabel(NodeType(node_type), name)
+
+        else:
+            with contextlib.suppress(ValueError):
+                label = NodeLabel(NodeType(label))
 
         return label
 
 
 @total_ordering
-class Tree(PersistentList):
+class Tree(PersistentList['_SubTree | str']):
     _label: NodeLabel | str
     _metadata: MutableMapping[str, Any]
     _oid: TreeOID
 
     _v_parent: weakref.ReferenceType['Tree'] | None
-    _v_cache: MutableMapping
+    _v_cache: MutableMapping[Hashable, Any]
 
     __slots__ = ('_label', '_metadata', '_oid', '_v_cache', '_v_parent')
 
@@ -141,7 +147,7 @@ class Tree(PersistentList):
                 msg = f'Child at index {index} creates a cyclic reference: a tree cannot contain itself.'
                 errors.append(ValueError(msg))
 
-            if child.parent is not None and child.parent is not self:
+            if is_sub_tree(child) and child.parent is not self:
                 msg = f'Child at index {index} is already attached to another parent: {child.parent}.'
                 errors.append(ValueError(msg))
 
@@ -209,7 +215,17 @@ class Tree(PersistentList):
 
     @property
     def parent(self) -> 'Tree | None':
-        """The parent of this tree, or None if it has no parent."""
+        """
+        The parent of this tree, or None if it has no parent.
+
+        >>> t = Tree.fromstring('(S (A xxx) (A xxx))')
+        >>> t.parent
+
+        >>> t[0].parent is t
+        True
+        >>> t[1].parent is t
+        True
+        """
         return self._v_parent() if self._v_parent else None
 
     @property
@@ -222,6 +238,8 @@ class Tree(PersistentList):
         since the ``index()`` method returns the first child that is equal to its argument.
 
         >>> t = Tree.fromstring('(S (A xxx) (A xxx))')
+        >>> t.parent_index
+
         >>> t[0].parent_index
         0
         >>> t[1].parent_index
@@ -309,7 +327,7 @@ class Tree(PersistentList):
         >>> t[1, 0].position
         (1, 0)
         """
-        if self.parent is None:
+        if not is_sub_tree(self):
             return ()
 
         return *self.parent.position, self.parent_index
@@ -429,7 +447,7 @@ class Tree(PersistentList):
             msg = 'index must be non-negative'
             raise IndexError(msg)
 
-        stack = [(self, ())]
+        stack: list[tuple[Tree | str, tuple[int, ...]]] = [(self, ())]
         count = 0
 
         while stack:
@@ -461,7 +479,7 @@ class Tree(PersistentList):
         """
         result = set()
 
-        if has_type(self, NodeType.GROUP):
+        if isinstance(self.label, NodeLabel) and has_type(self, NodeType.GROUP):
             result.add(self.label.name)
 
         for child in self:
@@ -500,7 +518,7 @@ class Tree(PersistentList):
         """
         dataframes = [child.group_instances(group_name) for child in self if isinstance(child, Tree)]
 
-        if has_type(self, NodeType.GROUP) and self.label.name == group_name:
+        if isinstance(self.label, NodeLabel) and has_type(self, NodeType.GROUP) and self.label.name == group_name:
             root_dataframe = pd.DataFrame(
                 [
                     {
@@ -518,7 +536,7 @@ class Tree(PersistentList):
         return pd.concat(dataframes, ignore_index=True).drop_duplicates()
 
     @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entities'))
-    def entities(self) -> tuple['Tree', ...]:
+    def entities(self) -> tuple['_TypedTree', ...]:
         """
         Get a tuple of subtrees that are entities.
 
@@ -531,7 +549,7 @@ class Tree(PersistentList):
         >>> list(t[0, 0].entities()) == [t[0, 0]]
         True
         """
-        return tuple(self.subtrees(lambda ent: has_type(ent, NodeType.ENT)))
+        return tuple(ent for ent in self.subtrees() if has_type(ent, NodeType.ENT))
 
     @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entity_labels'))
     def entity_labels(self) -> set[str]:
@@ -547,7 +565,7 @@ class Tree(PersistentList):
         >>> sorted(t.entity_labels())
         ['animal', 'person']
         """
-        return {node.label.name for node in self.entities()}
+        return {ent.label.name for ent in self.entities()}
 
     @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entity_label_count'))
     def entity_label_count(self) -> Counter[str]:
@@ -644,7 +662,7 @@ class Tree(PersistentList):
         >>> print(t)
         (S Alice (VP (VB like) (NNS apples)))
         """
-        if not self.parent or len(self) != 1 or (skip_types and has_type(self, skip_types)):
+        if not is_sub_tree(self) or len(self) != 1 or (skip_types and has_type(self, skip_types)):
             return False
 
         # Replace the original subtree by its children into the parent at `pos`
@@ -679,12 +697,12 @@ class Tree(PersistentList):
                     break
 
     @overload
-    def __getitem__(self, pos: TreePosition | int) -> 'Tree | str': ...
+    def __getitem__(self, pos: TreePosition | int) -> '_SubTree | str': ...
 
     @overload
-    def __getitem__(self, pos: slice) -> 'list[Tree | str]': ...
+    def __getitem__(self, pos: slice) -> 'list[_SubTree | str]': ...
 
-    def __getitem__(self, pos: TreePosition | int | slice) -> 'Tree | str | list[Tree | str]':
+    def __getitem__(self, pos: TreePosition | int | slice) -> '_SubTree | str | list[_SubTree | str]':
         """
         Retrieve a child or subtree using an index, a slice, or a tree position.
 
@@ -701,7 +719,7 @@ class Tree(PersistentList):
             # to the parent class, which would return a Tree instead of a plain list.
             return self.data[pos]
 
-        if isinstance(pos, list | tuple):
+        if isinstance(pos, tuple):
             if len(pos) == 0:
                 return self
             if len(pos) == 1:
@@ -716,7 +734,7 @@ class Tree(PersistentList):
     def __setitem__(self, pos: TreePosition | int, subtree: 'Tree | str') -> None: ...
 
     @overload
-    def __setitem__(self, pos: slice, subtree: 'list[Tree | str]') -> None: ...
+    def __setitem__(self, pos: slice, subtree: 'Iterable[Tree | str]') -> None: ...
 
     def __setitem__(self, pos: TreePosition | int | slice, subtree: 'Tree | str | Iterable[Tree | str]') -> None:  # noqa: C901
         # ptree[start:stop] = subtree
@@ -730,8 +748,8 @@ class Tree(PersistentList):
             self._check_children(subtree)
             # clear the child pointers of all parents we're removing
             for i in range(start, stop, step):
-                if isinstance(self[i], Tree):
-                    self[i]._v_parent = None
+                if isinstance((child := self[i]), Tree):
+                    child._v_parent = None
             # set the child pointers of the new children. We do this
             # after clearing *all* child pointers, in case we're e.g.
             # reversing the elements in a tree.
@@ -755,12 +773,12 @@ class Tree(PersistentList):
             if isinstance(subtree, Tree):
                 subtree._v_parent = weakref.ref(self)
             # Remove the old child's parent pointer
-            if isinstance(self[pos], Tree):
-                subtree._v_parent = None
+            if isinstance((child := self[pos]), Tree):
+                child._v_parent = None
             # Update our child list.
             super().__setitem__(pos, subtree)
 
-        elif isinstance(pos, list | tuple):
+        elif isinstance(pos, tuple):
             # ptree[()] = subtree
             if len(pos) == 0:
                 msg = 'The tree position () may not be assigned to.'
@@ -784,8 +802,8 @@ class Tree(PersistentList):
             start, stop, step = slice_bounds(self, pos, allow_step=True)
             # Clear all the children pointers.
             for i in range(start, stop, step):
-                if isinstance(self[i], Tree):
-                    self[i]._v_parent = None
+                if isinstance((child := self[i]), Tree):
+                    child._v_parent = None
             # Delete the children from our child list.
             super().__delitem__(pos)
 
@@ -797,12 +815,12 @@ class Tree(PersistentList):
                 msg = 'pos out of range'
                 raise IndexError(msg)
             # Clear the child's parent pointer.
-            if isinstance(self[pos], Tree):
-                self[pos]._v_parent = None
+            if isinstance((child := self[pos]), Tree):
+                child._v_parent = None
             # Remove the child from our child list.
             super().__delitem__(pos)
 
-        elif isinstance(pos, list | tuple):
+        elif isinstance(pos, tuple):
             # del ptree[()]
             if len(pos) == 0:
                 msg = 'The tree position () may not be deleted.'
@@ -826,10 +844,7 @@ class Tree(PersistentList):
 
     def append(self, child: 'Tree | str') -> None:
         if isinstance(child, Tree):
-            if child._v_parent is not None:
-                msg = 'Can not insert a subtree that already has a parent.'
-                raise ValueError(msg)
-
+            self._check_children([child])
             child._v_parent = weakref.ref(self)
 
         super().append(child)
@@ -858,10 +873,7 @@ class Tree(PersistentList):
     def insert(self, pos: int, child: 'Tree | str') -> None:
         # Set the child's parent and update our child list.
         if isinstance(child, Tree):
-            if child.parent is not None:
-                msg = 'Can not insert a subtree that already has a parent.'
-                raise ValueError(msg)
-
+            self._check_children([child])
             child._v_parent = weakref.ref(self)
 
         super().insert(pos, child)
@@ -916,7 +928,7 @@ class Tree(PersistentList):
         >>> print(t)
         (S (B yyy))
         """
-        if self.parent is not None:
+        if is_sub_tree(self):
             self.parent.remove(self, recursive=False)
 
         return self
@@ -951,7 +963,9 @@ class Tree(PersistentList):
         (S (X xxx) (Y yyy))
         """
         # Walk through each token, updating a stack of trees.
-        stack: list[tuple[str | None, list]] = [(None, [])]  # list of (node, children) tuples
+        stack: list[tuple[str | None, list[Any]]] = [(None, [])]  # list of (node, children) tuples
+        label: str | None
+
         for match in TREE_PARSER_RE.finditer(text):
             token = match.group()
 
@@ -1082,6 +1096,52 @@ class Tree(PersistentList):
         return f"{pad}({self._label} {child_lines})"
 
 
+if TYPE_CHECKING:
+
+    class _SubTree(Tree):
+        parent: Tree
+        parent_index: int
+
+    class _TypedTree(Tree):
+        label: NodeLabel
+
+    class _TypedSubTree(_SubTree, _TypedTree): ...
+
+
+def is_sub_tree(tree: Tree) -> TypeGuard['_SubTree']:
+    """
+    Determine whether the given Tree instance is a subtree.
+
+    This helper function serves as a type guard to assist static type checkers
+    like mypy in refining the type of `tree` when the function returns True.
+
+    :param tree: The tree instance to check.
+    :return: True if `tree` is a subtree (i.e., has a parent), False otherwise.
+
+    >>> t = Tree.fromstring('(S (X xxx) (Y yyy))')
+    >>> is_sub_tree(t)
+    False
+    >>> is_sub_tree(t[0])
+    True
+
+    """
+    return tree.parent is not None
+
+
+@overload
+def has_type(
+    t: '_SubTree', types: set[NodeType | str] | NodeType | str | None = None
+) -> TypeGuard['_TypedSubTree']: ...
+
+
+@overload
+def has_type(t: Tree, types: set[NodeType | str] | NodeType | str | None = None) -> TypeGuard['_TypedTree']: ...
+
+
+@overload
+def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool: ...
+
+
 def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool:
     """
     Check if the given tree object has the specified type(s).
@@ -1103,8 +1163,6 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
     True
 
     """
-    assert t is not None
-
     # Normalize type input
     if types is None:
         types = set(NodeType)
@@ -1112,6 +1170,7 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
         types = {types}
 
     types = {t.value if isinstance(t, NodeType) else str(t) for t in types}
+    label: NodeLabel | str
 
     # Check for the type in the respective object
     if isinstance(t, NodeLabel):
@@ -1144,6 +1203,32 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
     - Automatically handles transactions when adding or removing :py:class:`Tree` from the bucket.
     - If a :py:class:`Tree` is modified after being added to the bucket, you must call :py:meth:`~TreeBucket.commit` to persist those changes.
     """
+
+    @abstractmethod
+    def update(self, trees: Iterable[Tree], batch_size: int = BATCH_SIZE) -> None:
+        """
+        Add multiple :py:class:`Tree` to the bucket, managing memory via chunked transactions.
+
+        :param trees: Trees to add to the bucket.
+        :param batch_size: The number of trees to be added at once.
+        """
+
+    async def async_update(self, trees: AsyncIterable[Tree], batch_size: int = BATCH_SIZE) -> None:
+        """
+        Asynchronously add multiple :py:class:`Tree` to the bucket.
+
+        This method mirrors the behavior of :py:meth:`~TreeBucket.update` but supports asynchronous iteration.
+        Internally, it delegates each chunk to a background thread.
+
+        :param trees: Trees to add to the bucket.
+        :param batch_size: The number of trees to be added at once.
+        """
+        chunk_stream: Stream[list[Tree]] = stream.chunks(trees, batch_size)
+        chunk: list[Tree]
+
+        async with chunk_stream.stream() as streamer:
+            async for chunk in streamer:
+                await asyncio.to_thread(self.update, chunk)
 
     @abstractmethod
     def close(self) -> None:
@@ -1231,7 +1316,7 @@ class ZODBTreeBucket(TreeBucket):
 
     _db: ZODB.DB
     _connection: Connection
-    _data: MutableMapping[bytes, Tree]
+    _data: OOBTree
     _temp_dir: tempfile.TemporaryDirectory | None
 
     def __init__(
@@ -1313,7 +1398,7 @@ class ZODBTreeBucket(TreeBucket):
     def commit(self) -> None:
         self._connection.transaction_manager.commit()
 
-    def update(self, trees: Iterable[Tree], _memory_threshold_mb: int = 3_000) -> None:
+    def update(self, trees: Iterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000) -> None:
         """
         Add multiple :py:class:`Tree` to the bucket, managing memory via chunked transactions.
 
@@ -1326,9 +1411,10 @@ class ZODBTreeBucket(TreeBucket):
             Prior chunks remain committed, potentially leaving the database in a partially updated state.
 
         :param trees: Trees to add to the bucket.
+        :param batch_size: The number of trees to be added at once.
         :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
         """
-        for chunk in more_itertools.chunked(trees, BATCH_SIZE):
+        for chunk in more_itertools.chunked(trees, batch_size):
             with self.transaction():
                 self._data.update({tree.oid.bytes: tree for tree in chunk})
 
@@ -1336,7 +1422,9 @@ class ZODBTreeBucket(TreeBucket):
                 self._connection.cacheMinimize()
                 gc.collect()
 
-    async def async_update(self, trees: AsyncIterable[Tree], _memory_threshold_mb: int = 3_000) -> None:
+    async def async_update(
+        self, trees: AsyncIterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000
+    ) -> None:
         """
         Asynchronously add multiple :py:class:`Tree` to the bucket.
 
@@ -1344,11 +1432,15 @@ class ZODBTreeBucket(TreeBucket):
         Internally, it delegates each chunk to a background thread.
 
         :param trees: Trees to add to the bucket.
+        :param batch_size: The number of trees to be added at once.
         :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
         """
-        async with stream.chunks(trees, BATCH_SIZE).stream() as streamer:
+        chunk_stream: Stream[list[Tree]] = stream.chunks(trees, batch_size)
+        chunk: list[Tree]
+
+        async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                await asyncio.to_thread(self.update, chunk, _memory_threshold_mb=_memory_threshold_mb)
+                await asyncio.to_thread(self.update, chunk, batch_size, _memory_threshold_mb=_memory_threshold_mb)
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`Tree` to the bucket."""

@@ -74,20 +74,20 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     0.5555555555555555
 
     """
-    assert x is not None
-    assert y is not None
-
     if x.oid == y.oid or x.label == y.label:
         return 1.0
+
+    _x: Tree | None = x
+    _y: Tree | None = y
 
     weight_sum = 0.0
     sim_sum = 0.0
     distance = 1
 
-    while x is not None and y is not None:
+    while _x is not None and _y is not None:
         # Extract the entity labels as sets for faster lookup
-        x_labels = x.entity_labels()
-        y_labels = y.entity_labels()
+        x_labels = _x.entity_labels()
+        y_labels = _y.entity_labels()
 
         # If no common entity labels, return similarity 0 early
         if x_labels.isdisjoint(y_labels):
@@ -99,8 +99,8 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
         sim_sum += weight * metric(x_labels, y_labels)
 
         # Move to parent nodes
-        x = x.parent
-        y = y.parent
+        _x = _x.parent
+        _y = _y.parent
         distance += 1
 
     return min(max(sim_sum / weight_sum, 0), 1)  # Need to fix float issues

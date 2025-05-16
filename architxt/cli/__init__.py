@@ -66,7 +66,7 @@ def simplify(
     workers: int | None = typer.Option(
         None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores.", min=1
     ),
-    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
@@ -83,14 +83,16 @@ def simplify(
         console.print(
             f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]'
         )
-        metrics = rewrite(forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers)
+        result_metrics = rewrite(
+            forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers
+        )
 
         # Generate schema
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
         if metrics:
-            show_metrics(metrics)
+            show_metrics(result_metrics)
 
 
 @app.command(help="Display statistics of a dataset.")
@@ -142,7 +144,7 @@ def inspect(
 def instance_generator(
     *,
     sample: int = typer.Option(100, help="Number of sentences to sample from the corpus.", min=1),
-    output: typer.FileBinaryWrite | None = typer.Option(None, help="Path to save the result."),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
 ) -> None:
     """Generate synthetic database instances."""
     schema = Schema.from_description(

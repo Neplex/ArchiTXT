@@ -3,6 +3,7 @@ import uuid
 import warnings
 from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
 from types import TracebackType
+from typing import TYPE_CHECKING
 
 from aiostream import pipe, stream
 from nltk.tokenize.util import align_tokens
@@ -10,6 +11,9 @@ from nltk.tokenize.util import align_tokens
 from architxt.nlp.entity_resolver import EntityResolver
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation, TreeEntity, TreeRel
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
+
+if TYPE_CHECKING:
+    from architxt.tree import _SubTree
 
 __all__ = ['Parser']
 
@@ -213,9 +217,6 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
     >>> print(t)
     (S (REL (ENT::overlap XXX YYY) (nested (ENT::nested1 XXX) (ENT::nested2 YYY))))
     """
-    assert tree is not None
-    assert sentence
-
     tokens = align_tokens(tree.leaves(), sentence)
     entity_tokens = {
         entity.id: tuple(i for i, token in enumerate(tokens) if entity.start <= token[1] and token[0] < entity.end)
@@ -237,8 +238,8 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
         entity_trees.append(entity_tree)
         computed_spans.add(entity_span)
 
-        for et in entity_trees:
-            assert et.parent is not None, str(et)
+        if any(et.parent is None for et in entity_trees):
+            raise ValueError()
 
     # Unnest any nested entities in reverse order (to avoid modifying parent indices during the process)
     for entity_tree in sorted(entity_trees, key=lambda x: x.height):
@@ -273,12 +274,11 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     >>> print(t)
     (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)))))
     """
-    assert tree is not None
-
-    coord = None
+    subtree = tree[pos]
+    coord: _SubTree | None = None
 
     # Identify the coordination subtree
-    for child in tree[pos]:
+    for child in subtree:
         if (
             isinstance(child, Tree)
             and child.label == 'COORD'
@@ -295,8 +295,11 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     coord_index = coord.parent_index
 
     # Create the left and right parts of the conjunction
-    left = Tree(tree[pos].label, children=[child.detach() for child in tree[pos][:coord_index]])
-    right = [child.detach() for child in coord[1:]]  # Get all NPs after the conjunction
+    left = Tree(
+        subtree.label,
+        children=[child.detach() if isinstance(child, Tree) else child for child in subtree[:coord_index]],
+    )
+    right = [child.detach() if isinstance(child, Tree) else child for child in coord[1:]]
 
     # Create the conjunction tree
     conj = Tree('CONJ', children=[left, *right])  # CONJ should include the left NP and the conjuncts
@@ -304,8 +307,11 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     # Insert the new structure back into the tree
     # If children remain on the right of the coordination, we keep the existing level
     new_tree = (
-        Tree(tree[pos].label, children=[conj] + [child.detach() for child in remaining_children])
-        if (remaining_children := tree[pos][coord_index + 1 :])
+        Tree(
+            subtree.label,
+            children=[conj] + [child.detach() if isinstance(child, Tree) else child for child in remaining_children],
+        )
+        if (remaining_children := subtree[coord_index + 1 :])
         else conj
     )
 
@@ -336,26 +342,26 @@ def fix_conj(tree: Tree, pos: int) -> bool:
     >>> print(t)
     (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)) (NP (NNS bananas)))))
     """
-    assert tree is not None
+    subtree = tree[pos]
 
     # Check if the specified position is valid and corresponds to a 'CONJ' node
-    if not isinstance(tree[pos], Tree) or tree[pos].label != 'CONJ':
+    if not isinstance(subtree, Tree) or subtree.label != 'CONJ':
         return False
 
     new_children: list[Tree | str] = []
     # Collect children, flattening nested conjunctions
-    for child in tree[pos]:
+    for child in subtree:
         if isinstance(child, Tree) and child.label == 'CONJ':
             new_children.extend(child)  # Extend with children of the nested CONJ
         else:
             new_children.append(child)  # Append non-CONJ children
 
     # If no changes were made, return False
-    if len(new_children) <= len(tree[pos]):
+    if len(new_children) <= len(subtree):
         return False
 
     # Create a new tree for the flattened conjunction
-    new_tree = Tree('CONJ', children=[t.detach() for t in new_children])
+    new_tree = Tree('CONJ', children=[child.detach() if isinstance(child, Tree) else child for child in new_children])
 
     # Replace the original 'CONJ' node with the new tree
     tree[pos] = new_tree
@@ -383,8 +389,6 @@ def fix_all_coord(tree: Tree) -> None:
     >>> print(t2)
     (S (NP Alice) (VP (VB eats) (CONJ (NP (NNS apples)) (NP (NNS oranges)) (NP (NNS bananas)))))
     """
-    assert tree is not None
-
     # Fix coordination
     coord_fixed = True
     while coord_fixed:
@@ -465,8 +469,6 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     >>> print(t)
     (S (ENT::XY x y) (ENT::YZ y z))
     """
-    assert tree is not None
-
     # Determine the insertion point based on the positions of the entity
     anchor_pos = tree_ent.root_pos
     anchor_pos_len = len(anchor_pos)
@@ -498,20 +500,19 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     children = []
     for child_position in reversed(tree_ent.positions):
         parent_position = child_position[:-1]
+        subtree = tree[parent_position]
 
-        if not has_type(tree[parent_position], NodeType.ENT):
+        if not has_type(subtree, NodeType.ENT):
             # The entity has no conflict
             children.append(tree[child_position])
-            tree[parent_position].pop(child_position[-1], recursive=False)
+            subtree.pop(child_position[-1], recursive=False)
 
         elif len(parent_position) <= len(anchor_pos) and parent_position == anchor_pos[: len(parent_position)]:
             # The entity is a child of another
             children.append(tree[child_position])
-            tree[parent_position].pop(child_position[-1], recursive=False)
+            subtree.pop(child_position[-1], recursive=False)
 
-        elif any(
-            leaf_position not in tree_ent.positions for leaf_position in tree[parent_position].positions(order='leaves')
-        ):
+        elif any(leaf_position not in tree_ent.positions for leaf_position in subtree.positions(order='leaves')):
             # The entity overlap with another we need to duplicate overlapping leaves
             # Else, the entity is a parent entity, so we include only leaves not present in nested entities
             children.append(tree[child_position])
@@ -550,8 +551,6 @@ def unnest_ent(tree: Tree, pos: int) -> None:
     >>> print(t)
     (S (REL (ENT::person Alice Bob Charlie) (nested (ENT::person Bob) (ENT::person Charlie))))
     """
-    assert tree is not None
-
     # Check if the specified position corresponds to an 'ENT' node
     if not has_type(tree[pos], NodeType.ENT):
         return
@@ -571,7 +570,7 @@ def unnest_ent(tree: Tree, pos: int) -> None:
 
 
 def ins_rel(tree: Tree, _: TreeRel) -> None:
-    assert tree is not None
+    pass
 
 
 def is_conflicting_entity(

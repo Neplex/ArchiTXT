@@ -214,16 +214,15 @@ def traverse_tree(tree: Tree, *, sample: int = 0) -> tuple[Tree, Tree]:
             # extend relations recursively
             relationship_nodes.extend(grandchild.copy() for grandchild in child_tree)
 
-        if has_type(child_group, NodeType.COLL):
-            # Create relationships with each element in the collection
-            if sample:
-                child_group = more_itertools.sample(child_group, sample)
-            for element in child_group:
-                rel_label = NodeLabel(NodeType.REL, f'{group_node.label.name}<->{element.label.name}')
-                relationship_nodes.append(Tree(rel_label, [group_node.copy(), element.copy()]))
+        if has_type(child_group, NodeType.COLL):  # Create relationships with each element in the collection
+            children = more_itertools.sample(child_group, sample) if sample else child_group
         else:
-            rel_label = NodeLabel(NodeType.REL, f'{group_node.label.name}<->{child_group.label.name}')
-            relationship_nodes.append(Tree(rel_label, [group_node.copy(), child_group.copy()]))
+            children = [child_group]
+
+        for element in children:
+            element_label = element.label.name if isinstance(element.label, NodeLabel) else element.label
+            rel_label = NodeLabel(NodeType.REL, f'{group_label.name}<->{element_label}')
+            relationship_nodes.append(Tree(rel_label, [group_node.copy(), element.copy()]))
 
     # Return the group node and either a tree of relations or just the group if there are no relations
     return group_node, Tree('ROOT', relationship_nodes) if relationship_nodes else group_node

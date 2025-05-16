@@ -2,12 +2,12 @@ import asyncio
 import hashlib
 import tarfile
 import zipfile
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Iterable, Sequence
 from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 
 import mlflow
 from mlflow.data.code_dataset_source import CodeDatasetSource
@@ -21,6 +21,9 @@ from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
 from architxt.nlp.parser import Parser
 from architxt.tree import Tree, ZODBTreeBucket
 from architxt.utils import BATCH_SIZE
+
+if TYPE_CHECKING:
+    from architxt.nlp.model import AnnotatedSentence
 
 __all__ = ['raw_load_corpus']
 
@@ -138,7 +141,7 @@ async def _load_or_cache_corpus(  # noqa: C901
                             'relations_filter': sorted(relations_filter or []),
                             'entities_mapping': entities_mapping,
                             'relations_mapping': relations_mapping,
-                            'cache_file': str(corpus_cache_path.absolute()),
+                            'cache_file': str(corpus_cache_path.absolute()) if corpus_cache_path else None,
                         }
                     ),
                     name=name or archive_file.name,
@@ -170,7 +173,7 @@ async def _load_or_cache_corpus(  # noqa: C901
                     await asyncio.to_thread(corpus.extractall, path=tmp_dir)
 
                     # Parse sentences and enrich the forest
-                    sentences = load_brat_dataset(
+                    sentences: Iterable[AnnotatedSentence] = load_brat_dataset(
                         Path(tmp_dir),
                         entities_filter=entities_filter,
                         relations_filter=relations_filter,

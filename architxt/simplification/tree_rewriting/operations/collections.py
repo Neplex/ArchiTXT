@@ -67,7 +67,7 @@ class FindCollectionsOperation(Operation):
                 label = NodeLabel(NodeType.COLL, coll_tree_set[0].label.name)
 
                 # Prepare a new collection of nodes (merging if some nodes are already collections)
-                children = []
+                children: list[Tree] = []
                 for coll_tree in coll_tree_set:
                     if has_type(coll_tree, NodeType.COLL):
                         # Merge collection elements

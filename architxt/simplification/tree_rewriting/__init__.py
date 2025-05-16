@@ -6,9 +6,9 @@ import multiprocessing
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import nullcontext
-from multiprocessing import Barrier, Manager, Queue, cpu_count
+from multiprocessing import Manager, cpu_count
 from queue import Full
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 import mlflow
 import more_itertools
@@ -34,6 +34,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from concurrent.futures import Future
     from multiprocessing.managers import ValueProxy
+    from queue import Queue
+    from threading import Barrier
 
 __all__ = ['apply_operations', 'create_group', 'find_groups', 'rewrite']
 
@@ -267,7 +269,7 @@ def apply_operations(
     if not edit_ops:
         return None
 
-    run_id = mlflow.active_run().info.run_id if mlflow.active_run() else None
+    run_id = run.info.run_id if (run := mlflow.active_run()) else None
     edit_ops_names = [(op.name, op) if isinstance(op, Operation) else op for op in edit_ops]
     workers_count = executor._max_workers
     futures: list[Future]
@@ -276,7 +278,9 @@ def apply_operations(
         shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees, lock=False)
         simplification_operation = manager.Value(ctypes.c_int, -1, lock=False)
         barrier = manager.Barrier(workers_count + isinstance(forest, TreeBucket))
-        queue = manager.Queue(maxsize=workers_count * 3) if isinstance(forest, TreeBucket) else None
+        queue: Queue[TreeOID | None] | None = (
+            manager.Queue(maxsize=workers_count * 3) if isinstance(forest, TreeBucket) else None
+        )
 
         worker_fn = functools.partial(
             _apply_operations_worker,
@@ -290,7 +294,7 @@ def apply_operations(
             queue=queue,
         )
 
-        if queue is not None:
+        if queue is not None and isinstance(forest, TreeBucket):
             futures = [executor.submit(worker_fn, idx=idx, forest=forest) for idx in range(workers_count)]
             _fill_queue(futures, forest, simplification_operation, barrier, queue, edit_ops_names, early_exit)
 
@@ -307,8 +311,8 @@ def apply_operations(
             if trees:
                 new_forest.extend(trees)
 
-            worker_trace = mlflow.get_trace(request_id)
-            mlflow.add_trace(worker_trace)
+            if worker_trace := mlflow.get_trace(request_id):
+                mlflow.add_trace(worker_trace)
 
         if new_forest:
             forest[:] = new_forest
@@ -319,7 +323,7 @@ def apply_operations(
 
 
 def _check_worker_health(futures: Sequence[Future], barrier: Barrier, error: Exception | None = None) -> None:
-    if errors := [future.exception() for future in futures if not future.running()]:
+    if errors := [exc for future in futures if not future.running() and (exc := future.exception())]:
         barrier.abort()
 
         msg = 'Some workers has failed'
@@ -331,7 +335,7 @@ def _fill_queue(
     forest: TreeBucket,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
-    queue: Queue[TreeOID],
+    queue: Queue[TreeOID | None],
     edit_ops: Sequence[tuple[str, Operation]],
     early_exit: bool,
     timeout: int = 1,
@@ -371,11 +375,41 @@ def _fill_queue(
             break
 
 
+@overload
+def _apply_operations_worker(
+    idx: int,
+    edit_ops: Sequence[tuple[str, Operation]],
+    forest: TreeBucket,
+    queue: Queue[TreeOID | None],
+    shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
+    early_exit: bool,
+    simplification_operation: ValueProxy[int],
+    barrier: Barrier,
+    run_id: str | None,
+    batch_size: int,
+) -> tuple[str, None]: ...
+
+
+@overload
+def _apply_operations_worker(
+    idx: int,
+    edit_ops: Sequence[tuple[str, Operation]],
+    forest: Forest,
+    queue: None,
+    shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
+    early_exit: bool,
+    simplification_operation: ValueProxy[int],
+    barrier: Barrier,
+    run_id: str | None,
+    batch_size: int,
+) -> tuple[str, Forest]: ...
+
+
 def _apply_operations_worker(
     idx: int,
     edit_ops: Sequence[tuple[str, Operation]],
     forest: TreeBucket | Forest,
-    queue: Queue[TreeOID] | None,
+    queue: Queue[TreeOID | None] | None,
     shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
@@ -413,7 +447,7 @@ def _apply_operations_worker(
     :param barrier: A barrier to synchronize the workers before starting the next operation.
     :param run_id: The Mlflow run_id to link to.
     :param batch_size: Number of trees to process before committing changes in bucket mode.
-    :return: Tuple of (MLflow request ID, modified forest or None if using a bucket).
+    :return: Tuple of MLflow request ID and modified forest, or None if using a bucket.
     """
     equiv_subtrees = shared_equiv_subtrees.get()
 
@@ -433,7 +467,7 @@ def _apply_operations_worker(
                     forest_iterator = tqdm(forest, desc=name, total=len(forest), leave=False, position=idx + 1)
                     simplified = any(map(op_fn, forest_iterator))
 
-                else:
+                elif isinstance(forest, TreeBucket):
                     # Bucket-based mode: apply operation for each tree in the queue and commit in batches
                     simplified = False
                     count = 0
@@ -448,6 +482,10 @@ def _apply_operations_worker(
 
                     if count > 0:
                         forest.commit()
+
+                else:
+                    msg = 'Using an in-memory collection may result in excessive serialization when used with a queue.'
+                    raise ValueError(msg)
 
             if simplified:
                 simplification_operation.set(op_id)

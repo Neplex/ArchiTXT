@@ -76,6 +76,6 @@ def load_forest(files: Iterable[str | Path]) -> Generator[Tree, None, None]:
         for file_path, task_id in zip(files, task_ids):
             progress.start_task(task_id)
 
-            with ZODBTreeBucket(storage_path=file_path, read_only=True) as forest:
+            with ZODBTreeBucket(storage_path=Path(file_path), read_only=True) as forest:
                 for tree in progress.track(forest, task_id=task_id):
                     yield tree.copy()

@@ -87,6 +87,7 @@ class Schema(CFG):
         :return: A CFG-based schema representation.
         """
         schema: dict[Nonterminal, set[tuple[Nonterminal, ...]]] = defaultdict(set)
+        productions: Iterable[Production]
 
         for tree in forest:
             for prod in tree.productions():
