@@ -31,15 +31,14 @@ __all__ = ['ZODBTreeBucket']
 
 class ZODBTreeBucket(TreeBucket):
     """
-    A persistent, scalable container for :py:class:`Tree` objects backed by ZODB and RelStorage using SQLite.
+    A persistent, scalable container for :py:class:`~architxt.tree.Tree` objects backed by ZODB and RelStorage using SQLite.
 
-    Internally, this container uses `ZODB <https://zodb.org/en/latest/>`_'s :py:class:`~BTrees.OOBTree.OOBTree`,
-    using Tree OIDs as keys.
-    Tree OIDs (UUIDs) are stored as raw bytes to enable efficient storage and fast comparisons,
-    avoiding the overhead of instantiating UUID objects during lookups.
+    This container uses `ZODB <https://zodb.org/en/latest/>`_'s :py:class:`~BTrees.OOBTree.OOBTree` internally
+    with Tree OIDs (UUIDs) as keys. The OIDs are stored as raw bytes to optimize storage space.
+    This also enables fast key comparisons as UUID objects do not need to be created during lookups.
 
     .. note::
-        UUIDs are stored as bytes instead of integers, because ZODB only supports integers up to
+        UUIDs are stored as bytes rather than integers, because ZODB only supports integers up to
         64 bits, while UUIDs require 128 bits.
 
     Without a specified storage path, the container creates a temporary database automatically deleted upon closing.
@@ -149,7 +148,7 @@ class ZODBTreeBucket(TreeBucket):
 
     def update(self, trees: Iterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000) -> None:
         """
-        Add multiple :py:class:`Tree` to the bucket, managing memory via chunked transactions.
+        Add multiple :py:class:`~architxt.tree.Tree` to the bucket, managing memory via chunked transactions.
 
         Trees are added in batches to reduce memory footprint.
         When available system memory falls below the threshold,
@@ -175,7 +174,7 @@ class ZODBTreeBucket(TreeBucket):
         self, trees: AsyncIterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000
     ) -> None:
         """
-        Asynchronously add multiple :py:class:`Tree` to the bucket.
+        Asynchronously add multiple :py:class:`~architxt.tree.Tree` to the bucket.
 
         This method mirrors the behavior of :py:meth:`~ZODBTreeBucket.update` but supports asynchronous iteration.
         Internally, it delegates each chunk to a background thread.
@@ -192,17 +191,17 @@ class ZODBTreeBucket(TreeBucket):
                 await asyncio.to_thread(self.update, chunk, batch_size, _memory_threshold_mb=_memory_threshold_mb)
 
     def add(self, tree: Tree) -> None:
-        """Add a single :py:class:`Tree` to the bucket."""
+        """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""
         with self.transaction():
             self._data[tree.oid.bytes] = tree
 
     def discard(self, tree: Tree) -> None:
-        """Remove a :py:class:`Tree` from the bucket if it exists."""
+        """Remove a :py:class:`~architxt.tree.Tree` from the bucket if it exists."""
         with self.transaction():
             self._data.pop(tree.oid.bytes)
 
     def clear(self) -> None:
-        """Remove all :py:class:`Tree` objects from the bucket."""
+        """Remove all :py:class:`~architxt.tree.Tree` objects from the bucket."""
         with self.transaction():
             self._data.clear()
 

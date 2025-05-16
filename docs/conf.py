@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosectionlabel',
+    'sphinx.ext.inheritance_diagram',
     'sphinxcontrib.typer',
     'sphinxcontrib.mermaid',
 ]
