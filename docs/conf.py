@@ -20,13 +20,14 @@ author = 'Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin'
 copyright = f'{date}, {author}'  # noqa: A001
 
 github_username = 'neplex'
-github_repository = 'architxt'
+github_repository = 'ArchiTXT'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     'myst_nb',
+    'sphinx_sitemap',
     'sphinx_design',
     'sphinx_copybutton',
     'sphinx_toolbox.more_autodoc',
@@ -62,6 +63,7 @@ language = 'en'
 
 html_title = f'{project} Documentation'
 html_short_title = project
+html_baseurl = f'https://{github_username}.github.io/{github_repository}'
 
 html_logo = '_static/logo.png'
 html_favicon = '_static/favicon.png'
@@ -71,6 +73,7 @@ html_css_files = []
 html_js_files = [
     'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js',
 ]
+html_extra_path = ['robot.txt']
 
 html_theme = 'sphinx_book_theme'
 html_theme_options = {

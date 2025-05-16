@@ -3,8 +3,9 @@ ArchiTXT Documentation
 
 .. meta::
     :description: ArchiTXT is an open source Python library that transforms unstructured text into structured, searchable, and AI-ready data, enabling automated database generation and seamless integration.
-    :keywords: ArchiTXT, open source Python library, data structuration, text conversion, structured data, searchable data, AI-ready, auromatic modeling, text parsing, natural language processing, data modeling, machine learning, auditable, meta grammar, tree rewriting
+    :keywords: ArchiTXT, open source Python library, data structuration, text conversion, structured data, searchable data, AI-ready, automatic modeling, text parsing, natural language processing, data modeling, machine learning, auditable, meta grammar, tree rewriting
     :keywords lang=fr: ArchiTXT, bibliothèque Python open source, structuration de données, conversion de texte, données structurées, données interrogeables, prêtes pour l'IA, modelisation automatique, analyse de texte, traitement du langage naturel, modélisation de données, apprentissage automatique, auditable, méta-grammaire, réécriture d'arbres
+    :google-site-verification: C3f4U0di9zxWmENJ1ygHRE2kcZtLukgoqttNziqXBHg
 
 .. image:: https://img.shields.io/pypi/status/architxt
     :alt: PyPI - Project Status
