@@ -8,9 +8,10 @@ from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
 
+from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.metrics import Metrics
 from architxt.schema import Schema
-from architxt.tree import Tree, ZODBTreeBucket
+from architxt.tree import Tree
 
 __all__ = ['console', 'load_forest', 'show_metrics', 'show_schema']
 

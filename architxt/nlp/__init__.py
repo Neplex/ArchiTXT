@@ -16,10 +16,11 @@ from platformdirs import user_cache_path
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn
 
+from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.nlp.brat import load_brat_dataset
 from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
 from architxt.nlp.parser import Parser
-from architxt.tree import Tree, ZODBTreeBucket
+from architxt.tree import Tree
 from architxt.utils import BATCH_SIZE
 
 if TYPE_CHECKING:

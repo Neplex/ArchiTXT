@@ -15,9 +15,10 @@ import more_itertools
 from mlflow.entities import SpanEvent
 from tqdm.auto import tqdm, trange
 
+from architxt.bucket import TreeBucket
 from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
-from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeBucket, TreeOID, has_type
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import BATCH_SIZE, ExceptionGroup
 
 from .operations import (

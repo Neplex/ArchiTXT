@@ -6,11 +6,11 @@ import mlflow
 import typer
 from sqlalchemy import create_engine
 
+from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.database.loader import read_database, read_document
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
-from architxt.tree import ZODBTreeBucket
 
 from .utils import console, show_schema
 

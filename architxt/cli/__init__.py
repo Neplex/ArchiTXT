@@ -13,11 +13,11 @@ from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
+from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
 from architxt.schema import Schema
 from architxt.simplification.tree_rewriting import rewrite
-from architxt.tree import ZODBTreeBucket
 
 from .export import app as export_app
 from .loader import app as loader_app

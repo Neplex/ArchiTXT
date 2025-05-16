@@ -4,7 +4,8 @@ from contextlib import nullcontext
 import more_itertools
 from tqdm.auto import tqdm
 
-from architxt.tree import NodeLabel, NodeType, Tree, TreeBucket, has_type
+from architxt.bucket import TreeBucket
+from architxt.tree import NodeLabel, NodeType, Tree, has_type
 from architxt.utils import BATCH_SIZE
 
 __all__ = ['simple_rewrite']
