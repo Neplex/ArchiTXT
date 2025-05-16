@@ -99,7 +99,7 @@ class Schema(CFG):
                     schema[prod.lhs()] = {(prod.rhs()[0],)}
 
                 elif has_type(prod, NodeType.REL):
-                    rhs = tuple(sorted(prod.rhs()))
+                    rhs = tuple(prod.rhs())
                     schema[prod.lhs()].add(rhs)
 
                 elif merge_lhs:
@@ -141,6 +141,51 @@ class Schema(CFG):
             for production in self.productions()
             if has_type(production, NodeType.REL)
         }
+
+    def get_relations_type(self, forest: Forest) -> dict[NodeLabel, tuple[NodeLabel, NodeLabel]]:
+        """Return the dictionary of relation types in the schema."""
+        relation = {}
+        for root in forest:
+            for production in root:
+                if production.label.type == NodeType.REL:
+                    if production.label.name not in relation:
+                        relation[production.label.name] = {0: {}, 1: {}, "rel": set()}
+                    if (production[0].oid, production[1].oid) not in relation[production.label.name]["rel"]:
+                        relation[production.label.name]["rel"].add((production[0].oid, production[1].oid))
+                        if production[0].oid not in relation[production.label.name][0]:
+                            relation[production.label.name][0][production[0].oid] = 0
+                        if production[1].oid not in relation[production.label.name][1]:
+                            relation[production.label.name][1][production[1].oid] = 0
+                        relation[production.label.name][0][production[0].oid] += 1
+                        relation[production.label.name][1][production[1].oid] += 1
+        return self.get_convert_count_to_relation(relation)
+
+    def get_convert_count_to_relation(self, relation: dict) -> tuple[set, dict]:
+        """
+        Convert relation counts into relation types.
+
+        :param relation: A dictionary representing relations and their group occurrences.
+        :return: A tuple of set for N-N relations and a dict for the 1-N with the source.
+        """
+        relation_n_n = set()
+        relation_1_n = {}
+        for type_relation in relation:
+            is_n_n = False
+            is_1_n = False
+            for i in relation[type_relation][0]:
+                if relation[type_relation][0][i] > 1:
+                    is_1_n = 2
+                    break
+            for i in relation[type_relation][1]:
+                if relation[type_relation][1][i] > 1:
+                    is_n_n = is_1_n
+                    is_1_n = 1
+                    break
+            if is_n_n:
+                relation_n_n.add(type_relation)
+            elif is_1_n:
+                relation_1_n[type_relation] = {"source": is_1_n - 1}
+        return relation_n_n, relation_1_n
 
     def verify(self) -> bool:
         """
