@@ -1,7 +1,8 @@
+import dataclasses
 import math
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from copy import deepcopy
 from functools import cached_property
 from itertools import combinations
@@ -32,6 +33,17 @@ def _get_rank(nt: Nonterminal) -> int:
         return _NODE_TYPE_RANK[nt.symbol().type]
 
     return 0
+
+
+@dataclasses.dataclass(frozen=True)
+class RelationData:
+    src: str
+    dest: str
+    type: str
+    src_index: int
+
+    def __iter__(self) -> Iterator[str]:
+        yield from dataclasses.asdict(self).values()
 
 
 class Schema(CFG):
@@ -87,6 +99,7 @@ class Schema(CFG):
         :return: A CFG-based schema representation.
         """
         schema: dict[Nonterminal, set[tuple[Nonterminal, ...]]] = defaultdict(set)
+        relation = {}
         productions: Iterable[Production]
 
         for tree in forest:
@@ -110,6 +123,14 @@ class Schema(CFG):
                 else:
                     rhs = tuple(sorted(set(prod.rhs())))
                     schema[prod.lhs()].add(rhs)
+
+            for root in forest:
+                for production in root:
+                    if production.label.type == NodeType.REL:
+                        Schema._add_rel(self=cls, relation=relation, production=production)
+
+        type_relation = Schema._get_convert_count_to_relation(cls, relation)
+        schema = cls._convert_relation(cls, type_relation=type_relation, schema=schema)
 
         # Create productions for the schema
         productions = (Production(lhs, rhs) for lhs, alternatives in schema.items() for rhs in alternatives)
@@ -137,30 +158,44 @@ class Schema(CFG):
     def relations(self) -> dict[NodeLabel, tuple[NodeLabel, NodeLabel]]:
         """The set of relations in the schema."""
         return {
-            production.lhs().symbol(): (production.rhs()[0].symbol(), production.rhs()[1].symbol())
+            production.lhs().symbol(): production.rhs()
             for production in self.productions()
             if has_type(production, NodeType.REL)
         }
 
-    def get_relations_type(self, forest: Forest) -> dict[NodeLabel, tuple[NodeLabel, NodeLabel]]:
-        """Return the dictionary of relation types in the schema."""
-        relation = {}
-        for root in forest:
-            for production in root:
-                if production.label.type == NodeType.REL:
-                    if production.label.name not in relation:
-                        relation[production.label.name] = {0: {}, 1: {}, "rel": set()}
-                    if (production[0].oid, production[1].oid) not in relation[production.label.name]["rel"]:
-                        relation[production.label.name]["rel"].add((production[0].oid, production[1].oid))
-                        if production[0].oid not in relation[production.label.name][0]:
-                            relation[production.label.name][0][production[0].oid] = 0
-                        if production[1].oid not in relation[production.label.name][1]:
-                            relation[production.label.name][1][production[1].oid] = 0
-                        relation[production.label.name][0][production[0].oid] += 1
-                        relation[production.label.name][1][production[1].oid] += 1
-        return self.get_convert_count_to_relation(relation)
+    def _convert_relation(self, type_relation: dict, schema: dict) -> dict:
+        """
+        Convert relation counts into relation types.
 
-    def get_convert_count_to_relation(self, relation: dict) -> tuple[set, dict]:
+        :param type_relation: A dictionary representing relations types.
+        :param schema: A dictionary representing the schema.
+        :return: A dictionary with converted relations.
+        """
+        for a, b in schema.items():
+            for rhs in b:
+                if a.symbol() in type_relation[0]:
+                    schema[a] = {RelationData(src=rhs[0], dest=rhs[1], type='n-n', src_index=0)}
+                elif a.symbol() in type_relation[1]:
+                    schema[a] = {
+                        RelationData(
+                            src=rhs[0], dest=rhs[1], type='1-n', src_index=type_relation[1][a.symbol()]["source"]
+                        )
+                    }
+        return schema
+
+    def _add_rel(self, relation: dict, production: Tree) -> None:
+        if production.label not in relation:
+            relation[production.label] = {0: {}, 1: {}, "rel": set()}
+        if (production[0].oid, production[1].oid) not in relation[production.label]["rel"]:
+            relation[production.label]["rel"].add((production[0].oid, production[1].oid))
+            if production[0].oid not in relation[production.label][0]:
+                relation[production.label][0][production[0].oid] = 0
+            if production[1].oid not in relation[production.label][1]:
+                relation[production.label][1][production[1].oid] = 0
+            relation[production.label][0][production[0].oid] += 1
+            relation[production.label][1][production[1].oid] += 1
+
+    def _get_convert_count_to_relation(self, relation: dict) -> tuple[set, dict]:
         """
         Convert relation counts into relation types.
 
