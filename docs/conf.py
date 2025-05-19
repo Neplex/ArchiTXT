@@ -65,7 +65,7 @@ html_title = f'{project} Documentation'
 html_short_title = project
 html_baseurl = f'https://{github_username}.github.io/{github_repository}'
 
-html_logo = '_static/logo.png'
+html_logo = '_static/logo_h.png'
 html_favicon = '_static/favicon.png'
 
 html_static_path = ['_static']
