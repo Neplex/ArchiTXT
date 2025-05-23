@@ -1,5 +1,5 @@
 Loading Databases
-===========================
+=================
 
 ArchiTXT is designed to work seamlessly with relational databases such as SQLite, MySQL, or PostgreSQL. It also works with graph database such as Neo4j. The schema of your database is automatically converted into a tree structure based on the relationships and data extracted.
 
@@ -15,12 +15,12 @@ Operations
 ArchiTXT performs the following operations to transform your database into a structured format:
 
 1. Analyze:
-^^^^^^^^^^^^^
+^^^^^^^^^^^
 
 ArchiTXT analyzes the schema of the database to determine the optimal way to start the process. It identifies the starting table(s) for the relational database, which are tables that have no foreign keys pointing to them. As for the graph database, it identifies the starting node(s).
 
 2. Read:
-^^^^^^^^^^^^^
+^^^^^^^^
 The data are read from the database. For relational databases, it follows the foreign key relationships to fetch the relevant rows from other tables. For graph databases, it follows the relationships to fetch the relevant nodes and edges. Architxt will also create an unique identifier based on the name of the database and the name of the table and the data or primary key of the table depending on the type of database.
 
 3. Transform:
@@ -30,13 +30,18 @@ The data are transformed into a structured tree format. The transformation proce
 .. note:: Refer to the section of the documentation that describes the tree structure of ArchiTXT.
 
 Example
---------
+-------
 
 1. Relational Databases
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     erDiagram
         ORDER_DETAIL {
         }
@@ -67,7 +72,12 @@ The program will then transform the data into a structured tree format, where ea
 
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph TD
         RELATION1[REL]
         RELATION1 --> ORDER_DETAIL1
@@ -98,11 +108,16 @@ The program will then transform the data into a structured tree format, where ea
 This graph illustrates the relationships between the tables. The parent node represents a relation between two tables, and the child nodes represent the tables involved in that relationship.
 
 2. Graph Databases (Neo4j)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph TD
         ORDER_DETAIL[ORDER_DETAIL]
         ORDER[ORDER]
@@ -122,10 +137,15 @@ Particularities
 ---------------
 
 Case 1: Cyclic Relationships
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph LR
     A --> B
     B --> C
@@ -138,7 +158,12 @@ It will take parents from the cycle.
 **Self-Referencing Tables**
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph LR
         Person --> Person
 
@@ -146,7 +171,12 @@ In the case of a self-referencing table, ArchiTXT will detect the self-referenci
 The relation will be stored in a relational node that references itself.
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph TD
         REL --> Person1
         REL --> Person2
@@ -168,10 +198,15 @@ The relation will be stored in a relational node that references itself.
 
 
 Case 2: Multiple Relationships / Many-to-Many (Relational Database)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph TD
         A --- B
         A --- C
@@ -179,7 +214,12 @@ Case 2: Multiple Relationships / Many-to-Many (Relational Database)
 When a table has only foreign keys pointing to other tables, you can activate a flag in the command to remove this table.
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph TD
         REL1[REL]
         REL1 --> A1
@@ -193,7 +233,12 @@ When a table has only foreign keys pointing to other tables, you can activate a 
 After the removal of the table A in the example above, the resulting structure will look like this:
 
 .. mermaid::
+    :align: center
 
+    ---
+    config:
+      theme: neutral
+    ---
     graph TD
         REL1[REL]
         REL1 --> B1
@@ -207,6 +252,6 @@ After the removal of the table A in the example above, the resulting structure w
         C2[C]
 
 Case 3: Labels for the Relationships (Graph Database)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the case of a graph database, a node can have multiple labels. ArchiTXT will perform only on the first label of the node.
