@@ -5,4 +5,4 @@ Transform data
     :glob:
     :maxdepth: 1
 
-    transform_data/*
+    transformers/*
