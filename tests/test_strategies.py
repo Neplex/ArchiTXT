@@ -3,7 +3,7 @@
 import string
 from itertools import combinations
 
-from architxt.schema import Schema
+from architxt.schema import Group, Relation, RelationOrientation, Schema
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
 from hypothesis import given, note
 from hypothesis import strategies as st
@@ -18,8 +18,8 @@ def schema_st(
     draw: st.DrawFn,
     *,
     entities: set[str] | None = None,
-    groups: dict[str, set[str]] | None = None,
-    rels: dict[str, tuple[str, str]] | None = None,
+    groups: set[Group] | None = None,
+    relations: set[Relation] | None = None,
     collections: bool = True,
 ) -> Schema:
     """
@@ -28,7 +28,7 @@ def schema_st(
     :param draw: The Hypothesis draw function.
     :param entities: A set of predefined entities, or `None` to generate randomly.
     :param groups: A dictionary mapping group names to sets of entities, or `None` to generate randomly.
-    :param rels: A dictionary mapping relation names to group pairs, or `None` to generate randomly.
+    :param relations: A dictionary mapping relation names to group pairs, or `None` to generate randomly.
     :param collections: If `True`, includes collections in the generated schema.
     :return: A `Schema` object generated based on the provided parameters.
     """
@@ -38,18 +38,26 @@ def schema_st(
     if groups is None:
         group_names = draw(st.lists(LABEL_ST, min_size=1, max_size=6, unique=True))
         groups = {
-            group_name: draw(st.sets(st.sampled_from(list(entities)), min_size=2, max_size=min(5, len(entities))))
+            Group(
+                name=group_name,
+                entities=draw(st.sets(st.sampled_from(list(entities)), min_size=2, max_size=min(5, len(entities)))),
+            )
             for group_name in group_names
         }
 
-    if rels is None and len(groups) >= 2:
-        group_pairs = list(combinations(groups.keys(), 2))
-        rels = {
-            f'{group1}<->{group2}': (group1, group2)
+    if relations is None and len(groups) >= 2:
+        group_pairs = list(combinations(groups, 2))
+        relations = {
+            Relation(
+                name=f'{group1.name}<->{group2.name}',
+                left=group1.name,
+                right=group2.name,
+                orientation=draw(st.sampled_from(RelationOrientation)),
+            )
             for group1, group2 in draw(st.lists(st.sampled_from(group_pairs), min_size=0, max_size=len(group_pairs)))
         }
 
-    schema = Schema.from_description(groups=groups, rels=rels, collections=collections)
+    schema = Schema.from_description(groups=groups, relations=relations, collections=collections)
     note(f'== Generated Schema ==\n{schema.as_cfg()}\n============')
 
     return schema
@@ -70,12 +78,14 @@ def entity_tree_st(
     :param name: If provided, use this as the entity name; otherwise, generates a random one.
     :return: An entity `Tree`.
     """
-    if schema and (entities := list(schema.groups.get(group_name, schema.entities))):
-        label = draw(st.sampled_from(entities))
+    if schema and schema.entities:
+        entities = next((group.entities for group in schema.groups if group.name == group_name), schema.entities)
+        entity_name = draw(st.sampled_from(list(entities)))
+
     else:
         entity_name = name or draw(LABEL_ST)
-        label = NodeLabel(NodeType.ENT, entity_name)
 
+    label = NodeLabel(NodeType.ENT, entity_name)
     words = draw(
         st.lists(
             st.text(string.digits + string.ascii_letters + string.punctuation, min_size=1, max_size=6),
@@ -100,20 +110,19 @@ def group_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str | 
     :return: A group `Tree`.
     """
     if schema and schema.groups:
-        if name and (label_name := NodeLabel(NodeType.GROUP, name)) in schema.groups:
-            label = label_name
-
-        else:
-            groups = list(schema.groups.keys())
-            label = draw(st.sampled_from(groups))
+        # pick the named group if it exists, otherwise sample one
+        group = next((group for group in schema.groups if name and group.name == name), None) or draw(
+            st.sampled_from(list(schema.groups))
+        )
+        group_name = group.name
 
     else:
         group_name = name or draw(LABEL_ST)
-        label = NodeLabel(NodeType.GROUP, group_name)
 
-    entity_strategy = entity_tree_st(schema=schema, group_name=label)
+    entity_strategy = entity_tree_st(schema=schema, group_name=group_name)
     children = draw(st.lists(entity_strategy, min_size=2, unique_by=lambda tree: tree.label.name))
 
+    label = NodeLabel(NodeType.GROUP, group_name)
     return Tree(label, children)
 
 
@@ -130,25 +139,26 @@ def relation_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str
     :return: A relation `Tree`.
     """
     if schema and schema.relations:
-        if name and (label_name := NodeLabel(NodeType.REL, name)) in schema.relations:
-            label = label_name
+        # pick the named relation if it exists, otherwise sample one
+        relation = next((rel for rel in schema.relations if name and rel.name == name), None) or draw(
+            st.sampled_from(list(schema.relations))
+        )
 
-        else:
-            relations = list(schema.relations.keys())
-            label = draw(st.sampled_from(relations))
-
-        group_1, group_2 = sorted(schema.relations[label], key=lambda x: x.name)
+        relation_name = relation.name
         children = draw(
-            st.tuples(group_tree_st(schema=schema, name=group_1.name), group_tree_st(schema=schema, name=group_2.name))
+            st.tuples(
+                group_tree_st(schema=schema, name=relation.left),
+                group_tree_st(schema=schema, name=relation.right),
+            )
         )
 
     else:
         relation_name = name or draw(LABEL_ST)
-        label = NodeLabel(NodeType.REL, relation_name)
         children = draw(
             st.lists(group_tree_st(schema=schema), min_size=2, max_size=2, unique_by=lambda tree: tree.label.name)
         )
 
+    label = NodeLabel(NodeType.REL, relation_name)
     return Tree(label, children)
 
 
@@ -167,16 +177,16 @@ def collection_tree_st(draw: st.DrawFn, *, schema: Schema | None = None) -> Tree
         schema = draw(schema_st())
 
     if schema.relations and draw(st.booleans()):
-        relations = list(schema.relations.keys())
-        child_label = draw(st.sampled_from(relations))
-        child_strategy = relation_tree_st(schema=schema, name=child_label.name)
+        relation = draw(st.sampled_from(list(schema.relations)))
+        child_name = relation.name
+        child_strategy = relation_tree_st(schema=schema, name=child_name)
 
     else:
-        groups = list(schema.groups.keys())
-        child_label = draw(st.sampled_from(groups))
-        child_strategy = group_tree_st(schema=schema, name=child_label.name)
+        group = draw(st.sampled_from(list(schema.groups)))
+        child_name = group.name
+        child_strategy = group_tree_st(schema=schema, name=child_name)
 
-    label = NodeLabel(NodeType.COLL, child_label.name)
+    label = NodeLabel(NodeType.COLL, child_name)
     children = draw(st.lists(child_strategy, min_size=2))
     return Tree(label, children)
 
@@ -254,7 +264,7 @@ def test_entity_tree_generation(schema: Schema, data: st.DataObject) -> None:
     """
     entity_tree = data.draw(entity_tree_st(schema=schema))
     if schema.entities:
-        assert entity_tree.label in schema.entities
+        assert entity_tree.label.name in schema.entities
 
 
 @given(schema=schema_st(), data=st.data())
@@ -268,10 +278,13 @@ def test_group_tree_generation(schema: Schema, data: st.DataObject) -> None:
     group_tree = data.draw(group_tree_st(schema=schema))
     if schema.groups:
         # Ensure the group tree's label is in the schema's groups
-        assert group_tree.label in schema.groups
+        all_groups_name = [group.name for group in schema.groups]
+        assert group_tree.label.name in all_groups_name
+
         # Ensure the group tree's children are entities defined in the schema for that group
-        group_entities = {child.label for child in group_tree}
-        assert group_entities.issubset(schema.groups[group_tree.label])
+        sch_entities = next((group.entities for group in schema.groups if group.name == group_tree.label.name), set())
+        group_entities = {child.label.name for child in group_tree}
+        assert group_entities.issubset(sch_entities)
 
 
 @given(tree=tree_st(has_parent=False))

@@ -16,7 +16,7 @@ from typer.main import get_command
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
-from architxt.schema import Schema
+from architxt.schema import Group, Relation, Schema
 from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
@@ -149,13 +149,13 @@ def instance_generator(
     """Generate synthetic database instances."""
     schema = Schema.from_description(
         groups={
-            'SOSY': {'SOSY', 'ANATOMIE', 'SUBSTANCE'},
-            'TREATMENT': {'SUBSTANCE', 'DOSAGE', 'ADMINISTRATION', 'FREQUENCY'},
-            'EXAM': {'DIAGNOSTIC_PROCEDURE', 'ANATOMIE'},
+            Group(name='SOSY', entities={'SOSY', 'ANATOMIE', 'SUBSTANCE'}),
+            Group(name='TREATMENT', entities={'SUBSTANCE', 'DOSAGE', 'ADMINISTRATION', 'FREQUENCY'}),
+            Group(name='EXAM', entities={'DIAGNOSTIC_PROCEDURE', 'ANATOMIE'}),
         },
-        rels={
-            'PRESCRIPTION': ('SOSY', 'TREATMENT'),
-            'EXAM_RESULT': ('EXAM', 'SOSY'),
+        relations={
+            Relation(name='PRESCRIPTION', left='SOSY', right='TREATMENT'),
+            Relation(name='EXAM_RESULT', left='EXAM', right='SOSY'),
         },
     )
     show_schema(schema)

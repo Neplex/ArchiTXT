@@ -1,8 +1,9 @@
+import dataclasses
 import math
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
-from copy import deepcopy
+from collections.abc import Generator, Iterable
+from enum import Enum, auto
 from functools import cached_property
 from itertools import combinations
 
@@ -15,9 +16,9 @@ from nltk import CFG, Nonterminal, Production
 from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
 from architxt.similarity import jaccard
-from architxt.tree import Forest, NodeLabel, NodeType, Tree, has_type
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 
-__all__ = ['Schema']
+__all__ = ['Group', 'Relation', 'RelationOrientation', 'Schema']
 
 _NODE_TYPE_RANK = {
     NodeType.COLL: 1,
@@ -27,43 +28,94 @@ _NODE_TYPE_RANK = {
 }
 
 
-def _get_rank(nt: Nonterminal) -> int:
-    if isinstance(nt.symbol(), NodeLabel) and nt.symbol().type in _NODE_TYPE_RANK:
-        return _NODE_TYPE_RANK[nt.symbol().type]
+@dataclasses.dataclass(slots=True, frozen=True)
+class Group:
+    name: str
+    entities: set[str]
 
-    return 0
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+
+class RelationOrientation(Enum):
+    """
+    Specifies the direction of a relationship between two groups.
+
+    This enum is used to indicate the source or cardinality orientation of a relationship.
+    """
+
+    LEFT = auto()
+    """The source of the relationship is the left group."""
+
+    RIGHT = auto()
+    """The source of the relationship is the right group."""
+
+    BOTH = auto()
+    """The relationship is bidirectional or many-to-many, with no single source."""
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
+class Relation:
+    name: str
+    left: str
+    right: str
+    orientation: RelationOrientation = RelationOrientation.BOTH
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.left, self.right))
 
 
 class Schema(CFG):
+    _groups: set[Group]
+    _relations: set[Relation]
+
+    def __init__(self, productions: Iterable[Production], groups: set[Group], relations: set[Relation]) -> None:
+        productions = sorted(productions, key=lambda p: Schema._get_rank(p.lhs()))
+        root_production = Production(Nonterminal('ROOT'), sorted(prod.lhs() for prod in productions))
+
+        super().__init__(Nonterminal('ROOT'), [root_production, *productions])
+        self._groups = groups
+        self._relations = relations
+
+    @staticmethod
+    def _get_rank(nt: Nonterminal) -> int:
+        if isinstance(nt.symbol(), NodeLabel) and nt.symbol().type in _NODE_TYPE_RANK:
+            return _NODE_TYPE_RANK[nt.symbol().type]
+
+        return 0
+
     @classmethod
     def from_description(
         cls,
         *,
-        groups: dict[str, set[str]] | None = None,
-        rels: dict[str, tuple[str, str]] | None = None,
+        groups: set[Group] | None = None,
+        relations: set[Relation] | None = None,
         collections: bool = True,
     ) -> 'Schema':
         """
         Create a Schema from a description of groups, relations, and collections.
 
         :param groups: A dictionary mapping groups names to sets of entities.
-        :param rels: A dictionary mapping relation names to tuples of group names.
+        :param relations: A dictionary mapping relation names to tuples of group names.
         :param collections: Whether to generate collection productions.
         :return: A Schema object.
         """
-        productions = set()
+        productions: set[Production] = set()
 
         if groups:
-            for group_name, entities in groups.items():
-                group_label = NodeLabel(NodeType.GROUP, group_name)
-                entity_labels = [Nonterminal(NodeLabel(NodeType.ENT, entity)) for entity in entities]
+            for group in groups:
+                group_label = NodeLabel(NodeType.GROUP, group.name)
+                entity_labels = [Nonterminal(NodeLabel(NodeType.ENT, entity)) for entity in group.entities]
                 productions.add(Production(Nonterminal(group_label), sorted(entity_labels)))
 
-        if rels:
-            for relation_name, rel_groups in rels.items():
-                relation_label = NodeLabel(NodeType.REL, relation_name)
-                group_labels = [Nonterminal(NodeLabel(NodeType.GROUP, group)) for group in rel_groups]
-                productions.add(Production(Nonterminal(relation_label), sorted(group_labels)))
+        if relations:
+            for relation in relations:
+                relation_label = NodeLabel(NodeType.REL, relation.name)
+                group_labels = [
+                    Nonterminal(NodeLabel(NodeType.GROUP, relation.left)),
+                    Nonterminal(NodeLabel(NodeType.GROUP, relation.right)),
+                ]
+                productions.add(Production(Nonterminal(relation_label), group_labels))
 
         if collections:
             coll_productions = {
@@ -72,12 +124,10 @@ class Schema(CFG):
             }
             productions.update(coll_productions)
 
-        root_prod = Production(Nonterminal('ROOT'), sorted(prod.lhs() for prod in productions))
-
-        return cls(Nonterminal('ROOT'), [root_prod, *sorted(productions, key=lambda p: _get_rank(p.lhs()))])
+        return cls(productions, groups or set(), relations or set())
 
     @classmethod
-    def from_forest(cls, forest: Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True) -> 'Schema':
+    def from_forest(cls, forest: Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True) -> 'Schema':  # noqa: C901
         """
         Create a Schema from a given forest of trees.
 
@@ -86,61 +136,110 @@ class Schema(CFG):
         :param merge_lhs: Whether to merge nodes in the schema.
         :return: A CFG-based schema representation.
         """
-        schema: dict[Nonterminal, set[tuple[Nonterminal, ...]]] = defaultdict(set)
-        productions: Iterable[Production]
+        schema_productions: dict[Nonterminal, set[tuple[Nonterminal, ...]]] = defaultdict(set)
+        groups: set[Group] = set()
+        relations_examples: dict[str, dict[str, dict[str, tuple[TreeOID, TreeOID]]]] = defaultdict(
+            lambda: defaultdict(dict)
+        )
+        relations_is_multi: dict[str, dict[str, bool]] = defaultdict(lambda: defaultdict(bool))
 
         for tree in forest:
             for prod in tree.productions():
-                # Skip instance and uncategorized nodes
-                if prod.is_lexical() or (not keep_unlabelled and not has_type(prod)):
+                if prod.is_lexical():
                     continue
 
                 if has_type(prod, NodeType.COLL):
-                    schema[prod.lhs()] = {(prod.rhs()[0],)}
+                    schema_productions[prod.lhs()] = {(prod.rhs()[0],)}
 
-                elif has_type(prod, NodeType.REL):
+                elif has_type(prod, NodeType.REL) and len(prod) == 2:
                     rhs = tuple(sorted(prod.rhs()))
-                    schema[prod.lhs()].add(rhs)
+                    schema_productions[prod.lhs()].add(rhs)
 
-                elif merge_lhs:
-                    merged_rhs = set(prod.rhs()).union(*schema[prod.lhs()])
-                    rhs = tuple(sorted(merged_rhs))
-                    schema[prod.lhs()] = {rhs}
+                elif has_type(prod, NodeType.GROUP):
+                    if merge_lhs:
+                        merged_rhs = set(prod.rhs()).union(*schema_productions[prod.lhs()])
+                        rhs = tuple(sorted(merged_rhs))
+                        schema_productions[prod.lhs()] = {rhs}
 
-                else:
+                    else:
+                        rhs = tuple(sorted(set(prod.rhs())))
+                        schema_productions[prod.lhs()].add(rhs)
+
+                    group = Group(
+                        name=prod.lhs().symbol().name,
+                        entities={ent.symbol().name for entities in schema_productions[prod.lhs()] for ent in entities},
+                    )
+                    groups.add(group)
+
+                elif keep_unlabelled:
                     rhs = tuple(sorted(set(prod.rhs())))
-                    schema[prod.lhs()].add(rhs)
+                    schema_productions[prod.lhs()].add(rhs)
 
-        # Create productions for the schema
-        productions = (Production(lhs, rhs) for lhs, alternatives in schema.items() for rhs in alternatives)
-        productions = sorted(productions, key=lambda p: _get_rank(p.lhs()))
+            for subtree in tree.subtrees(lambda x: has_type(x, NodeType.REL) and len(x) == 2):
+                pair = tuple(sorted((subtree[0].oid, subtree[1].oid)))
+                rel = relations_examples[subtree.label.name]
 
-        return cls(Nonterminal('ROOT'), [Production(Nonterminal('ROOT'), sorted(schema.keys())), *productions])
+                for child in subtree:
+                    if not (existing := rel[child.label.name].get(child.oid)):
+                        rel[child.label.name][child.oid] = pair
+
+                    elif existing != pair:
+                        relations_is_multi[subtree.label.name][child.label.name] = True
+
+        del relations_examples
+
+        productions = (Production(lhs, rhs) for lhs, alternatives in schema_productions.items() for rhs in alternatives)
+        relations = cls._convert_relations(relations_is_multi)
+
+        return cls(productions, groups, relations)
 
     @cached_property
-    def entities(self) -> set[NodeLabel]:
+    def entities(self) -> set[str]:
         """The set of entities in the schema."""
-        return {
-            rhs.symbol() for production in self.productions() for rhs in production.rhs() if has_type(rhs, NodeType.ENT)
-        }
+        return {entity for group in self.groups for entity in group.entities}
 
-    @cached_property
-    def groups(self) -> dict[NodeLabel, set[NodeLabel]]:
+    @property
+    def groups(self) -> set[Group]:
         """The set of groups in the schema."""
-        return {
-            production.lhs().symbol(): {entity.symbol() for entity in production.rhs()}
-            for production in self.productions()
-            if has_type(production, NodeType.GROUP)
-        }
+        return self._groups
 
-    @cached_property
-    def relations(self) -> dict[NodeLabel, tuple[NodeLabel, NodeLabel]]:
+    @property
+    def relations(self) -> set[Relation]:
         """The set of relations in the schema."""
-        return {
-            production.lhs().symbol(): (production.rhs()[0].symbol(), production.rhs()[1].symbol())
-            for production in self.productions()
-            if has_type(production, NodeType.REL)
-        }
+        return self._relations
+
+    @staticmethod
+    def _convert_relations(
+        relations_flags: dict[str, dict[str, bool]],
+    ) -> set[Relation]:
+        """
+        Convert relation counts into relation objects.
+
+        :param relations_flags: A dict mapping relation-name -> { entity: is_multi_flag, ... }
+        :return: A set of relations.
+        """
+        relations: set[Relation] = set()
+
+        for name, flags in relations_flags.items():
+            keys = tuple(flags.keys())
+            if len(keys) != 2:
+                continue
+
+            left, right = keys
+
+            if flags[left] == flags[right]:
+                orientation = RelationOrientation.BOTH
+
+            elif flags[left]:
+                orientation = RelationOrientation.LEFT
+
+            else:
+                orientation = RelationOrientation.RIGHT
+
+            relation = Relation(name=name, left=left, right=right, orientation=orientation)
+            relations.add(relation)
+
+        return relations
 
     def verify(self) -> bool:
         """
@@ -177,7 +276,7 @@ class Schema(CFG):
         :return: The group overlap ratio as a float value between 0 and 1.
                  A higher value indicates a higher degree of overlap between groups.
         """
-        jaccard_indices = [jaccard(group1, group2) for group1, group2 in combinations(self.groups.values(), 2)]
+        jaccard_indices = [jaccard(group1.entities, group2.entities) for group1, group2 in combinations(self.groups, 2)]
 
         # Combine scores (average of pairwise indices)
         return sum(jaccard_indices) / len(jaccard_indices) if jaccard_indices else 0.0
@@ -207,11 +306,11 @@ class Schema(CFG):
         if not len(self.groups):
             return 1.0
 
-        attribute_counts = [len(attributes) for attributes in self.groups.values()]
+        entities_counts = [len(group.entities) for group in self.groups]
 
-        mean_attributes = sum(attribute_counts) / len(attribute_counts)
+        mean_attributes = sum(entities_counts) / len(entities_counts)
 
-        variance = sum((count - mean_attributes) ** 2 for count in attribute_counts) / len(attribute_counts)
+        variance = sum((count - mean_attributes) ** 2 for count in entities_counts) / len(entities_counts)
         std_dev = math.sqrt(variance)
 
         variation = std_dev / mean_attributes if mean_attributes else 1.0
@@ -226,51 +325,38 @@ class Schema(CFG):
         """
         return '\n'.join(f"{prod};" for prod in self.productions())
 
-    def as_sql(self) -> str:
-        """
-        Convert the schema to an SQL representation.
-
-        TODO: Implement this method.
-
-        :returns: The schema as an SQL creation script.
-        """
-        raise NotImplementedError
-
-    def as_cypher(self) -> str:
-        """
-        Convert the schema to a Cypher representation.
-
-        It only define indexes and constraints as properties graph database do not have fixed schema.
-
-        TODO: Implement this method.
-
-        :returns: The schema as a Cypher creation script defining constraints and indexes.
-        """
-        raise NotImplementedError
-
-    def extract_valid_trees(self, forest: Forest) -> Forest:
+    def extract_valid_trees(self, forest: Iterable[Tree]) -> Generator[Tree, None, None]:
         """
         Filter and return a valid instance (according to the schema) of the provided forest.
 
         It removes any subtrees with labels that do not match valid labels and gets rid of redundant collections.
 
         :param forest: The input forest to be cleaned.
-        :return: A list of valid trees according to the schema.
+        :yield: Valid trees according to the schema.
         """
-        valid_forest = deepcopy(forest)
-        valid_labels = self.entities | self.groups.keys() | self.relations.keys()
+        valid_labels = (
+            {NodeLabel(NodeType.ENT, entity) for entity in self.entities}
+            | {NodeLabel(NodeType.GROUP, group.name) for group in self.groups}
+            | {NodeLabel(NodeType.REL, rel.name) for rel in self.relations}
+        )
 
-        for tree in valid_forest:
+        for tree in forest:
+            tree = tree.copy()
+
             for subtree in reversed(list(tree.subtrees(lambda t: t.label not in valid_labels))):
                 if not (parent := subtree.parent):
                     subtree.label = 'ROOT'
+                    direct_leafs = [child for child in subtree if isinstance(child, str)]
+                    for leaf in direct_leafs:
+                        subtree.remove(leaf)
                     continue
 
                 children = [child.copy() for child in subtree if isinstance(child, Tree)]
                 parent.remove(subtree, recursive=False)
                 parent.extend(children)
 
-        return valid_forest
+            if tree:
+                yield tree
 
     def extract_datasets(self, forest: Forest) -> dict[str, pd.DataFrame]:
         """
@@ -279,14 +365,12 @@ class Schema(CFG):
         :param forest: The input forest to extract datasets from.
         :return: A mapping from group names to datasets.
         """
-        cleaned_forest = self.extract_valid_trees(forest)
-
         return {
-            group: dataset
+            group.name: dataset
             for group in self.groups
             if not (
                 dataset := pd.concat(
-                    [tree.group_instances(group.name) for tree in cleaned_forest], ignore_index=True
+                    [tree.group_instances(group.name) for tree in forest], ignore_index=True
                 ).drop_duplicates()
             ).empty
         }
