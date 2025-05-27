@@ -1,5 +1,6 @@
 import base64
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     BLOB,
@@ -16,12 +17,12 @@ from sqlalchemy import (
 )
 from tqdm.auto import tqdm
 
-from architxt.schema import Schema
-from architxt.tree import NodeLabel, NodeType, Tree, has_type
+from architxt.schema import Group, Relation, RelationOrientation, Schema
+from architxt.tree import Forest, NodeType, Tree, has_type
 
 
 def export_relational(
-    forest: list[Tree],
+    forest: Forest,
     conn: Connection,
 ) -> None:
     """
@@ -30,39 +31,39 @@ def export_relational(
     :param conn: Connection to the relational database.
     :param forest: Forest to export.
     """
-    table_relation = create_schema(conn=conn, forest=forest)
+    schema = Schema.from_forest(forest, keep_unlabelled=False)
+    create_schema(conn=conn, schema=schema)
+
     for tree in tqdm(forest, desc="Exporting relational database"):
-        export_tree(tree, conn=conn, table_relation=table_relation)
+        export_tree(tree, conn=conn, schema=schema)
         conn.commit()
 
 
 def create_schema(
     conn: Connection,
-    forest: list[Tree],
-) -> dict[str, dict[str, str]]:
+    schema: Schema,
+) -> Schema:
     """
     Create the schema for the relational database.
 
     :param conn: Connection to the graph.
-    :param forest: Forest to create the schema from.
+    :param schema: The schema to build.
     """
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
     metadata = MetaData()
-    database_schema = {}
-    for group, children in schema.groups.items():
-        database_schema[group.name] = create_table_for_group(group, metadata, children)
 
-    relation = {"n-n": set(), "1-n": {}}
-    for group, relation_data in schema.relations.items():
-        if relation_data[2] == "1-n":
-            relation["1-n"][group.name] = {"source": relation_data[3]}
-            add_foreign_keys_to_table(database_schema, group, (relation_data[0].symbol(), relation_data[1].symbol()))
+    database_schema: dict[str, Table] = {}
+    for group in schema.groups:
+        database_schema[group.name] = create_table_for_group(group, metadata)
+
+    for rel in schema.relations:
+        if rel.orientation == RelationOrientation.BOTH:
+            create_table_for_relation(database_schema, rel, metadata)
+
         else:
-            relation["n-n"].add(group.name)
-            create_table_for_relation(database_schema, (relation_data[0].symbol(), relation_data[1].symbol()), metadata)
+            add_foreign_keys_to_table(database_schema, rel)
 
     metadata.create_all(conn)
-    return relation
+    return schema
 
 
 def generate_id_column(
@@ -77,35 +78,35 @@ def generate_id_column(
     return f'architxt_{group_name}ID'
 
 
-def create_table_for_group(group: NodeLabel, metadata: MetaData, children: set[NodeLabel]) -> Table:
+def create_table_for_group(group: Group, metadata: MetaData) -> Table:
     """
     Create a table for the given group.
 
-    :param group: The group (NodeLabel) to create a table for.
+    :param group: The group to create a table for.
     :param metadata: SQLAlchemy metadata to attach the table to.
-    :param children: The child nodes of the group.
     :return: SQLAlchemy Table object.
     """
-    columns = create_all_columns(group, children)
+    columns = [Column(entity, String) for entity in group.entities]
+    columns.append(Column(generate_id_column(group.name), Uuid, primary_key=True))
     return Table(group.name, metadata, *columns)
 
 
 def add_foreign_keys_to_table(
     database_schema: dict,
-    group: NodeLabel,
-    children: tuple[NodeLabel, NodeLabel],
+    relation: Relation,
 ) -> None:
     """
     Add foreign key constraints to the database schema.
 
     :param database_schema: The dictionary of tables in the database schema.
-    :param group: The group (NodeLabel) defining the relation.
-    :param children: The child nodes related to the group.
+    :param relation: The relation to build as a foreign key.
     """
-    source = database_schema[children[0].name.replace(" ", "")]
-    target = database_schema[children[1].name.replace(" ", "")]
+    left = database_schema[relation.left.replace(" ", "")]
+    right = database_schema[relation.right.replace(" ", "")]
 
-    column_name = group.name if source.name == target.name else generate_id_column(target.name)
+    source, target = (left, right) if relation.orientation == RelationOrientation.LEFT else (right, left)
+
+    column_name = relation.name if source.name == target.name else generate_id_column(target.name)
     target_column_name = target.primary_key.columns.keys()[0]
 
     database_schema[source.name].append_column(Column(column_name, ForeignKey(f"{target.name}.{target_column_name}")))
@@ -113,88 +114,57 @@ def add_foreign_keys_to_table(
 
 def create_table_for_relation(
     database_schema: dict,
-    children: tuple[NodeLabel, NodeLabel],
+    relation: Relation,
     metadata: MetaData,
 ) -> None:
     """
     Create a table for the given relation.
 
     :param database_schema: The dictionary of tables in the database schema.
-    :param children: The child nodes related to the group.
+    :param relation: The relation to build the table for.
     :param metadata: SQLAlchemy metadata to attach the table to.
     """
-    group1 = database_schema[children[0].name.replace(" ", "")]
-    group2 = database_schema[children[1].name.replace(" ", "")]
+    left = database_schema[relation.left.replace(" ", "")]
+    right = database_schema[relation.right.replace(" ", "")]
 
-    group_name = group1.name + "_" + group2.name
-    database_schema[group_name] = Table(group_name, metadata)
-    database_schema[group_name].append_column(
+    database_schema[relation.name] = Table(relation.name, metadata)
+    database_schema[relation.name].append_column(
         Column(
-            generate_id_column(group1.name),
-            ForeignKey(f"{group1.name}.{generate_id_column(group1.name)}"),
+            generate_id_column(left.name),
+            ForeignKey(f"{left.name}.{generate_id_column(left.name)}"),
             primary_key=True,
         )
     )
-    database_schema[group_name].append_column(
+    database_schema[relation.name].append_column(
         Column(
-            generate_id_column(group2.name),
-            ForeignKey(f"{group2.name}.{generate_id_column(group2.name)}"),
+            generate_id_column(right.name),
+            ForeignKey(f"{right.name}.{generate_id_column(right.name)}"),
             primary_key=True,
         )
     )
-
-
-def get_relation_from_forest(
-    forest: list[Tree],
-    schema: Schema,
-) -> dict[str, dict[str, str]]:
-    """
-    Get the relation from the forest.
-
-    :param forest: Forest to get the relation from.
-    :param schema: Schema to get the relation from.
-    :return: Relation from the forest.
-    """
-    relations = schema.get_relations_type(forest=forest)
-    return {"n-n": relations[0], "1-n": relations[1]}
-
-
-def create_all_columns(
-    group: NodeLabel,
-    children: set[NodeLabel],
-) -> list[Column]:
-    """
-    Create all columns for a group.
-
-    :param group: Group to create columns for.
-    :param children: Children of the group.
-    :return: List of columns.
-    """
-    columns = [Column(child.name, String) for child in children]
-    columns.append(Column(generate_id_column(group.name), Uuid, primary_key=True))
-    return columns
 
 
 def export_tree(
     tree: Tree,
     *,
     conn: Connection,
-    table_relation: dict[str, dict[str, str]],
+    schema: Schema,
 ) -> None:
     """
     Export the tree to the relational database.
 
     :param tree: Tree to export.
     :param conn: Connection to the relational database.
-    :param table_relation: The relation between the tables.
+    :param schema: The schema.
     """
-    data_to_export = {}
+    data_to_export: dict[str, dict[str, Any]] = {}
 
-    for group in tree.subtrees(lambda subtree: has_type(subtree, NodeType.GROUP)):
-        export_group(group, data=data_to_export)
+    for subtree in tree.subtrees():
+        if has_type(subtree, NodeType.GROUP):
+            export_group(subtree, data=data_to_export)
 
-    for relation in tree.subtrees(lambda subtree: has_type(subtree, NodeType.REL)):
-        export_relation(relation, data=data_to_export, table_relation=table_relation)
+        elif has_type(subtree, NodeType.REL):
+            export_relation(subtree, data=data_to_export, schema=schema)
 
     export_data(data=data_to_export, conn=conn)
 
@@ -202,44 +172,48 @@ def export_tree(
 def export_relation(
     tree: Tree,
     *,
-    data: dict[str, dict[str, any]],
-    table_relation: dict[str, dict[str, str]],
+    data: dict[str, dict[str, Any]],
+    schema: Schema,
 ) -> None:
     """
     Export the relation to the relational database.
 
     :param tree: Relation to export.
     :param data: Data to export.
-    :param table_relation: The relation between the tables.
+    :param schema: The schema.
     """
-    rel_name = tree.label.name
-    if rel_name in table_relation["n-n"]:
-        table_name = tree[0].label.name + "_" + tree[1].label.name
-        data[table_name] = {str(tree[0].oid): {}}
-        data[table_name][str(tree[0].oid)][generate_id_column(tree[0].label.name)] = data[tree[0].label.name][
-            str(tree[0].oid)
-        ]
-        data[table_name][str(tree[0].oid)][generate_id_column(tree[1].label.name)] = data[tree[1].label.name][
-            str(tree[1].oid)
-        ]
-        return
-    if rel_name in table_relation["1-n"]:
-        if table_relation["1-n"][rel_name]["source"]:
-            source = tree[1]
-            target = tree[0]
-        else:
-            source = tree[0]
-            target = tree[1]
+    relation = next(rel for rel in schema.relations if rel.name == tree.label.name)
 
-    column_name = rel_name if target.label.name == source.label.name else generate_id_column(target.label.name)
+    if relation.orientation == RelationOrientation.BOTH:
+        relation_data = {}
+        for child in tree:
+            relation_data[generate_id_column(child.label.name)] = data[child.label.name][str(child.oid)]
 
-    data[source.label.name][str(source.oid)][column_name] = data[target.label.name][str(target.oid)]
+        data[relation.name] = {str(tree.oid): relation_data}
+
+    else:
+        left: Tree | None = None
+        right: Tree | None = None
+
+        for child in tree:
+            if child.label.name == relation.left:
+                left = child
+
+            elif child.label.name == relation.right:
+                right = child
+
+        if not left or not right:
+            return
+
+        source, target = (left, right) if relation.orientation == RelationOrientation.LEFT else (right, left)
+        column_name = relation.name if target.label.name == source.label.name else generate_id_column(target.label.name)
+        data[source.label.name][str(source.oid)][column_name] = data[target.label.name][str(target.oid)]
 
 
 def export_group(
     group: Tree,
     *,
-    data: dict[str, dict[str, str]],
+    data: dict[str, dict[str, Any]],
 ) -> None:
     """
     Export the group to the relational database.
@@ -249,12 +223,12 @@ def export_group(
     """
     group_name = group.label.name
 
-    insert = get_data_from_group(group)
-    insert[generate_id_column(group_name)] = str(group.oid)
+    group_data = get_data_from_group(group)
+    group_data[generate_id_column(group_name)] = str(group.oid)
 
     if group_name not in data:
         data[group_name] = {}
-    data[group_name][str(group.oid)] = insert
+    data[group_name][str(group.oid)] = group_data
 
 
 def get_data_from_group(group: Tree) -> dict[str, str]:
@@ -264,17 +238,23 @@ def get_data_from_group(group: Tree) -> dict[str, str]:
     :param group: Group to get data from.
     :return: Data from the group.
     """
-    result = {}
-    for column in group:
-        if column.label.name is None:
+    result: dict[str, str] = {}
+
+    for entity in group:
+        if entity.label.name is None or 'type' not in entity.metadata:
             continue
-        if column.metadata and isinstance(column.metadata["type"], Date) and isinstance(column[0], str):
-            column[0] = datetime.strptime(column[0], "%Y-%m-%d").date()
-        elif column.metadata and isinstance(column.metadata["type"], DateTime) and isinstance(column[0], str):
-            column[0] = datetime.strptime(column[0], "%Y-%m-%d %H:%M:%S")
-        elif column.metadata and isinstance(column.metadata["type"], BLOB) and isinstance(column[0], str):
-            column[0] = base64.b64decode(column[0])
-        result[column.label.name] = column[0]
+
+        if entity.metadata and isinstance(entity.metadata['type'], Date) and isinstance(entity[0], str):
+            entity[0] = datetime.strptime(entity[0], '%Y-%m-%d').date()
+
+        elif entity.metadata and isinstance(entity.metadata['type'], DateTime) and isinstance(entity[0], str):
+            entity[0] = datetime.strptime(entity[0], '%Y-%m-%d %H:%M:%S')
+
+        elif entity.metadata and isinstance(entity.metadata['type'], BLOB) and isinstance(entity[0], str):
+            entity[0] = base64.b64decode(entity[0])
+
+        result[entity.label.name] = entity[0]
+
     return result
 
 
@@ -325,7 +305,6 @@ def export_table_to_insert(
     Export the table to the graph.
 
     :param table_to_insert: Tables to insert.
-    :param data: Data to insert.
     :param conn: Connection to the graph.
     """
     for table in table_to_insert:

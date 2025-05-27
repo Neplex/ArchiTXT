@@ -58,14 +58,14 @@ def graph(schema: Schema) -> None:
     for entity in schema.entities:
         nodes.add(Node(id=entity, label=entity))
 
-    for group, entities in schema.groups.items():
-        nodes.add(Node(id=group, label=group))
+    for group in schema.groups:
+        nodes.add(Node(id=group.name, label=group.name))
 
-        for entity in entities:
-            edges.add(Edge(source=group, target=entity))
+        for entity in group.entities:
+            edges.add(Edge(source=group.name, target=entity))
 
-    for relation, (group1, group2) in schema.relations.items():
-        edges.add(Edge(source=group1, target=group2, label=relation))
+    for relation in schema.relations:
+        edges.add(Edge(source=relation.left, target=relation.right, label=relation.name))
 
     agraph(nodes=nodes, edges=edges, config=Config(directed=True))
 
@@ -209,8 +209,7 @@ if submitted and file_language:
 
         # Display instance data
         with instance_tab:
-            clean_forest = schema.extract_valid_trees(forest)
-            dataframe(clean_forest)
+            dataframe(forest)
 
     except Exception as e:
         st.error(f"An error occurred: {e!s}")
