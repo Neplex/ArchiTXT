@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 from neo4j import GraphDatabase
 
+from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.database import export
 
 from .utils import console, load_forest
@@ -19,10 +20,9 @@ def export_graph(
     password: str | None = typer.Option(None, help="Password to use for authentication."),
 ) -> None:
     """Export the database as a property graph."""
-    forest = load_forest(database)
-
     auth = (username, password) if username and password else None
-    with GraphDatabase.driver(uri, auth=auth) as driver, driver.session() as session:
+    with ZODBTreeBucket() as forest, GraphDatabase.driver(uri, auth=auth) as driver, driver.session() as session:
+        forest.update(load_forest(database))
         export.export_graph(forest, session=session)
 
     console.print('[green]Database exported successfully![/]')
