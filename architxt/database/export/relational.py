@@ -1,4 +1,5 @@
 import base64
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -20,102 +21,113 @@ from tqdm.auto import tqdm
 from architxt.schema import Group, Relation, RelationOrientation, Schema
 from architxt.tree import Forest, NodeType, Tree, has_type
 
+PKColumnFactory = Callable[[str], str]
+
+
+def default_pk_factory(
+    table_name: str,
+) -> str:
+    """
+    Generate the ID column for the given table.
+
+    :param table_name: The table name to generate ID for.
+    :return: The name of the ID column for the table.
+    """
+    return f'architxt_{table_name}ID'
+
 
 def export_relational(
     forest: Forest,
     conn: Connection,
+    *,
+    pk_factory: PKColumnFactory = default_pk_factory,
 ) -> None:
     """
     Export the forest to the relational database.
 
     :param conn: Connection to the relational database.
     :param forest: Forest to export.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     schema = Schema.from_forest(forest, keep_unlabelled=False)
-    create_schema(conn=conn, schema=schema)
+    create_schema(conn, schema, pk_factory)
 
     for tree in tqdm(forest, desc="Exporting relational database"):
-        export_tree(tree, conn=conn, schema=schema)
+        export_tree(tree, conn, schema, pk_factory)
         conn.commit()
 
 
 def create_schema(
     conn: Connection,
     schema: Schema,
+    pk_factory: PKColumnFactory,
 ) -> Schema:
     """
     Create the schema for the relational database.
 
     :param conn: Connection to the graph.
     :param schema: The schema to build.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     metadata = MetaData()
 
     database_schema: dict[str, Table] = {}
     for group in schema.groups:
-        database_schema[group.name] = create_table_for_group(group, metadata)
+        database_schema[group.name] = create_table_for_group(group, metadata, pk_factory)
 
     for rel in schema.relations:
         if rel.orientation == RelationOrientation.BOTH:
-            create_table_for_relation(database_schema, rel, metadata)
+            create_table_for_relation(database_schema, rel, metadata, pk_factory)
 
         else:
-            add_foreign_keys_to_table(database_schema, rel)
+            add_foreign_keys_to_table(database_schema, rel, pk_factory)
 
     metadata.create_all(conn)
     return schema
 
 
-def generate_id_column(
-    group_name: str,
-) -> str:
-    """
-    Generate the ID column for the given group.
-
-    :param group_name: The name of the group.
-    :return: The ID column for the group.
-    """
-    return f'architxt_{group_name}ID'
-
-
-def create_table_for_group(group: Group, metadata: MetaData) -> Table:
+def create_table_for_group(group: Group, metadata: MetaData, pk_factory: PKColumnFactory) -> Table:
     """
     Create a table for the given group.
 
     :param group: The group to create a table for.
     :param metadata: SQLAlchemy metadata to attach the table to.
+    :param pk_factory: A column name factory for the groups primary keys.
     :return: SQLAlchemy Table object.
     """
     columns = [Column(entity, String) for entity in group.entities]
-    columns.append(Column(generate_id_column(group.name), Uuid, primary_key=True))
+    columns.append(Column(pk_factory(group.name), Uuid, primary_key=True))
     return Table(group.name, metadata, *columns)
 
 
 def add_foreign_keys_to_table(
-    database_schema: dict,
+    database_schema: dict[str, Table],
     relation: Relation,
+    pk_factory: PKColumnFactory,
 ) -> None:
     """
     Add foreign key constraints to the database schema.
 
     :param database_schema: The dictionary of tables in the database schema.
     :param relation: The relation to build as a foreign key.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     left = database_schema[relation.left.replace(" ", "")]
     right = database_schema[relation.right.replace(" ", "")]
 
     source, target = (left, right) if relation.orientation == RelationOrientation.LEFT else (right, left)
 
-    column_name = relation.name if source.name == target.name else generate_id_column(target.name)
+    column_name = relation.name if source.name == target.name else pk_factory(target.name)
     target_column_name = target.primary_key.columns.keys()[0]
 
     database_schema[source.name].append_column(Column(column_name, ForeignKey(f"{target.name}.{target_column_name}")))
 
 
 def create_table_for_relation(
-    database_schema: dict,
+    database_schema: dict[str, Table],
     relation: Relation,
     metadata: MetaData,
+    pk_factory: PKColumnFactory,
 ) -> None:
     """
     Create a table for the given relation.
@@ -123,32 +135,27 @@ def create_table_for_relation(
     :param database_schema: The dictionary of tables in the database schema.
     :param relation: The relation to build the table for.
     :param metadata: SQLAlchemy metadata to attach the table to.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     left = database_schema[relation.left.replace(" ", "")]
     right = database_schema[relation.right.replace(" ", "")]
+    left_key = pk_factory(left.name)
+    right_key = pk_factory(right.name)
 
     database_schema[relation.name] = Table(relation.name, metadata)
     database_schema[relation.name].append_column(
-        Column(
-            generate_id_column(left.name),
-            ForeignKey(f"{left.name}.{generate_id_column(left.name)}"),
-            primary_key=True,
-        )
+        Column(left_key, ForeignKey(f"{left.name}.{left_key}"), primary_key=True)
     )
     database_schema[relation.name].append_column(
-        Column(
-            generate_id_column(right.name),
-            ForeignKey(f"{right.name}.{generate_id_column(right.name)}"),
-            primary_key=True,
-        )
+        Column(right_key, ForeignKey(f"{right.name}.{right_key}"), primary_key=True)
     )
 
 
 def export_tree(
     tree: Tree,
-    *,
     conn: Connection,
     schema: Schema,
+    pk_factory: PKColumnFactory,
 ) -> None:
     """
     Export the tree to the relational database.
@@ -156,24 +163,25 @@ def export_tree(
     :param tree: Tree to export.
     :param conn: Connection to the relational database.
     :param schema: The schema.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     data_to_export: dict[str, dict[str, Any]] = {}
 
     for subtree in tree.subtrees():
         if has_type(subtree, NodeType.GROUP):
-            export_group(subtree, data=data_to_export)
+            export_group(subtree, data_to_export, pk_factory)
 
         elif has_type(subtree, NodeType.REL):
-            export_relation(subtree, data=data_to_export, schema=schema)
+            export_relation(subtree, data_to_export, schema, pk_factory)
 
-    export_data(data=data_to_export, conn=conn)
+    export_data(data_to_export, conn)
 
 
 def export_relation(
     tree: Tree,
-    *,
     data: dict[str, dict[str, Any]],
     schema: Schema,
+    pk_factory: PKColumnFactory,
 ) -> None:
     """
     Export the relation to the relational database.
@@ -181,13 +189,14 @@ def export_relation(
     :param tree: Relation to export.
     :param data: Data to export.
     :param schema: The schema.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     relation = next(rel for rel in schema.relations if rel.name == tree.label.name)
 
     if relation.orientation == RelationOrientation.BOTH:
         relation_data = {}
         for child in tree:
-            relation_data[generate_id_column(child.label.name)] = data[child.label.name][str(child.oid)]
+            relation_data[pk_factory(child.label.name)] = data[child.label.name][str(child.oid)]
 
         data[relation.name] = {str(tree.oid): relation_data}
 
@@ -206,25 +215,26 @@ def export_relation(
             return
 
         source, target = (left, right) if relation.orientation == RelationOrientation.LEFT else (right, left)
-        column_name = relation.name if target.label.name == source.label.name else generate_id_column(target.label.name)
+        column_name = relation.name if target.label.name == source.label.name else pk_factory(target.label.name)
         data[source.label.name][str(source.oid)][column_name] = data[target.label.name][str(target.oid)]
 
 
 def export_group(
     group: Tree,
-    *,
     data: dict[str, dict[str, Any]],
+    pk_factory: PKColumnFactory,
 ) -> None:
     """
     Export the group to the relational database.
 
     :param group: Group to export.
     :param data: Data to export.
+    :param pk_factory: A column name factory for the groups primary keys.
     """
     group_name = group.label.name
 
     group_data = get_data_from_group(group)
-    group_data[generate_id_column(group_name)] = str(group.oid)
+    group_data[pk_factory(group_name)] = str(group.oid)
 
     if group_name not in data:
         data[group_name] = {}
@@ -260,7 +270,6 @@ def get_data_from_group(group: Tree) -> dict[str, str]:
 
 def export_data(
     data: dict,
-    *,
     conn: Connection,
 ) -> None:
     """
@@ -291,14 +300,13 @@ def export_data(
                     data_to_export[table] = {}
                 data_to_export[table][oid] = info
 
-    export_table_to_insert(table_to_insert=table_to_insert, conn=conn)
+    export_table_to_insert(table_to_insert, conn)
 
-    export_data(data=data_to_export, conn=conn)
+    export_data(data_to_export, conn)
 
 
 def export_table_to_insert(
     table_to_insert: dict[str, list[dict[str, str]]],
-    *,
     conn: Connection,
 ) -> None:
     """
