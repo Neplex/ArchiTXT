@@ -49,12 +49,13 @@ def schema_st(
         group_pairs = list(combinations(groups, 2))
         relations = {
             Relation(
-                name=f'{group1.name}<->{group2.name}',
-                left=group1.name,
-                right=group2.name,
+                name=f'{left.name}<->{right.name}',
+                left=left.name,
+                right=right.name,
                 orientation=draw(st.sampled_from(RelationOrientation)),
             )
-            for group1, group2 in draw(st.lists(st.sampled_from(group_pairs), min_size=0, max_size=len(group_pairs)))
+            for groups in draw(st.lists(st.sampled_from(group_pairs), min_size=0, max_size=len(group_pairs)))
+            for left, right in [sorted(groups, key=lambda g: g.name)]
         }
 
     schema = Schema.from_description(groups=groups, relations=relations, collections=collections)

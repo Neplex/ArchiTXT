@@ -10,7 +10,7 @@ def test_find_subgroups_no_simplify() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::X 1) (ENT::Y 2))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::X 1) (ENT::Y 2))'),),
         },
     )
 
@@ -25,7 +25,7 @@ def test_find_subgroups_simple() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
         },
     )
 
@@ -40,7 +40,10 @@ def test_find_subgroups_simple_group() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'), Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))')),
+            '2': (
+                Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),
+                Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),
+            ),
         },
     )
 
@@ -57,8 +60,8 @@ def test_find_subgroups_largest() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3))'),),
-            (Tree.fromstring('(GROUP::3 (ENT::A 1) (ENT::B 2))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3))'),),
+            '3': (Tree.fromstring('(GROUP::3 (ENT::A 1) (ENT::B 2))'),),
         },
     )
 
@@ -73,8 +76,8 @@ def test_find_subgroups_multi() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
-            (Tree.fromstring('(GROUP::3 (ENT::D 4) (ENT::E 5))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
+            '3': (Tree.fromstring('(GROUP::3 (ENT::D 4) (ENT::E 5))'),),
         },
     )
 
@@ -89,7 +92,7 @@ def test_find_subgroups_root() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
         },
     )
 

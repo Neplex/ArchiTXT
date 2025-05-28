@@ -145,7 +145,7 @@ class Schema(CFG):
 
         for tree in forest:
             for prod in tree.productions():
-                if prod.is_lexical():
+                if prod.is_lexical() or prod.lhs().symbol() == 'ROOT':
                     continue
 
                 if has_type(prod, NodeType.COLL):

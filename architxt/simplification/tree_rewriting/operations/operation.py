@@ -45,7 +45,7 @@ class Operation(ABC):
             event = SpanEvent(self.__class__.__name__, attributes=attributes)
             span.add_event(event)
 
-    def get_equiv_of(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> tuple[Tree, ...]:
+    def get_equiv_of(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> str | None:
         return get_equiv_of(tree, equiv_subtrees, tau=self.tau, metric=self.metric)
 
     @abstractmethod

@@ -59,11 +59,11 @@ class FindSubGroupsOperation(Operation):
 
         # Compute support for the new subtree. It is a valid subgroup if its support exceeds the given threshold.
         new_group = new_subtree[insertion_index]
-        equiv = self.get_equiv_of(new_group, equiv_subtrees=equiv_subtrees)
-        support = len(equiv)
+        equiv_class_name = self.get_equiv_of(new_group, equiv_subtrees=equiv_subtrees)
+        support = len(equiv_subtrees.get(equiv_class_name, ()))
 
         if support >= min_support:
-            new_group.label = equiv[0].label
+            new_group.label = NodeLabel(NodeType.GROUP, equiv_class_name)
             return new_subtree, support
 
         return None
@@ -82,7 +82,8 @@ class FindSubGroupsOperation(Operation):
             parent_idx = subtree.parent_index
 
             # Compute initial support for the subtree
-            group_support = len(self.get_equiv_of(subtree, equiv_subtrees=equiv_subtrees))
+            equiv_class_name = self.get_equiv_of(subtree, equiv_subtrees=equiv_subtrees)
+            group_support = len(equiv_subtrees.get(equiv_class_name, ()))
             entity_trees = [child for child in subtree if has_type(child, NodeType.ENT)]
             entity_labels = {ent.label for ent in entity_trees}
 
@@ -92,7 +93,7 @@ class FindSubGroupsOperation(Operation):
             # This allows us to reduce the set of entity labels to consider only those present in these selected groups.
             entity_groups = {
                 tuple(sorted(x.label for x in subtree))
-                for cluster in equiv_subtrees
+                for cluster in equiv_subtrees.values()
                 if len(cluster) > group_support
                 for subtree in cluster
                 if entity_labels.intersection(x.label for x in subtree)
@@ -212,7 +213,8 @@ class MergeGroupsOperation(Operation):
 
                 else:
                     group_count += 1
-                    group_support = len(self.get_equiv_of(group_entity, equiv_subtrees=equiv_subtrees))
+                    equiv_class_name = self.get_equiv_of(group_entity, equiv_subtrees=equiv_subtrees)
+                    group_support = len(equiv_subtrees.get(equiv_class_name, ()))
                     max_sub_group_support = max(max_sub_group_support, group_support)
                     sub_group.extend(group_entity.entities())
 
@@ -236,12 +238,12 @@ class MergeGroupsOperation(Operation):
         new_subtree.insert(group_position, group_tree)
 
         # Compute support for the newly formed group
-        equiv = self.get_equiv_of(new_subtree[group_position], equiv_subtrees=equiv_subtrees)
-        support = len(equiv)
+        equiv_class_name = self.get_equiv_of(new_subtree[group_position], equiv_subtrees=equiv_subtrees)
+        support = len(equiv_subtrees.get(equiv_class_name, ()))
 
         # Return the modified subtree and its support counts if support exceeds the threshold
         if support >= max_sub_group_support:
-            new_subtree[group_position].label = equiv[0].label
+            new_subtree[group_position].label = NodeLabel(NodeType.GROUP, equiv_class_name)
             return new_subtree, support
 
         return None
