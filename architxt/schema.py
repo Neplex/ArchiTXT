@@ -1,7 +1,7 @@
 import dataclasses
 import math
 import warnings
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Generator, Iterable
 from enum import Enum, auto
 from functools import cached_property
@@ -141,7 +141,7 @@ class Schema(CFG):
         relations_examples: dict[str, dict[str, dict[str, tuple[TreeOID, TreeOID]]]] = defaultdict(
             lambda: defaultdict(dict)
         )
-        relations_is_multi: dict[str, dict[str, bool]] = defaultdict(lambda: defaultdict(bool))
+        relations_is_multi: dict[str, dict[str, bool]] = defaultdict(lambda: defaultdict(lambda: False))
 
         for tree in forest:
             for prod in tree.productions():
@@ -180,6 +180,8 @@ class Schema(CFG):
                 rel = relations_examples[subtree.label.name]
 
                 for child in subtree:
+                    relations_is_multi[subtree.label.name][child.label.name] |= False
+
                     if not (existing := rel[child.label.name].get(child.oid)):
                         rel[child.label.name][child.oid] = pair
 
@@ -295,7 +297,7 @@ class Schema(CFG):
             B = 1 - \frac{\sigma(A)}{\mu(A)}
 
         Where:
-            - :math:`A`: The set of attribute counts for all groups.
+            - :math:`A`: The set of attributes counts for all groups.
             - :math:`\mu(A)`: The mean number of attributes per group.
             - :math:`\sigma(A)`: The standard deviation of attribute counts across groups.
 
@@ -374,3 +376,64 @@ class Schema(CFG):
                 ).drop_duplicates()
             ).empty
         }
+
+    def find_collapsible_groups(self) -> set[str]:
+        """
+        Identify all groups eligible for collapsing into attributed relationships.
+
+        A group M is collapsible if it participates exactly twice in a 1-n relation
+        on the 'one' side, i.e. we want to collapse patterns like:
+
+            A --(n-1)--> M <--(1-n)-- B
+
+        Into a direct n-n edge:
+
+            A --[attributed edge]-- B
+
+        :return: A set of groups that can be turned into attributed edges.
+
+        >>> schema = Schema.from_description(relations={
+        ...     Relation(name='R1', left='A', right='M', orientation=RelationOrientation.LEFT),
+        ...     Relation(name='R2', left='M', right='B', orientation=RelationOrientation.RIGHT),
+        ... })
+        >>> schema.find_collapsible_groups()
+        {'M'}
+
+        >>> schema = Schema.from_description(relations={
+        ...     Relation(name='R1', left='M', right='B', orientation=RelationOrientation.RIGHT),
+        ...     Relation(name='R2', left='M', right='C', orientation=RelationOrientation.RIGHT),
+        ... })
+        >>> schema.find_collapsible_groups()
+        {'M'}
+
+        >>> schema = Schema.from_description(relations={
+        ...     Relation(name='R1', left='A', right='M', orientation=RelationOrientation.BOTH),
+        ...     Relation(name='R2', left='M', right='B', orientation=RelationOrientation.RIGHT),
+        ... })
+        >>> schema.find_collapsible_groups()
+        set()
+
+        >>> schema = Schema.from_description(relations={
+        ...     Relation(name='R1', left='A', right='M', orientation=RelationOrientation.BOTH),
+        ...     Relation(name='R2', left='M', right='B', orientation=RelationOrientation.RIGHT),
+        ...     Relation(name='R2', left='M', right='C', orientation=RelationOrientation.RIGHT),
+        ... })
+        >>> schema.find_collapsible_groups()
+        set()
+        """
+        group_count = Counter()
+
+        for relation in self.relations:
+            if relation.orientation == RelationOrientation.LEFT:
+                group_count[relation.left] += 3
+                group_count[relation.right] += 1
+
+            elif relation.orientation == RelationOrientation.RIGHT:
+                group_count[relation.left] += 1
+                group_count[relation.right] += 3
+
+            else:
+                group_count[relation.left] += 3
+                group_count[relation.right] += 3
+
+        return {group for group, count in group_count.items() if count == 2}
