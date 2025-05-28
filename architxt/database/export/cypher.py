@@ -3,8 +3,10 @@ import neo4j
 from architxt.schema import Schema
 from architxt.tree import Forest, NodeType, Tree, has_type
 
+__all__ = ['export_cypher']
 
-def export_graph(
+
+def export_cypher(
     forest: Forest,
     session: neo4j.Session,
 ) -> None:

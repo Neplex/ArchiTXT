@@ -21,6 +21,8 @@ from tqdm.auto import tqdm
 from architxt.schema import Group, Relation, RelationOrientation, Schema
 from architxt.tree import Forest, NodeType, Tree, has_type
 
+__all__ = ['export_sql']
+
 PKColumnFactory = Callable[[str], str]
 
 
@@ -36,7 +38,7 @@ def default_pk_factory(
     return f'architxt_{table_name}ID'
 
 
-def export_relational(
+def export_sql(
     forest: Forest,
     conn: Connection,
     *,

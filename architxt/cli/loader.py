@@ -7,7 +7,7 @@ import typer
 from sqlalchemy import create_engine
 
 from architxt.bucket.zodb import ZODBTreeBucket
-from architxt.database.loader import read_database, read_document
+from architxt.database import loader
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
@@ -44,7 +44,7 @@ ENTITIES_MAPPING = {
 app = typer.Typer(no_args_is_help=True)
 
 
-@app.command(name='document', help="Extract information of a document file into a formatted tree.")
+@app.command(name='document', help="Extract document database into a formatted tree.")
 def load_document(
     file: Path = typer.Argument(..., exists=True, readable=True, help="The document file to read."),
     *,
@@ -67,14 +67,14 @@ def load_document(
         raise typer.Abort()
 
     with ZODBTreeBucket(storage_path=output) as bucket:
-        bucket.update(read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
+        bucket.update(loader.read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
         schema = Schema.from_forest(bucket, keep_unlabelled=False)
         show_schema(schema)
 
 
-@app.command(name='database', help="Extract the database information into a formatted tree.")
-def load_database(
-    db_connection: str = typer.Argument(..., help="Database connection string."),
+@app.command(name='sql', help="Extract a SQL compatible database into a formatted tree.")
+def load_sql(
+    uri: str = typer.Argument(..., help="Database connection string."),
     *,
     simplify_association: bool = typer.Option(True, help="Simplify association tables."),
     sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
@@ -92,10 +92,10 @@ def load_database(
         raise typer.Abort()
 
     with (
-        create_engine(db_connection).connect() as connection,
+        create_engine(uri).connect() as connection,
         ZODBTreeBucket(storage_path=output) as forest,
     ):
-        forest.update(read_database(connection, simplify_association=simplify_association, sample=sample or 0))
+        forest.update(loader.read_sql(connection, simplify_association=simplify_association, sample=sample or 0))
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 

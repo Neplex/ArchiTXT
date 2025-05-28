@@ -301,7 +301,7 @@ class Schema(CFG):
             - :math:`\mu(A)`: The mean number of attributes per group.
             - :math:`\sigma(A)`: The standard deviation of attribute counts across groups.
 
-        returns: Balance metric (B), a measure of attribute dispersion.
+        :return: Balance metric (B), a measure of attribute dispersion.
            - :math:`B \approx 1`: Attributes are evenly distributed.
            - :math:`B \approx 0`: Significant imbalance; some groups are much larger or smaller than others.
         """
@@ -414,7 +414,7 @@ class Schema(CFG):
         set()
 
         >>> schema = Schema.from_description(relations={
-        ...     Relation(name='R1', left='A', right='M', orientation=RelationOrientation.BOTH),
+        ...     Relation(name='R1', left='A', right='M', orientation=RelationOrientation.LEFT),
         ...     Relation(name='R2', left='M', right='B', orientation=RelationOrientation.RIGHT),
         ...     Relation(name='R2', left='M', right='C', orientation=RelationOrientation.RIGHT),
         ... })

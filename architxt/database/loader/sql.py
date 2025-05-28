@@ -8,10 +8,10 @@ from tqdm.auto import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
 
-__all__ = ['read_database']
+__all__ = ['read_sql']
 
 
-def read_database(
+def read_sql(
     conn: Connection,
     *,
     simplify_association: bool = True,

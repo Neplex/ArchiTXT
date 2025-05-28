@@ -4,8 +4,7 @@ from collections import OrderedDict
 from typing import Any
 
 import pytest
-from architxt.database.loader import read_database
-from architxt.database.loader.sql import get_oid
+from architxt.database.loader.sql import get_oid, read_sql
 from architxt.tree import Forest, Tree
 from hypothesis import given
 from hypothesis import strategies as st
@@ -110,7 +109,7 @@ def _get_expected_trees(include_unreferenced: bool) -> Forest:
 @pytest.mark.parametrize("include_unreferenced", [True, False])
 def test_read_database(include_unreferenced: bool, connection: Connection) -> None:
     expected_forest = _get_expected_trees(include_unreferenced)
-    forest = read_database(connection, search_all_instances=include_unreferenced)
+    forest = read_sql(connection, search_all_instances=include_unreferenced)
 
     for tree, expected in zip(forest, expected_forest):
         assert str(tree) == str(expected)
