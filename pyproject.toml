@@ -1,15 +1,27 @@
 [tool.poetry]
 name = "architxt"
-version = "0.0.0"
+version = "0.2.1"
 description = "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting."
 authors = [
     "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>",
     "Mirian Halfeld-Ferrari <mirian@univ-orleans.fr>",
-    "Jacques Chabin <jchabin@univ-orleans.fr>"
+    "Jacques Chabin <jacques.chabin@univ-orleans.fr>"
+]
+maintainers = [
+    "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>"
 ]
 readme = "README.md"
 repository = "https://github.com/neplex/ArchiTXT"
 documentation = "https://neplex.github.io/ArchiTXT"
+keywords = [
+    "python",
+    "nlp",
+    "database",
+    "structuration",
+    "text mining",
+    "text analysis",
+    "data analysis"
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",

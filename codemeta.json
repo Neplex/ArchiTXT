@@ -1,54 +1,369 @@
 {
-  "@context": "https://w3id.org/codemeta/3.0",
-  "type": "SoftwareSourceCode",
-  "applicationCategory": "Database",
-  "author": [
-    {
-      "id": "https://orcid.org/0000-0003-4318-4906",
-      "type": "Person",
-      "affiliation": {
-        "type": "Organization",
-        "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
-      },
-      "email": "nicolas.hiot@univ-orleans.fr",
-      "familyName": "Hiot",
-      "givenName": "Nicolas"
+    "@context": [
+        "https://w3id.org/codemeta/3.0",
+        "https://w3id.org/software-iodata",
+        "https://raw.githubusercontent.com/jantman/repostatus.org/master/badges/latest/ontology.jsonld",
+        "https://schema.org",
+        "https://w3id.org/software-types"
+    ],
+    "@type": "SoftwareSourceCode",
+    "applicationCategory": [
+        "Database",
+        "Scientific/Engineering",
+        "Scientific/Engineering > Information Analysis"
+    ],
+    "audience": [
+        {
+            "@type": "Audience",
+            "audienceType": "Developers"
+        },
+        {
+            "@type": "Audience",
+            "audienceType": "Information Technology"
+        },
+        {
+            "@type": "Audience",
+            "audienceType": "Science/Research"
+        }
+    ],
+    "author": [
+        {
+            "@id": "https://orcid.org/0000-0003-1460-9979",
+            "@type": "Person",
+            "affiliation": {
+                "@type": "Organization",
+                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+            },
+            "familyName": "Chabin",
+            "givenName": "Jacques"
+        },
+        {
+            "@id": "https://orcid.org/0000-0003-2601-3224",
+            "@type": "Person",
+            "affiliation": {
+                "@type": "Organization",
+                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+            },
+            "familyName": "Halfeld-Ferrari",
+            "givenName": "Mirian"
+        },
+        {
+            "@id": "https://orcid.org/0000-0003-4318-4906",
+            "@type": "Person",
+            "affiliation": {
+                "@type": "Organization",
+                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+            },
+            "familyName": "Hiot",
+            "givenName": "Nicolas"
+        }
+    ],
+    "codeRepository": "https://github.com/Neplex/ArchiTXT",
+    "contributor": [
+        {
+            "@id": "https://orcid.org/0000-0003-1460-9979",
+            "@type": "Person",
+            "affiliation": {
+                "@type": "Organization",
+                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+            },
+            "familyName": "Chabin",
+            "givenName": "Jacques"
+        },
+        {
+            "@id": "https://orcid.org/0000-0003-2601-3224",
+            "@type": "Person",
+            "affiliation": {
+                "@type": "Organization",
+                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+            },
+            "familyName": "Halfeld-Ferrari",
+            "givenName": "Mirian"
+        },
+        {
+            "@id": "https://orcid.org/0000-0003-4318-4906",
+            "@type": "Person",
+            "affiliation": {
+                "@type": "Organization",
+                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+            },
+            "familyName": "Hiot",
+            "givenName": "Nicolas"
+        }
+    ],
+    "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
+    "developmentStatus": "https://www.repostatus.org/#wip",
+    "identifier": "data",
+    "isSourceCodeOf": {
+        "@type": "CommandLineApplication",
+        "executableName": "architxt",
+        "name": "architxt",
+        "runtimePlatform": "Python 3"
     },
-    {
-      "id": "https://orcid.org/0000-0003-1460-9979",
-      "type": "Person",
-      "affiliation": {
-        "type": "Organization",
-        "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
-      },
-      "email": "jchabin@univ-orleans.fr",
-      "familyName": "Chabin",
-      "givenName": "Jacques"
+    "keywords": [
+        "data analysis",
+        "database",
+        "nlp",
+        "python",
+        "structuration",
+        "text analysis",
+        "text mining"
+    ],
+    "license": "http://spdx.org/licenses/CC-BY-NC-4.0",
+    "maintainer": {
+        "@type": "Person",
+        "email": "nicolas.hiot@univ-orleans.fr",
+        "familyName": "Hiot",
+        "givenName": "Nicolas"
     },
-    {
-      "id": "https://orcid.org/0000-0003-2601-3224",
-      "type": "Person",
-      "affiliation": {
-        "type": "Organization",
-        "name": "LIFO - Université d'Orléans, INSA CVL, Orléans, France"
-      },
-      "email": "mirian@univ-orleans.fr",
-      "familyName": "Halfeld-Ferrari",
-      "givenName": "Mirian"
-    }
-  ],
-  "license": "https://spdx.org/licenses/CC-BY-NC-4.0",
-  "codeRepository": "git+https://github.com/Neplex/ArchiTXT.git",
-  "dateCreated": "2023-01-01",
-  "datePublished": "2024-04-01",
-  "funder": {
-    "type": "Organization",
-    "name": "APR-IA DOING, ENNOV"
-  },
-  "isPartOf": "https://www.univ-orleans.fr/lifo/evenements/doing/",
-  "name": "ArchiTXT",
-  "programmingLanguage": "Python",
-  "version": "0.1.1",
-  "developmentStatus": "concept",
-  "funding": "AE 2021-1850, 2001LIF0000"
+    "name": "ArchiTXT",
+    "operatingSystem": "OS Independent",
+    "producer": {
+        "@type": "Organization",
+        "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+    },
+    "programmingLanguage": "Python",
+    "runtimePlatform": "Python 3",
+    "softwareHelp": "https://neplex.github.io/ArchiTXT",
+    "softwareRequirements": [
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "aiostream",
+            "name": "aiostream",
+            "runtimePlatform": "Python 3",
+            "version": "^0.6.4"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "antlr4-python3-runtime",
+            "name": "antlr4-python3-runtime",
+            "runtimePlatform": "Python 3",
+            "version": ">= 4.13"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "benepar",
+            "name": "benepar",
+            "runtimePlatform": "Python 3",
+            "version": "*"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "cachetools",
+            "name": "cachetools",
+            "runtimePlatform": "Python 3",
+            "version": "^5.5.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "click",
+            "name": "click",
+            "runtimePlatform": "Python 3",
+            "version": "<8.3.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "googletrans",
+            "name": "googletrans",
+            "runtimePlatform": "Python 3",
+            "version": "^4.0.2"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "itables",
+            "name": "itables",
+            "runtimePlatform": "Python 3",
+            "version": "^2.3.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "levenshtein",
+            "name": "levenshtein",
+            "runtimePlatform": "Python 3",
+            "version": "*"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "mlflow",
+            "name": "mlflow",
+            "runtimePlatform": "Python 3",
+            "version": "^2.6.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "more-itertools",
+            "name": "more-itertools",
+            "runtimePlatform": "Python 3",
+            "version": "*"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "neo4j",
+            "name": "neo4j",
+            "runtimePlatform": "Python 3",
+            "version": "^5.28.1"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "nltk",
+            "name": "nltk",
+            "runtimePlatform": "Python 3",
+            "version": "^3.9"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "nmslib",
+            "name": "nmslib",
+            "runtimePlatform": "Python 3"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "notebook",
+            "name": "notebook",
+            "runtimePlatform": "Python 3",
+            "version": "^7.3.3"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "numpy",
+            "name": "numpy",
+            "runtimePlatform": "Python 3",
+            "version": "^1.16"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "plotly",
+            "name": "plotly",
+            "runtimePlatform": "Python 3",
+            "version": "^6.0.1"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "psutil",
+            "name": "psutil",
+            "runtimePlatform": "Python 3",
+            "version": "^7.0.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "pybrat",
+            "name": "pybrat",
+            "runtimePlatform": "Python 3",
+            "version": "^0.1.7"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "python",
+            "name": "python",
+            "runtimePlatform": "Python 3",
+            "version": ">= 3.10"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "relstorage",
+            "name": "relstorage",
+            "runtimePlatform": "Python 3",
+            "version": "^4.1.1"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "rich",
+            "name": "rich",
+            "runtimePlatform": "Python 3",
+            "version": ">= 13.9.4"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "scispacy",
+            "name": "scispacy",
+            "runtimePlatform": "Python 3",
+            "version": "^0.5.5"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "spacy-alignments",
+            "name": "spacy-alignments",
+            "runtimePlatform": "Python 3",
+            "version": "^0.9.1"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "sqlalchemy",
+            "name": "sqlalchemy",
+            "runtimePlatform": "Python 3",
+            "version": "^2.0.39"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "streamlit",
+            "name": "streamlit",
+            "runtimePlatform": "Python 3",
+            "version": ">=1.39.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "streamlit-agraph",
+            "name": "streamlit-agraph",
+            "runtimePlatform": "Python 3",
+            "version": "*"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "streamlit-tags",
+            "name": "streamlit-tags",
+            "runtimePlatform": "Python 3",
+            "version": "*"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "torch",
+            "name": "torch",
+            "runtimePlatform": "Python 3",
+            "version": "<2.3.0"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "tqdm",
+            "name": "tqdm",
+            "runtimePlatform": "Python 3",
+            "version": ">= 4.60"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "typer",
+            "name": "typer",
+            "runtimePlatform": "Python 3",
+            "version": "^0.15.1"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "unidecode",
+            "name": "unidecode",
+            "runtimePlatform": "Python 3",
+            "version": "*"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "xlrd",
+            "name": "xlrd",
+            "runtimePlatform": "Python 3",
+            "version": "^2.0.1"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "xmltodict",
+            "name": "xmltodict",
+            "runtimePlatform": "Python 3",
+            "version": "^0.14.2"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "zodb",
+            "name": "zodb",
+            "runtimePlatform": "Python 3",
+            "version": "^6.0"
+        }
+    ],
+    "url": "https://github.com/Neplex/ArchiTXT",
+    "version": "0.2.1"
 }

@@ -1,3 +1,3 @@
-- Nicolas Hiot <nicolas.hiot@univ-orleans.fr>
-- Mirian Halfeld-Ferrari <mirian@univ-orleans.fr>
-- Jacques Chabin <jchabin@univ-orleans.fr>
+- Nicolas Hiot <nicolas.hiot@univ-orleans.fr>, Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France
+- Mirian Halfeld-Ferrari <mirian@univ-orleans.fr>, Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France
+- Jacques Chabin <jacques.chabin@univ-orleans.fr>, Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France

@@ -1,0 +1,46 @@
+name: Generate CodeMeta Metadata
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  codemeta:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-plugins: 'poetry-dynamic-versioning'
+
+      - name: Apply dynamic versioning
+        run: |
+          VERSION=$(poetry version -s)
+          CLEAN_VERSION=$(echo "$VERSION" | sed -E 's/(\.post.*|\.dev.*)//g')
+          poetry version $CLEAN_VERSION
+
+      - name: Generate codemeta.json using codemeta-harvester
+        run: |
+          docker run -v $(pwd):/data -e GITHUB_TOKEN=$GITHUB_TOKEN proycon/codemeta-harvester --regen
+
+      - name: Commit & Push changes
+        uses: actions-js/push@v1.5
+        with:
+          github_token: '${{ secrets.GITHUB_TOKEN }}'
+          message: ':label: Update project metadata [skip ci]'
+
+  archive-project:
+    name: Archive (Software Heritage)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || startsWith(github.head_ref, 'ci/')
+    steps:
+      - uses: sdruskat/swh-save-action@v1.0.1
