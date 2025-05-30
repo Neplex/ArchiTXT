@@ -10,7 +10,7 @@ def test_merge_groups_simple() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2) (ENT::C 3) (ENT::D 4))'),),
         },
     )
 
@@ -25,8 +25,8 @@ def test_merge_groups_extend() -> None:
     has_simplified = operation.apply(
         tree,
         equiv_subtrees={
-            (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
-            (Tree.fromstring('(GROUP::4 (ENT::A 1) (ENT::B 2) (ENT::C 3))'),),
+            '2': (Tree.fromstring('(GROUP::2 (ENT::A 1) (ENT::B 2))'),),
+            '4': (Tree.fromstring('(GROUP::4 (ENT::A 1) (ENT::B 2) (ENT::C 3))'),),
         },
     )
 

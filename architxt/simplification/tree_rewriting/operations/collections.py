@@ -32,11 +32,16 @@ class FindCollectionsOperation(Operation):
 
         for subtree in sorted(
             tree.subtrees(
-                lambda x: not has_type(x) and any(has_type(y, {NodeType.GROUP, NodeType.REL, NodeType.COLL}) for y in x)
+                lambda x: not has_type(x, {NodeType.ENT, NodeType.GROUP, NodeType.REL})
+                and any(has_type(y, {NodeType.GROUP, NodeType.REL, NodeType.COLL}) for y in x)
             ),
             key=lambda x: x.depth,
             reverse=True,
         ):
+            if has_type(subtree, NodeType.COLL):  # Renaming only
+                subtree.label = NodeLabel(NodeType.COLL, subtree[0].label.name)
+                continue
+
             # Naming-only mode: apply labels without modifying the tree structure
             if self.naming_only:
                 if has_type(subtree[0], {NodeType.GROUP, NodeType.REL}) and more_itertools.all_equal(

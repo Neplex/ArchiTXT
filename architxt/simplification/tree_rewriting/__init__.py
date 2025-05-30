@@ -500,14 +500,14 @@ def _apply_operations_worker(
     return request_id, None if isinstance(forest, TreeBucket) else forest
 
 
-def create_group(subtree: Tree, group_index: int) -> None:
+def create_group(subtree: Tree, group_name: str) -> None:
     """
     Create a group node from a subtree and inserts it into its parent node.
 
     :param subtree: The subtree to convert into a group.
-    :param group_index: The index to use for naming the group.
+    :param group_name: The name to use for the group.
     """
-    subtree.label = NodeLabel(NodeType.GROUP, str(group_index))
+    subtree.label = NodeLabel(NodeType.GROUP, group_name)
     subtree[:] = [entity.detach() for entity in subtree.entities()]
 
 
@@ -524,38 +524,45 @@ def find_groups(
     :return: A boolean indicating if groups were created.
     """
     frequent_clusters = sorted(
-        filter(lambda cluster: len(cluster) > min_support, equiv_subtrees),
-        key=lambda cluster: (
-            len(cluster),
-            sum(len(st.entities()) for st in cluster) / len(cluster),
-            sum(st.depth for st in cluster) / len(cluster),
+        filter(lambda cluster_name: len(equiv_subtrees[cluster_name]) > min_support, equiv_subtrees.keys()),
+        key=lambda cluster_name: (
+            len(equiv_subtrees[cluster_name]),
+            sum(len(st.entities()) for st in equiv_subtrees[cluster_name]) / len(equiv_subtrees[cluster_name]),
+            sum(st.depth for st in equiv_subtrees[cluster_name]) / len(equiv_subtrees[cluster_name]),
         ),
         reverse=True,
     )
 
     group_created = False
-    for group_index, subtree_cluster in enumerate(frequent_clusters):
+    for cluster_name in frequent_clusters:
+        subtree_cluster = equiv_subtrees[cluster_name]
+
         # Create a group for each subtree in the cluster
         for subtree in subtree_cluster:
             if (
                 len(subtree) < 2
-                or has_type(subtree)
                 or (subtree.parent and has_type(subtree.parent, NodeType.GROUP))
                 or not all(has_type(node, NodeType.ENT) for node in subtree)
                 or subtree.has_duplicate_entity()
             ):
                 continue
 
-            create_group(subtree, group_index)
+            if has_type(subtree, NodeType.GROUP):  # Renaming only
+                subtree.label = NodeLabel(NodeType.GROUP, cluster_name)
+                continue
+
+            create_group(subtree, cluster_name)
             group_created = True
 
-            group_labels = tuple(sorted({label for subtree in subtree_cluster for label in subtree.entity_labels()}))
             if span := mlflow.get_current_active_span():
+                group_labels = tuple(
+                    sorted({label for subtree in subtree_cluster for label in subtree.entity_labels()})
+                )
                 span.add_event(
                     SpanEvent(
                         'create_group',
                         attributes={
-                            'group': group_index,
+                            'group': cluster_name,
                             'labels': group_labels,
                         },
                     )

@@ -5,7 +5,7 @@ from architxt.tree import Tree
 def test_create_group_with_parent() -> None:
     tree = Tree.fromstring('(parent (1 (ENT::X xxx) (ENT::Y yyy)))')
 
-    create_group(tree[0], 0)
+    create_group(tree[0], '0')
 
     assert tree == Tree.fromstring('(parent (GROUP::0 (ENT::X xxx) (ENT::Y yyy)))')
 
@@ -13,7 +13,7 @@ def test_create_group_with_parent() -> None:
 def test_create_group_without_parent() -> None:
     tree = Tree.fromstring('(1 (ENT::X xxx) (ENT::Y yyy))')
 
-    create_group(tree, 0)
+    create_group(tree, '0')
 
     assert tree == Tree.fromstring('(GROUP::0 (ENT::X xxx) (ENT::Y yyy))')
 
@@ -21,13 +21,13 @@ def test_create_group_without_parent() -> None:
 def test_create_group_recursive() -> None:
     tree = Tree.fromstring('(parent (1 (ENT::X xxx) (2 (ENT::Y yyy) (3 (ENT::Z zzz)))))')
 
-    create_group(tree[0], 0)
+    create_group(tree[0], '0')
 
     assert tree == Tree.fromstring('(parent (GROUP::0 (ENT::X xxx) (ENT::Y yyy) (ENT::Z zzz)))')
 
 
 def test_find_groups_no_simplification() -> None:
-    has_simplified = find_groups(equiv_subtrees=set(), min_support=3)
+    has_simplified = find_groups(equiv_subtrees={}, min_support=3)
 
     assert not has_simplified
 
@@ -37,7 +37,7 @@ def test_find_groups_with_parent() -> None:
 
     has_simplified = find_groups(
         equiv_subtrees={
-            (tree[0],),
+            '0': (tree[0],),
         },
         min_support=0,
     )
@@ -51,7 +51,7 @@ def test_find_group_without_parent() -> None:
 
     has_simplified = find_groups(
         equiv_subtrees={
-            (tree,),
+            '0': (tree,),
         },
         min_support=0,
     )
@@ -65,8 +65,8 @@ def test_find_group_largest() -> None:
 
     has_simplified = find_groups(
         equiv_subtrees={
-            (tree,),
-            (tree[0],),
+            '0': (tree,),
+            '1': (tree[0],),
         },
         min_support=0,
     )
@@ -80,8 +80,8 @@ def test_find_group_frequent() -> None:
 
     has_simplified = find_groups(
         equiv_subtrees={
-            (tree,),
-            (tree[0], tree[0], tree[0]),
+            '1': (tree,),
+            '0': (tree[0], tree[0], tree[0]),
         },
         min_support=0,
     )
@@ -97,8 +97,8 @@ def test_find_groups_multi() -> None:
 
     has_simplified = find_groups(
         equiv_subtrees={
-            (tree[0],),
-            (tree[2],),
+            '1': (tree[0],),
+            '0': (tree[2],),
         },
         min_support=0,
     )

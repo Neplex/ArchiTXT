@@ -27,19 +27,24 @@ class FindRelationsOperation(Operation):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
+    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002, C901
         simplified = False
 
         # Traverse subtrees, starting with the deepest, containing exactly 2 children
         for subtree in sorted(
             tree.subtrees(
                 lambda x: len(x) == 2
-                and not has_type(x)
+                and not has_type(x, {NodeType.ENT, NodeType.GROUP})
                 and all(has_type(y, {NodeType.GROUP, NodeType.COLL}) for y in x)
             ),
             key=lambda x: x.depth,
             reverse=True,
         ):
+            if has_type(subtree, NodeType.REL):  # Renaming only
+                label = sorted([subtree[0].label.name, subtree[1].label.name])
+                subtree.label = NodeLabel(NodeType.REL, f'{label[0]}<->{label[1]}')
+                continue
+
             group = None
             collection = None
 
