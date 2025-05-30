@@ -30,9 +30,9 @@ ArchiTXT Documentation
     installation
     getting_started
     fundamentals
-    load_data
-    transform_data
-    export_data
+    importers
+    transformers
+    exporters
     examples
     integrations
 
