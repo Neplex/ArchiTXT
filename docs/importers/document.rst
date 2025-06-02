@@ -1,6 +1,11 @@
 Loading document databases
 ==========================
 
+.. seealso::
+
+    :doc:`../fundamentals`
+        Overview of ArchiTXT's internal data representation.
+
 .. margin::
 
     .. mermaid::
@@ -28,11 +33,6 @@ The document-to-tree conversion process involves three steps:
 The decomposition in three steps enables parsing not only supported data formats but also arbitrary Python data structures.
 The resulting raw trees are not considered valid on their own but can be combined with syntax trees before applying more advanced structuring algorithms.
 
-.. warning::
-
-    The transformation described here is specifically designed for tree-like data.
-    Applying it to arbitrary or improperly structured trees may result in invalid or incoherent outputs.
-
 Parsing nested data structures
 ------------------------------
 
@@ -48,7 +48,6 @@ This function traverses nested Python structures and constructs a corresponding 
     Consider the following JSON document:
 
     .. code-block:: json
-        :caption: An example of a JSON document
 
         [
             {
@@ -86,6 +85,11 @@ This function traverses nested Python structures and constructs a corresponding 
 
 Transforming Raw Trees
 ----------------------
+
+.. warning::
+
+    The transformation described here is specifically designed for tree-like data.
+    Applying it to arbitrary or improperly structured trees may result in invalid or incoherent outputs.
 
 Once a raw tree is constructed, it can be transformed into a flattened structure aligned with the metamodel using :py:func:`~architxt.database.loader.documents.parse_document_tree`.
 

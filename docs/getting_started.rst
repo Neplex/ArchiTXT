@@ -36,15 +36,6 @@ This allows you to explore multiple databases simultaneously and gain valuable i
         l --> o[(Unified Data
             Repository)];
 
-        click e "load_data.html"
-        click t "transform_data.html"
-        click l "export_data.html"
-
-Prepare Your Text Corpus
-------------------------
-
-Before you start, your corpora must be in the BRAT annotation format and archived as a Gzipped Tar file.
-
-.. note::
-
-    For full instructions on preparing your corpus, please refer to :doc:`getting_started/corpus` page.
+        click e "importers.html"
+        click t "transformers.html"
+        click l "exporters.html"

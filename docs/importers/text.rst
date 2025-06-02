@@ -1,21 +1,47 @@
 Loading textual datas
 =====================
 
-ArchiTXT enables seamless integration of textual data by representing it as a hierarchical tree structure, derived from the syntax tree.
-Through its built-in simplification algorithm, ArchiTXT organizes this data into structured instances, which can be easily combined with existing database instances.
-All tools for manipulating textual data are available in the :py:mod:`architxt.nlp` module.
-
 .. seealso::
 
-    :doc:`../getting_started/corpus`
-        More information on BRAT format support.
+    :doc:`../fundamentals`
+        Overview of ArchiTXT's internal data representation.
 
     :doc:`../examples/corpus_exploration`
         A real-case usage examples.
 
+    `BRAT Rapid Annotation Tool website <https://brat.nlplab.org/standoff.html>`_
+        BRAT documentation of the standoff format
+
+ArchiTXT enables seamless integration of textual data by representing it as a hierarchical tree structure, derived from the syntax tree.
+Through its built-in simplification algorithm, ArchiTXT organizes this data into structured instances, which can be easily combined with existing database instances.
+All tools for manipulating textual data are available in the :py:mod:`architxt.nlp` module.
+
+Preparing a Text Corpora
+------------------------
+
+ArchiTXT requires your text corpora to be in a Gzipped Tar archive using the BRAT annotation format.
+In this format, the text and annotations are stored in two files with the same name but different extensions (.txt for text and .ann for annotations).
+For example, `doc-123.txt` contains the text, while `doc-123.ann` holds the annotations (named entities, relations, events, etc.).
+Your archive should look similar to this :
+
+.. code-block:: text
+
+    corpus.tar.gz
+    ├── doc-123.txt
+    ├── doc-123.ann
+    ├── doc-124.txt
+    ├── doc-124.ann
+    ├── doc-125.txt
+    ├── doc-125.ann
+    └── ...
+
+.. important::
+
+    1. **One Sentence per Line:** You should have one sentence per line in your text file.
+    2. **Non-Overlapping Annotations:** The start and end offsets for each annotated entity should not overlap with any other entity in the same sentence. Overlapping spans are not yet handle and will be ignored by ArchiTXT.
 
 Annotations
------------
+^^^^^^^^^^^
 
 While ArchiTXT does not include built-in data extraction tools, it operates on text that is accompanied by annotations.
 These annotations can be directly provided to ArchiTXT or loaded from corpora formatted in the BRAT format, packaged as a zip or tar-archived folder.
@@ -29,6 +55,40 @@ Relations
     Binary connections between two entities that express semantic relationships. In "Alice likes apples", the word "likes" indicates a possible relation between the Person entity "Alice" and the Fruit entity "apples".
 
 Named entities are interpreted as entities within the ArchiTXT meta-model.
+
+BRAT Annotation Format
+^^^^^^^^^^^^^^^^^^^^^^
+
+Annotations in BRAT are defined in a simple, tab-delimited format.
+Each annotation line follows this structure:
+
+.. code-block::
+
+    T<ID> <Entity_Type> <Start_Offset> <End_Offset> <Entity_Text>
+
+- **T<ID>:** A unique identifier for the annotation (e.g., T1, T2, etc.).
+- **Entity_Type:** The category or type of the entity (e.g., `Person`, `Location`, `Animal`).
+- **Start_Offset and End_Offset:** The character positions in the sentence where the entity begins and ends.
+- **Entity_Text:** The exact text span that has been annotated.
+
+Consider the following sentence in your text file (`document.txt`):
+
+.. code-block::
+
+    The quick brown fox jumps over the lazy dog.
+
+An accompanying annotation file (`document.ann`) might look like:
+
+.. code-block::
+
+    T1 Animal 16 19 fox
+    T2 Animal 35 39 dog
+
+In this example:
+
+- **T1** annotates the entity "fox" starting at character position 16 and ending at 19.
+- **T2** annotates the entity "dog" starting at position 35 and ending at 39.
+- Both annotations are non-overlapping and correspond to entities in the sentence.
 
 Text to trees
 -------------
@@ -154,7 +214,7 @@ Parse your documents
 ArchiTXT provides multiple parsing backends to process documents and extract structured representations.
 
 CoreNLP
-+++++++
+^^^^^^^
 
 ArchiTXT can use `CoreNLP <https://stanfordnlp.github.io/CoreNLP/>`_ to process the documents.
 To use this, you need to have a CoreNLP server running with the appropriate language model installed.
@@ -173,8 +233,8 @@ To initialize a :py:class:`architxt.nlp.parser.corenlp.CoreNLPParser` in ArchiTX
 
     parser = CoreNLPParser(corenlp_url='http://localhost:9000')
 
-Benepar
-+++++++
+Benepar/SpaCy
+^^^^^^^^^^^^^
 
 ArchiTXT also supports the `Benepar parser <https://github.com/nikitakit/self-attentive-parser>`_, which integrates with `SpaCy <https://spacy.io>`_ for syntactic parsing.
 To initialize a :py:class:`architxt.nlp.parser.benepar.BeneparParser`, use:
@@ -198,3 +258,17 @@ You can install them using:
     python -m spacy download fr_core_news_md
 
 For a full list of available models, visit the `SpaCy model directory <https://spacy.io/models>`_.
+
+Entity resolution
+-----------------
+
+.. note::
+
+    This section is incomplete. Refer to :py:mod:`architxt.nlp.entity_resolver` for relevant implementation details.
+
+Caching
+-------
+
+.. note::
+
+    This section is incomplete. Refer to :py:func:`architxt.nlp.raw_load_corpus` for relevant implementation details.
