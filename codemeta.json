@@ -333,7 +333,7 @@
             "identifier": "typer",
             "name": "typer",
             "runtimePlatform": "Python 3",
-            "version": "^0.15.1"
+            "version": ">= 0.15.1"
         },
         {
             "@type": "SoftwareApplication",
