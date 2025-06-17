@@ -4,6 +4,7 @@ from pathlib import Path
 import click
 import mlflow
 import typer
+from neo4j import GraphDatabase
 from sqlalchemy import create_engine
 
 from architxt.bucket.zodb import ZODBTreeBucket
@@ -96,6 +97,37 @@ def load_sql(
         ZODBTreeBucket(storage_path=output) as forest,
     ):
         forest.update(loader.read_sql(connection, simplify_association=simplify_association, sample=sample or 0))
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
+        show_schema(schema)
+
+
+@app.command(name='graph', help="Extract a cypher/bolt compatible database into a formatted tree.")
+def load_graph(
+    uri: str = typer.Argument(..., help="Database connection string."),
+    *,
+    username: str | None = typer.Option('neo4j', help="Username to use for authentication."),
+    password: str | None = typer.Option(None, help="Password to use for authentication."),
+    sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
+    merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
+) -> None:
+    if (
+        output is not None
+        and output.exists()
+        and not merge_existing
+        and not typer.confirm("The storage path already exists. Merge existing data?")
+    ):
+        console.print("[red]Cannot store data due to conflict.[/]")
+        raise typer.Abort()
+
+    auth = (username, password) if username and password else None
+
+    with (
+        GraphDatabase.driver(uri, auth=auth) as driver,
+        driver.session() as session,
+        ZODBTreeBucket(storage_path=output) as forest,
+    ):
+        forest.update(loader.read_cypher(session, sample=sample or 0))
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
