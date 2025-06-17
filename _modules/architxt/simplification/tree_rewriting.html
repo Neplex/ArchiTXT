@@ -1,0 +1,1050 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>architxt.simplification.tree_rewriting &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/architxt/simplification/tree_rewriting';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="canonical" href="https://neplex.github.io/ArchiTXT/_modules/architxt/simplification/tree_rewriting.html" />
+    <link rel="icon" href="../../../_static/favicon.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_h.png" class="logo__image only-light" alt="ArchiTXT Documentation - Home"/>
+    <script>document.write(`<img src="../../../_static/logo_h.png" class="logo__image only-dark" alt="ArchiTXT Documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../importers.html">Import data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/cypher.html">Loading property graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/document.html">Loading document databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/sql.html">Loading relational databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../transformers.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../transformers/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../exporters.html">Export data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../exporters/cypher.html">Export as property graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../exporters/sql.html">Export as relational databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../examples.html">Usage examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/corpus_exploration.html">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.bucket.html">architxt.bucket</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.bucket.zodb.html">architxt.bucket.zodb</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.export.cypher.html">architxt.database.export.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.export.sql.html">architxt.database.export.sql</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.cypher.html">architxt.database.loader.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.inspector.html">architxt.inspector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/ArchiTXT">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/neplex/ArchiTXT/issues/new?title=Issue%20on%20page%20%2F_modules/architxt/simplification/tree_rewriting.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button"
+   title="Open an issue"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for architxt.simplification.tree_rewriting</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span> <span class="n">as_completed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">nullcontext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">multiprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Manager</span><span class="p">,</span> <span class="n">cpu_count</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">queue</span><span class="w"> </span><span class="kn">import</span> <span class="n">Full</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">overload</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">more_itertools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mlflow.entities</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpanEvent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span><span class="p">,</span> <span class="n">trange</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.bucket</span><span class="w"> </span><span class="kn">import</span> <span class="n">TreeBucket</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_METRIC</span><span class="p">,</span> <span class="n">METRIC_FUNC</span><span class="p">,</span> <span class="n">TREE_CLUSTER</span><span class="p">,</span> <span class="n">equiv_cluster</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">Forest</span><span class="p">,</span> <span class="n">NodeLabel</span><span class="p">,</span> <span class="n">NodeType</span><span class="p">,</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">TreeOID</span><span class="p">,</span> <span class="n">has_type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">ExceptionGroup</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.operations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FindCollectionsOperation</span><span class="p">,</span>
+    <span class="n">FindRelationsOperation</span><span class="p">,</span>
+    <span class="n">FindSubGroupsOperation</span><span class="p">,</span>
+    <span class="n">MergeGroupsOperation</span><span class="p">,</span>
+    <span class="n">Operation</span><span class="p">,</span>
+    <span class="n">ReduceBottomOperation</span><span class="p">,</span>
+    <span class="n">ReduceTopOperation</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">multiprocessing.managers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValueProxy</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">queue</span><span class="w"> </span><span class="kn">import</span> <span class="n">Queue</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">threading</span><span class="w"> </span><span class="kn">import</span> <span class="n">Barrier</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;apply_operations&#39;</span><span class="p">,</span> <span class="s1">&#39;create_group&#39;</span><span class="p">,</span> <span class="s1">&#39;find_groups&#39;</span><span class="p">,</span> <span class="s1">&#39;rewrite&#39;</span><span class="p">]</span>
+
+<span class="n">DEFAULT_OPERATIONS</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">Operation</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">FindSubGroupsOperation</span><span class="p">,</span>
+    <span class="n">MergeGroupsOperation</span><span class="p">,</span>
+    <span class="n">FindCollectionsOperation</span><span class="p">,</span>
+    <span class="n">FindRelationsOperation</span><span class="p">,</span>
+    <span class="n">FindCollectionsOperation</span><span class="p">,</span>
+    <span class="n">ReduceBottomOperation</span><span class="p">,</span>
+    <span class="n">ReduceTopOperation</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="rewrite">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.rewrite">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rewrite</span><span class="p">(</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="n">min_support</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">METRIC_FUNC</span> <span class="o">=</span> <span class="n">DEFAULT_METRIC</span><span class="p">,</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">Operation</span><span class="p">]]</span> <span class="o">=</span> <span class="n">DEFAULT_OPERATIONS</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">commit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">BATCH_SIZE</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Metrics</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Rewrite a forest by applying edit operations iteratively.</span>
+
+<span class="sd">    :param forest: The forest to perform on.</span>
+<span class="sd">    :param tau: Threshold for subtree similarity when clustering.</span>
+<span class="sd">    :param epoch: Maximum number of rewriting steps.</span>
+<span class="sd">    :param min_support: Minimum support of groups.</span>
+<span class="sd">    :param metric: The metric function used to compute similarity between subtrees.</span>
+<span class="sd">    :param edit_ops: The list of operations to perform on the forest.</span>
+<span class="sd">    :param debug: Whether to enable debug logging.</span>
+<span class="sd">    :param max_workers: Number of parallel worker processes to use.</span>
+<span class="sd">    :param commit: When working with a `TreeBucket`, changes can be committed automatically .</span>
+<span class="sd">        - If False, no commits are made. Use this for small forests where you want to commit manually later.</span>
+<span class="sd">        - If True, commits after processing the entire forest in one transaction.</span>
+<span class="sd">        - If an integer, commits after processing every N tree.</span>
+<span class="sd">        To avoid memory issues with large forests, we recommend using batch commit on large forests.</span>
+
+<span class="sd">    :return: The rewritten forest.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">metrics</span>
+
+    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">commit</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">commit</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">commit</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">BATCH_SIZE</span>
+    <span class="n">min_support</span> <span class="o">=</span> <span class="n">min_support</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">//</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">max_workers</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">//</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">max_workers</span> <span class="ow">or</span> <span class="p">(</span><span class="n">cpu_count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_params</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;nb_sentences&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span>
+                <span class="s1">&#39;tau&#39;</span><span class="p">:</span> <span class="n">tau</span><span class="p">,</span>
+                <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="n">epoch</span><span class="p">,</span>
+                <span class="s1">&#39;min_support&#39;</span><span class="p">:</span> <span class="n">min_support</span><span class="p">,</span>
+                <span class="s1">&#39;metric&#39;</span><span class="p">:</span> <span class="n">metric</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="s1">&#39;edit_ops&#39;</span><span class="p">:</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">op_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">edit_op</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">op_id</span><span class="p">,</span> <span class="n">edit_op</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">edit_ops</span><span class="p">)),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">log_to_mlflow</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="n">mp_ctx</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s1">&#39;spawn&#39;</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s1">&#39;win32&#39;</span> <span class="k">else</span> <span class="s1">&#39;forkserver&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="p">(</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="s1">&#39;rewriting&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">(),</span>
+        <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span> <span class="n">mp_context</span><span class="o">=</span><span class="n">mp_ctx</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;rewrite trees&#39;</span><span class="p">):</span>
+            <span class="k">with</span> <span class="p">(</span>
+                <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span>
+                    <span class="s1">&#39;iteration&#39;</span><span class="p">,</span>
+                    <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="n">iteration</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span>
+                <span class="k">else</span> <span class="n">nullcontext</span><span class="p">()</span>
+            <span class="p">):</span>
+                <span class="n">has_simplified</span> <span class="o">=</span> <span class="n">_rewrite_step</span><span class="p">(</span>
+                    <span class="n">iteration</span><span class="p">,</span>
+                    <span class="n">forest</span><span class="p">,</span>
+                    <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span>
+                    <span class="n">min_support</span><span class="o">=</span><span class="n">min_support</span><span class="p">,</span>
+                    <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+                    <span class="n">edit_ops</span><span class="o">=</span><span class="n">edit_ops</span><span class="p">,</span>
+                    <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+                    <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">,</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+                    <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+                    <span class="n">metrics</span><span class="o">.</span><span class="n">log_to_mlflow</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+                <span class="c1"># Stop if no further simplifications are made</span>
+                <span class="k">if</span> <span class="n">iteration</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_simplified</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+        <span class="n">_post_process</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">log_to_mlflow</span><span class="p">(</span><span class="n">iteration</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">metrics</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rewrite_step</span><span class="p">(</span>
+    <span class="n">iteration</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_support</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">METRIC_FUNC</span><span class="p">,</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">Operation</span><span class="p">]],</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">executor</span><span class="p">:</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform a single rewrite step on the forest.</span>
+
+<span class="sd">    :param iteration: The current iteration number.</span>
+<span class="sd">    :param forest: The forest to perform on.</span>
+<span class="sd">    :param tau: Threshold for subtree similarity when clustering.</span>
+<span class="sd">    :param min_support: Minimum support of groups.</span>
+<span class="sd">    :param metric: The metric function used to compute similarity between subtrees.</span>
+<span class="sd">    :param edit_ops: The list of operations to perform on the forest.</span>
+<span class="sd">    :param debug: Whether to enable debug logging.</span>
+<span class="sd">    :param executor: A pool executor to parallelize the processing of the forest.</span>
+<span class="sd">    :param batch_size: The number of trees to process in each batch.</span>
+
+<span class="sd">    :return: A flag indicating if any simplifications occurred.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="s1">&#39;reduce_all&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">forest</span><span class="p">:</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">reduce_all</span><span class="p">({</span><span class="n">NodeType</span><span class="o">.</span><span class="n">ENT</span><span class="p">})</span>
+
+    <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="s1">&#39;equiv_cluster&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">():</span>
+        <span class="n">equiv_subtrees</span> <span class="o">=</span> <span class="n">equiv_cluster</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="n">_step</span><span class="o">=</span><span class="n">iteration</span> <span class="k">if</span> <span class="n">debug</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="s1">&#39;find_groups&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">():</span>
+        <span class="n">find_groups</span><span class="p">(</span><span class="n">equiv_subtrees</span><span class="p">,</span> <span class="n">min_support</span><span class="p">)</span>
+
+    <span class="n">op_id</span> <span class="o">=</span> <span class="n">apply_operations</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">operation</span><span class="p">(</span><span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="n">min_support</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span> <span class="k">for</span> <span class="n">operation</span> <span class="ow">in</span> <span class="n">edit_ops</span><span class="p">],</span>
+        <span class="n">forest</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">equiv_subtrees</span><span class="o">=</span><span class="n">equiv_subtrees</span><span class="p">,</span>
+        <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span> <span class="ow">and</span> <span class="n">op_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="s1">&#39;edit_op&#39;</span><span class="p">,</span> <span class="n">op_id</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">iteration</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">op_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_post_process</span><span class="p">(</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">METRIC_FUNC</span><span class="p">,</span>
+    <span class="n">executor</span><span class="p">:</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Post-process the forest to find and name relations and collections.</span>
+
+<span class="sd">    :param forest: The forest to perform on.</span>
+<span class="sd">    :param tau: Threshold for subtree similarity when clustering.</span>
+<span class="sd">    :param metric: The metric function used to compute similarity between subtrees.</span>
+<span class="sd">    :param executor: A pool executor to parallelize the processing of the forest.</span>
+<span class="sd">    :param batch_size: The number of trees to process in each batch.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">equiv_subtrees</span> <span class="o">=</span> <span class="n">equiv_cluster</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+
+    <span class="n">apply_operations</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="s1">&#39;[post-process] name_relations&#39;</span><span class="p">,</span>
+                <span class="n">FindRelationsOperation</span><span class="p">(</span><span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="n">naming_only</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="p">(</span>
+                <span class="s1">&#39;[post-process] name_collections&#39;</span><span class="p">,</span>
+                <span class="n">FindCollectionsOperation</span><span class="p">(</span><span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="n">naming_only</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">forest</span><span class="p">,</span>
+        <span class="n">equiv_subtrees</span><span class="o">=</span><span class="n">equiv_subtrees</span><span class="p">,</span>
+        <span class="n">early_exit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="apply_operations">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.apply_operations">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_operations</span><span class="p">(</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Operation</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Operation</span><span class="p">]],</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">equiv_subtrees</span><span class="p">:</span> <span class="n">TREE_CLUSTER</span><span class="p">,</span>
+    <span class="n">early_exit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">executor</span><span class="p">:</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply a sequence of edit operations to a forest, potentially simplifying its structure.</span>
+
+<span class="sd">    Each operation in `edit_ops` is applied to the forest in the provided order.</span>
+<span class="sd">    If `early_exit` is enabled, the function stops as soon as an operation successfully simplifies at least one tree.</span>
+<span class="sd">    Otherwise, all operations are applied.</span>
+
+<span class="sd">    :param edit_ops: A sequence of operations to apply to the forest.</span>
+<span class="sd">                     Each operation can either be a callable or a tuple `(name, callable)`</span>
+<span class="sd">                     where `name` is a string identifier for the operation.</span>
+<span class="sd">    :param forest: The input forest (a collection of trees) on which operations are applied.</span>
+<span class="sd">    :param equiv_subtrees: The set of equivalent subtrees.</span>
+<span class="sd">    :param early_exit: A boolean flag indicating whether to stop after the first successful operation.</span>
+<span class="sd">                       If `False`, all operations are applied.</span>
+<span class="sd">    :param executor: A pool executor to parallelize the processing of the forest.</span>
+<span class="sd">    :param batch_size: The number of trees to process in each batch.</span>
+
+<span class="sd">    :return: The index of the operation that successfully simplified a tree, or `None` if no operation succeeded.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">edit_ops</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span> <span class="k">if</span> <span class="p">(</span><span class="n">run</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">())</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">edit_ops_names</span> <span class="o">=</span> <span class="p">[(</span><span class="n">op</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">Operation</span><span class="p">)</span> <span class="k">else</span> <span class="n">op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">edit_ops</span><span class="p">]</span>
+    <span class="n">workers_count</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">_max_workers</span>
+    <span class="n">futures</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Future</span><span class="p">]</span>
+
+    <span class="k">with</span> <span class="n">Manager</span><span class="p">()</span> <span class="k">as</span> <span class="n">manager</span><span class="p">:</span>
+        <span class="n">shared_equiv</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">py_object</span><span class="p">,</span> <span class="n">equiv_subtrees</span><span class="p">,</span> <span class="n">lock</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">simplification_operation</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">Value</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">lock</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">barrier</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">Barrier</span><span class="p">(</span><span class="n">workers_count</span> <span class="o">+</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">))</span>
+        <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">[</span><span class="n">TreeOID</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">manager</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="n">workers_count</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="n">worker_fn</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
+            <span class="n">_apply_operations_worker</span><span class="p">,</span>
+            <span class="n">edit_ops</span><span class="o">=</span><span class="n">edit_ops_names</span><span class="p">,</span>
+            <span class="n">shared_equiv_subtrees</span><span class="o">=</span><span class="n">shared_equiv</span><span class="p">,</span>
+            <span class="n">early_exit</span><span class="o">=</span><span class="n">early_exit</span><span class="p">,</span>
+            <span class="n">simplification_operation</span><span class="o">=</span><span class="n">simplification_operation</span><span class="p">,</span>
+            <span class="n">barrier</span><span class="o">=</span><span class="n">barrier</span><span class="p">,</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">queue</span><span class="o">=</span><span class="n">queue</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">queue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">):</span>
+            <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">worker_fn</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">forest</span><span class="o">=</span><span class="n">forest</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">workers_count</span><span class="p">)]</span>
+            <span class="n">_fill_queue</span><span class="p">(</span><span class="n">futures</span><span class="p">,</span> <span class="n">forest</span><span class="p">,</span> <span class="n">simplification_operation</span><span class="p">,</span> <span class="n">barrier</span><span class="p">,</span> <span class="n">queue</span><span class="p">,</span> <span class="n">edit_ops_names</span><span class="p">,</span> <span class="n">early_exit</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">worker_fn</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">forest</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">more_itertools</span><span class="o">.</span><span class="n">distribute</span><span class="p">(</span><span class="n">workers_count</span><span class="p">,</span> <span class="n">forest</span><span class="p">))</span>
+            <span class="p">]</span>
+
+        <span class="n">new_forest</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+            <span class="n">request_id</span><span class="p">,</span> <span class="n">trees</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">trees</span><span class="p">:</span>
+                <span class="n">new_forest</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">worker_trace</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_trace</span><span class="p">(</span><span class="n">request_id</span><span class="p">):</span>
+                <span class="n">mlflow</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">worker_trace</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">new_forest</span><span class="p">:</span>
+            <span class="n">forest</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">new_forest</span>
+
+        <span class="n">op_id</span> <span class="o">=</span> <span class="n">simplification_operation</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">op_id</span> <span class="k">if</span> <span class="n">op_id</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_worker_health</span><span class="p">(</span><span class="n">futures</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Future</span><span class="p">],</span> <span class="n">barrier</span><span class="p">:</span> <span class="n">Barrier</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">errors</span> <span class="o">:=</span> <span class="p">[</span><span class="n">exc</span> <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">futures</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">future</span><span class="o">.</span><span class="n">running</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">exc</span> <span class="o">:=</span> <span class="n">future</span><span class="o">.</span><span class="n">exception</span><span class="p">())]:</span>
+        <span class="n">barrier</span><span class="o">.</span><span class="n">abort</span><span class="p">()</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Some workers has failed&#39;</span>
+        <span class="k">raise</span> <span class="n">ExceptionGroup</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fill_queue</span><span class="p">(</span>
+    <span class="n">futures</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Future</span><span class="p">],</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">TreeBucket</span><span class="p">,</span>
+    <span class="n">simplification_operation</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">barrier</span><span class="p">:</span> <span class="n">Barrier</span><span class="p">,</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">[</span><span class="n">TreeOID</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Operation</span><span class="p">]],</span>
+    <span class="n">early_exit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">op_name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">edit_ops</span><span class="p">:</span>
+        <span class="c1"># Refill the queue with a new batch of object IDs from the bucket.</span>
+        <span class="c1"># This avoids holding all IDs in memory at once, which could cause OOM issues.</span>
+        <span class="k">for</span> <span class="n">oid</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">forest</span><span class="o">.</span><span class="n">oids</span><span class="p">(),</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="n">op_name</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">oid</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+                <span class="k">except</span> <span class="n">Full</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                    <span class="c1"># As we wait, we check for worker failures to avoid deadlocks.</span>
+                    <span class="n">_check_worker_health</span><span class="p">(</span><span class="n">futures</span><span class="p">,</span> <span class="n">barrier</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+
+        <span class="c1"># Signal to each worker that the current batch is complete.</span>
+        <span class="c1"># One sentinel per worker to ensure a clean exit or sync point.</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">)):</span>
+            <span class="n">queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Synchronize with all worker processes:</span>
+        <span class="c1"># - If a simplification occurred, workers will exit early.</span>
+        <span class="c1"># - Otherwise, the main process will continue to the next batch.</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">barrier</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+                <span class="k">break</span>
+
+            <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="c1"># As we wait, we check for worker failures to avoid deadlocks.</span>
+                <span class="n">_check_worker_health</span><span class="p">(</span><span class="n">futures</span><span class="p">,</span> <span class="n">barrier</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+
+        <span class="c1"># If simplification has occurred in any worker, stop processing further operations.</span>
+        <span class="k">if</span> <span class="n">early_exit</span> <span class="ow">and</span> <span class="n">simplification_operation</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">break</span>
+
+
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_operations_worker</span><span class="p">(</span>
+    <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Operation</span><span class="p">]],</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">TreeBucket</span><span class="p">,</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">[</span><span class="n">TreeOID</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="n">shared_equiv_subtrees</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="o">...</span><span class="p">]]],</span>
+    <span class="n">early_exit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">simplification_operation</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">barrier</span><span class="p">:</span> <span class="n">Barrier</span><span class="p">,</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span> <span class="o">...</span>
+
+
+<span class="nd">@overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_operations_worker</span><span class="p">(</span>
+    <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Operation</span><span class="p">]],</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">shared_equiv_subtrees</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="o">...</span><span class="p">]]],</span>
+    <span class="n">early_exit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">simplification_operation</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">barrier</span><span class="p">:</span> <span class="n">Barrier</span><span class="p">,</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Forest</span><span class="p">]:</span> <span class="o">...</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_operations_worker</span><span class="p">(</span>
+    <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">edit_ops</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Operation</span><span class="p">]],</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">TreeBucket</span> <span class="o">|</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">[</span><span class="n">TreeOID</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">shared_equiv_subtrees</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">set</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="o">...</span><span class="p">]]],</span>
+    <span class="n">early_exit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">simplification_operation</span><span class="p">:</span> <span class="n">ValueProxy</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">barrier</span><span class="p">:</span> <span class="n">Barrier</span><span class="p">,</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Forest</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply the given operations to a forest.</span>
+
+<span class="sd">    - In TreeBucket mode, tree IDs are consumed from a shared queue.</span>
+<span class="sd">      A sentinel value (None) signals the end of the input.</span>
+<span class="sd">      Each worker processes trees incrementally and commits changes in batches.</span>
+<span class="sd">    - In list-based mode (plain Forest), the entire collection is processed in a single pass.</span>
+
+<span class="sd">    Workers synchronize using a barrier after each operation.</span>
+
+<span class="sd">    MLflow&#39;s tracing buffers spans in memory and exports the entire trace only when the root span concludes.</span>
+<span class="sd">    This design does not inherently support multiprocessing, as spans created in separate processes are isolated</span>
+<span class="sd">    and cannot be automatically aggregated into a single trace.</span>
+<span class="sd">    As a result, we need to manually export spans from each subprocess and send them to the main process.</span>
+<span class="sd">    To achieve this, an independent trace is created for each worker, which is then merged with the main trace.</span>
+<span class="sd">    This means we SHOULD NOT pass OpenTelemetry context to the subprocess.</span>
+<span class="sd">    Only the request id is sent, and we let the main process retrieve the trace from the tracking store</span>
+<span class="sd">    See :py:func:`mlflow.tracing.fluent.add_trace`</span>
+
+<span class="sd">    :param idx: The index of the worker.</span>
+<span class="sd">    :param edit_ops: The list of operations to perform on the forest.</span>
+<span class="sd">    :param forest: The forest or bucket of trees to process.</span>
+<span class="sd">    :param queue: A shared queue of tree IDs still waiting to be processed (for bucket use).</span>
+<span class="sd">    :param shared_equiv_subtrees: The shared set of equivalent subtrees.</span>
+<span class="sd">    :param early_exit: A boolean flag indicating whether to stop after the first successful operation.</span>
+<span class="sd">                       If `False`, all operations are applied.</span>
+<span class="sd">    :param simplification_operation: A shared integer value to store the index of the operation that simplified a tree.</span>
+<span class="sd">    :param barrier: A barrier to synchronize the workers before starting the next operation.</span>
+<span class="sd">    :param run_id: The Mlflow run_id to link to.</span>
+<span class="sd">    :param batch_size: Number of trees to process before committing changes in bucket mode.</span>
+<span class="sd">    :return: Tuple of MLflow request ID and modified forest, or None if using a bucket.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">equiv_subtrees</span> <span class="o">=</span> <span class="n">shared_equiv_subtrees</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="p">(</span>
+        <span class="n">forest</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">)</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">(),</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">run_id</span> <span class="k">else</span> <span class="n">nullcontext</span><span class="p">(),</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="s1">&#39;worker&#39;</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;worker_id&#39;</span><span class="p">:</span> <span class="n">idx</span><span class="p">})</span> <span class="k">as</span> <span class="n">span</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">request_id</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">request_id</span>
+
+        <span class="k">for</span> <span class="n">op_id</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">edit_ops</span><span class="p">):</span>
+            <span class="n">op_fn</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">operation</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span> <span class="n">equiv_subtrees</span><span class="o">=</span><span class="n">equiv_subtrees</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">queue</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># List-based mode: apply operation directly</span>
+                    <span class="n">forest_iterator</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">simplified</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">op_fn</span><span class="p">,</span> <span class="n">forest_iterator</span><span class="p">))</span>
+
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">):</span>
+                    <span class="c1"># Bucket-based mode: apply operation for each tree in the queue and commit in batches</span>
+                    <span class="n">simplified</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="k">while</span> <span class="p">(</span><span class="n">oid</span> <span class="o">:=</span> <span class="n">queue</span><span class="o">.</span><span class="n">get</span><span class="p">())</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">simplified</span> <span class="o">|=</span> <span class="n">op_fn</span><span class="p">(</span><span class="n">forest</span><span class="p">[</span><span class="n">oid</span><span class="p">])</span>
+                        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">batch_size</span><span class="p">:</span>
+                            <span class="n">forest</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">forest</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Using an in-memory collection may result in excessive serialization when used with a queue.&#39;</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">simplified</span><span class="p">:</span>
+                <span class="n">simplification_operation</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">op_id</span><span class="p">)</span>
+
+            <span class="n">barrier</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>  <span class="c1"># Wait for all workers to finish this operation</span>
+
+            <span class="c1"># If simplification has occurred in any worker, stop processing further operations.</span>
+            <span class="k">if</span> <span class="n">early_exit</span> <span class="ow">and</span> <span class="n">simplification_operation</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">break</span>
+
+    <span class="k">return</span> <span class="n">request_id</span><span class="p">,</span> <span class="kc">None</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">)</span> <span class="k">else</span> <span class="n">forest</span>
+
+
+<div class="viewcode-block" id="create_group">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.create_group">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_group</span><span class="p">(</span><span class="n">subtree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">group_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a group node from a subtree and inserts it into its parent node.</span>
+
+<span class="sd">    :param subtree: The subtree to convert into a group.</span>
+<span class="sd">    :param group_name: The name to use for the group.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">subtree</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">NodeLabel</span><span class="p">(</span><span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span> <span class="n">group_name</span><span class="p">)</span>
+    <span class="n">subtree</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">entity</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="n">subtree</span><span class="o">.</span><span class="n">entities</span><span class="p">()]</span></div>
+
+
+
+<div class="viewcode-block" id="find_groups">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.find_groups">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_groups</span><span class="p">(</span>
+    <span class="n">equiv_subtrees</span><span class="p">:</span> <span class="n">TREE_CLUSTER</span><span class="p">,</span>
+    <span class="n">min_support</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find and create groups based on the given set of equivalent subtrees.</span>
+
+<span class="sd">    :param equiv_subtrees: The set of equivalent subtrees.</span>
+<span class="sd">    :param min_support: Minimum support of groups.</span>
+
+<span class="sd">    :return: A boolean indicating if groups were created.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">frequent_clusters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">cluster_name</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">min_support</span><span class="p">,</span> <span class="n">equiv_subtrees</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+        <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cluster_name</span><span class="p">:</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">]),</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">entities</span><span class="p">())</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">]),</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">depth</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">]),</span>
+        <span class="p">),</span>
+        <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">group_created</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">cluster_name</span> <span class="ow">in</span> <span class="n">frequent_clusters</span><span class="p">:</span>
+        <span class="n">subtree_cluster</span> <span class="o">=</span> <span class="n">equiv_subtrees</span><span class="p">[</span><span class="n">cluster_name</span><span class="p">]</span>
+
+        <span class="c1"># Create a group for each subtree in the cluster</span>
+        <span class="k">for</span> <span class="n">subtree</span> <span class="ow">in</span> <span class="n">subtree_cluster</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">subtree</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span>
+                <span class="ow">or</span> <span class="p">(</span><span class="n">subtree</span><span class="o">.</span><span class="n">parent</span> <span class="ow">and</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">))</span>
+                <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_type</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">ENT</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">subtree</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">subtree</span><span class="o">.</span><span class="n">has_duplicate_entity</span><span class="p">()</span>
+            <span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">):</span>  <span class="c1"># Renaming only</span>
+                <span class="n">subtree</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">NodeLabel</span><span class="p">(</span><span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span> <span class="n">cluster_name</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">create_group</span><span class="p">(</span><span class="n">subtree</span><span class="p">,</span> <span class="n">cluster_name</span><span class="p">)</span>
+            <span class="n">group_created</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="n">span</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_current_active_span</span><span class="p">():</span>
+                <span class="n">group_labels</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                    <span class="nb">sorted</span><span class="p">({</span><span class="n">label</span> <span class="k">for</span> <span class="n">subtree</span> <span class="ow">in</span> <span class="n">subtree_cluster</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">subtree</span><span class="o">.</span><span class="n">entity_labels</span><span class="p">()})</span>
+                <span class="p">)</span>
+                <span class="n">span</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span>
+                    <span class="n">SpanEvent</span><span class="p">(</span>
+                        <span class="s1">&#39;create_group&#39;</span><span class="p">,</span>
+                        <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s1">&#39;group&#39;</span><span class="p">:</span> <span class="n">cluster_name</span><span class="p">,</span>
+                            <span class="s1">&#39;labels&#39;</span><span class="p">:</span> <span class="n">group_labels</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">group_created</span></div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
