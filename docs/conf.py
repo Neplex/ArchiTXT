@@ -72,6 +72,7 @@ html_static_path = ['_static']
 html_css_files = []
 html_js_files = [
     'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js',
+    'https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js',
 ]
 html_extra_path = ['robot.txt']
 
