@@ -15,6 +15,8 @@ from tqdm.auto import tqdm
 
 from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
 
+MAX_DEPTH = 5
+DECAY = 2
 METRIC_FUNC = Callable[[Collection[str], Collection[str]], float]
 TREE_CLUSTER = dict[str, Sequence[Tree]]
 
@@ -55,17 +57,27 @@ def jaro(x: Collection[str], y: Collection[str]) -> float:
 DEFAULT_METRIC: METRIC_FUNC = jaro  # jaccard, levenshtein, jaro
 
 
-def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> float:
-    """
+def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay: float = DECAY) -> float:
+    r"""
     Compute the similarity between two tree objects based on their entity labels and context.
 
     The function uses a specified metric (such as Jaccard, Levenshtein, or Jaro-Winkler) to calculate the
-    similarity between the labels of entities in the trees. The similarity is computed as recursive weighted
-    mean for each tree anestor.
+    similarity between the labels of entities in the trees. The similarity is computed as a recursive weighted
+    mean for each tree anestor, where the weight decays with the distance from the tree.
+
+    .. math::
+        \text{similarity}_\text{metric}(x, y) =
+        \frac{\sum_{i=1}^{d_{\min}} \text{decay}^{-i} \cdot \text{metric}(P^x_i, P^y_i)}
+             {\sum_{i=1}^{d_{\min}} \text{decay}^{-i}}
+
+    where :math:`P^x_i` and :math:`P^y_i` are the :math:`i^\text{th}` parent nodes of
+    :math:`x` and :math:`y` respectively, and :math:`d_{\\min}` is the depth of the shallowest tree
+    from :math:`x` and :math:`y` up to the root (or a fixed maximum depth).
 
     :param x: The first tree object.
     :param y: The second tree object.
     :param metric: A metric function to compute the similarity between the entity labels of the two trees.
+    :param decay: The decay factor for the weighted mean. The higher the value, the more the weight of context decreases with distance.
     :return: A similarity score between 0 and 1, where 1 indicates maximum similarity.
 
     >>> from architxt.tree import Tree
@@ -84,7 +96,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
     sim_sum = 0.0
     distance = 1
 
-    while _x is not None and _y is not None:
+    while _x is not None and _y is not None and distance <= MAX_DEPTH:
         # Extract the entity labels as sets for faster lookup
         x_labels = _x.entity_labels()
         y_labels = _y.entity_labels()
@@ -94,7 +106,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC) -> flo
             return 0.0
 
         # Calculate similarity for current level and accumulate weighted sum
-        weight = 1 / distance
+        weight = decay ** (-distance)
         weight_sum += weight
         sim_sum += weight * metric(x_labels, y_labels)
 
@@ -256,7 +268,7 @@ def get_equiv_of(
     :param equiv_subtrees: The set of equivalent subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
-    :return: The name of the cluster that meet the similarity threshold.
+    :return: The name of the cluster that meets the similarity threshold.
     """
     distance_to_center = {}
     for cluster_name, cluster in equiv_subtrees.items():
