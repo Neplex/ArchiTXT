@@ -95,6 +95,7 @@ neo4j = "^5.28.1"
 zodb = "^6.0"
 relstorage = "^4.1.1"
 yfiles-jupyter-graphs-for-neo4j = "^1.7.0"
+anyio = "^4.9.0"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]

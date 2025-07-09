@@ -1,7 +1,7 @@
-import asyncio
 import random
 from copy import deepcopy
 
+import anyio
 import mlflow
 import pandas as pd
 import streamlit as st
@@ -147,7 +147,7 @@ if submitted and file_language:
             mlflow.end_run()
 
         with st.spinner('Computing...'), mlflow.start_run(description='UI run', log_system_metrics=True) as mlflow_run:
-            forest = asyncio.run(load_forest())
+            forest = anyio.run(load_forest)
 
             if sample:
                 forest = random.sample(forest, sample)
