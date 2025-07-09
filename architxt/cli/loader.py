@@ -1,6 +1,6 @@
-import asyncio
 from pathlib import Path
 
+import anyio
 import click
 import mlflow
 import typer
@@ -166,20 +166,19 @@ def load_corpus(
         mlflow.start_run(description='corpus_processing')
 
     with ZODBTreeBucket(storage_path=output) as bucket:
-        asyncio.run(
-            bucket.async_update(
-                raw_load_corpus(
-                    corpus_path,
-                    language,
-                    parser=CoreNLPParser(corenlp_url=corenlp_url),
-                    resolver_name=resolver,
-                    cache=cache,
-                    entities_filter=ENTITIES_FILTER,
-                    relations_filter=RELATIONS_FILTER,
-                    entities_mapping=ENTITIES_MAPPING,
-                    sample=sample,
-                )
-            )
+        anyio.run(
+            bucket.async_update,
+            raw_load_corpus(
+                corpus_path,
+                language,
+                parser=CoreNLPParser(corenlp_url=corenlp_url),
+                resolver_name=resolver,
+                cache=cache,
+                entities_filter=ENTITIES_FILTER,
+                relations_filter=RELATIONS_FILTER,
+                entities_mapping=ENTITIES_MAPPING,
+                sample=sample,
+            ),
         )
 
         schema = Schema.from_forest(bucket, keep_unlabelled=False)

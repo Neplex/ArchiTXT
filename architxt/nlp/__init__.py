@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import tarfile
 import zipfile
@@ -9,7 +8,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, BinaryIO
 
+import anyio
+import anyio.to_thread
 import mlflow
+from anyio.abc import ObjectSendStream
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
 from platformdirs import user_cache_path
@@ -45,7 +47,7 @@ async def _get_cache_key(
 ) -> str:
     """Generate a cache key based on the archive file's content and settings."""
     cursor = archive_file.tell()
-    file_hash = await asyncio.to_thread(hashlib.file_digest, archive_file, hashlib.md5)
+    file_hash = await anyio.to_thread.run_sync(hashlib.file_digest, archive_file, hashlib.md5)
     archive_file.seek(cursor)
 
     file_hash.update(language.encode())
@@ -81,19 +83,18 @@ def open_archive(archive_file: BytesIO | BinaryIO) -> zipfile.ZipFile | tarfile.
 
 async def _load_or_cache_corpus(  # noqa: C901
     archive_file: str | Path | BytesIO | BinaryIO,
-    queue: asyncio.Queue[Tree],
+    send_stream: ObjectSendStream[Tree],
     progress: Progress,
-    *,
+    parser: Parser,
+    language: str,
     entities_filter: set[str] | None = None,
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-    parser: Parser,
-    language: str,
-    name: str | None = None,
     resolver: EntityResolver | None = None,
     cache: bool = True,
     sample: int | None = None,
+    name: str | None = None,
 ) -> None:
     """
     Load the corpus from the disk or cache.
@@ -159,11 +160,9 @@ async def _load_or_cache_corpus(  # noqa: C901
                     description=f'[green]Loading corpus {archive_file.name} from cache...[/]',
                     total=sample,
                 ):
-                    await queue.put(tree.copy())
-                    count += 1
-
-                    if sample and count >= sample:
-                        break
+                    if not sample or count < sample:
+                        await send_stream.send(tree.copy())
+                        count += 1
 
             else:  # Load data from disk
                 with (
@@ -171,7 +170,7 @@ async def _load_or_cache_corpus(  # noqa: C901
                     TemporaryDirectory() as tmp_dir,
                 ):
                     # Extract archive contents to a temporary directory
-                    await asyncio.to_thread(corpus.extractall, path=tmp_dir)
+                    await anyio.to_thread.run_sync(corpus.extractall, tmp_dir)
 
                     # Parse sentences and enrich the forest
                     sentences: Iterable[AnnotatedSentence] = load_brat_dataset(
@@ -192,21 +191,22 @@ async def _load_or_cache_corpus(  # noqa: C901
                         batch.append(tree)
 
                         if not sample or count < sample:
-                            await queue.put(tree.copy())
+                            await send_stream.send(tree.copy())
                             count += 1
 
                         if len(batch) >= BATCH_SIZE:
-                            await asyncio.to_thread(forest.update, batch)
+                            await forest.async_update(batch)
                             batch.clear()
 
                     if batch:
-                        await asyncio.to_thread(forest.update, batch)
+                        await forest.async_update(batch)
 
     except Exception as e:
         console.print(f'[red]Error while processing corpus:[/] {e}')
         raise
 
     finally:
+        await send_stream.aclose()
         if should_close:
             archive_file.close()
 
@@ -265,36 +265,27 @@ async def raw_load_corpus(
             ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
         )
 
-        async with resolver_ctx as resolver:
-            queue: asyncio.Queue[Tree] = asyncio.Queue(batch_size)
-            pending = {
-                asyncio.create_task(
-                    _load_or_cache_corpus(
-                        corpus,
-                        queue,
-                        progress,
-                        entities_filter=entities_filter,
-                        relations_filter=relations_filter,
-                        entities_mapping=entities_mapping,
-                        relations_mapping=relations_mapping,
-                        parser=parser_ctx,
-                        language=language,
-                        resolver=resolver,
-                        cache=cache,
-                        sample=sample,
-                    )
+        async with resolver_ctx as resolver, anyio.create_task_group() as tg:
+            send_stream, receive_stream = anyio.create_memory_object_stream(batch_size)
+
+            for corpus, language in zip(corpus_archives, languages, strict=True):
+                tg.start_soon(
+                    _load_or_cache_corpus,
+                    corpus,
+                    send_stream.clone(),
+                    progress,
+                    parser_ctx,
+                    language,
+                    entities_filter,
+                    relations_filter,
+                    entities_mapping,
+                    relations_mapping,
+                    resolver,
+                    cache,
+                    sample,
                 )
-                for corpus, language in zip(corpus_archives, languages, strict=True)
-            }
 
-            try:
-                while pending or not queue.empty():
-                    while not queue.empty():
-                        yield await queue.get()
-
-                    if pending:
-                        _, pending = await asyncio.wait(pending, timeout=0.1, return_when=asyncio.FIRST_COMPLETED)
-
-            finally:
-                for task in pending:
-                    task.cancel()
+            send_stream.close()
+            async with receive_stream:
+                async for tree in receive_stream:
+                    yield tree

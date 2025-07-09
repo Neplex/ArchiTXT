@@ -1,10 +1,10 @@
-import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable, Generator, Iterable, MutableSet
 from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import overload
 
+import anyio.to_thread
 from aiostream import Stream, stream
 
 from architxt.tree import Forest, Tree, TreeOID
@@ -58,7 +58,7 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                await asyncio.to_thread(self.update, chunk)
+                await anyio.to_thread.run_sync(self.update, chunk)
 
     @abstractmethod
     def close(self) -> None:

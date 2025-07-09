@@ -1,4 +1,3 @@
-import asyncio
 import gc
 import tempfile
 import uuid
@@ -11,6 +10,7 @@ from collections.abc import (
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
+import anyio.to_thread
 import more_itertools
 import transaction
 import ZODB.config
@@ -171,7 +171,10 @@ class ZODBTreeBucket(TreeBucket):
                 gc.collect()
 
     async def async_update(
-        self, trees: AsyncIterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000
+        self,
+        trees: Iterable[Tree] | AsyncIterable[Tree],
+        batch_size: int = BATCH_SIZE,
+        _memory_threshold_mb: int = 3_000,
     ) -> None:
         """
         Asynchronously add multiple :py:class:`~architxt.tree.Tree` to the bucket.
@@ -183,12 +186,12 @@ class ZODBTreeBucket(TreeBucket):
         :param batch_size: The number of trees to be added at once.
         :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
         """
-        chunk_stream: Stream[list[Tree]] = stream.chunks(trees, batch_size)
+        chunk_stream: Stream[list[Tree]] = stream.chunks(stream.iterate(trees), batch_size)
         chunk: list[Tree]
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                await asyncio.to_thread(self.update, chunk, batch_size, _memory_threshold_mb=_memory_threshold_mb)
+                await anyio.to_thread.run_sync(self.update, chunk, batch_size, _memory_threshold_mb)
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""
