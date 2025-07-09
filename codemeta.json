@@ -232,6 +232,13 @@
         },
         {
             "@type": "SoftwareApplication",
+            "identifier": "pandas",
+            "name": "pandas",
+            "runtimePlatform": "Python 3",
+            "version": "^2.3.0"
+        },
+        {
+            "@type": "SoftwareApplication",
             "identifier": "plotly",
             "name": "plotly",
             "runtimePlatform": "Python 3",
@@ -278,13 +285,6 @@
             "name": "scispacy",
             "runtimePlatform": "Python 3",
             "version": "^0.5.5"
-        },
-        {
-            "@type": "SoftwareApplication",
-            "identifier": "spacy-alignments",
-            "name": "spacy-alignments",
-            "runtimePlatform": "Python 3",
-            "version": "^0.9.1"
         },
         {
             "@type": "SoftwareApplication",
@@ -355,6 +355,13 @@
             "name": "xmltodict",
             "runtimePlatform": "Python 3",
             "version": "^0.14.2"
+        },
+        {
+            "@type": "SoftwareApplication",
+            "identifier": "yfiles-jupyter-graphs-for-neo4j",
+            "name": "yfiles-jupyter-graphs-for-neo4j",
+            "runtimePlatform": "Python 3",
+            "version": "^1.7.0"
         },
         {
             "@type": "SoftwareApplication",
