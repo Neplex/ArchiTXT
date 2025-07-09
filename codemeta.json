@@ -142,6 +142,13 @@
         },
         {
             "@type": "SoftwareApplication",
+            "identifier": "anyio",
+            "name": "anyio",
+            "runtimePlatform": "Python 3",
+            "version": "^4.9.0"
+        },
+        {
+            "@type": "SoftwareApplication",
             "identifier": "benepar",
             "name": "benepar",
             "runtimePlatform": "Python 3",
