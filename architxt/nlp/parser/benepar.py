@@ -4,6 +4,7 @@ from types import TracebackType
 import benepar  # noqa: F401
 import spacy
 from spacy import Language
+from spacy.tokens import Doc
 
 from architxt.tree import Tree
 
@@ -24,6 +25,19 @@ DEFAULT_BENEPAR_MODELS = {
     'Polish': 'benepar_pl2',
     'Swedish': 'benepar_sv2',
 }
+
+SPACY_DISABLED_PIPELINES = {'parser', 'senter', 'sentencizer', 'ner', 'textcat', 'lemmatizer', 'tagger'}
+
+
+@Language.component('force_single_sent')
+def _force_single_sent(doc: Doc) -> Doc:
+    for t in doc:
+        t.is_sent_start = False
+
+    if len(doc):
+        doc[0].is_sent_start = True
+
+    return doc
 
 
 class BeneparParser(Parser):
@@ -50,8 +64,9 @@ class BeneparParser(Parser):
 
     def _get_model(self, language: str) -> Language:
         if language not in self.__models:
-            nlp = spacy.load(self.spacy_models[language], disable={'ner', 'textcat', 'lemmatizer', 'tagger'})
-            nlp.add_pipe('benepar', config={'model': self.benepar_models[language]})
+            nlp = spacy.load(self.spacy_models[language], disable=SPACY_DISABLED_PIPELINES)
+            nlp.add_pipe('force_single_sent')
+            nlp.add_pipe('benepar', config={'model': self.benepar_models[language]}, last=True)
             self.__models[language] = nlp
 
         return self.__models[language]
