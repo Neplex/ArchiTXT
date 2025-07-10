@@ -72,8 +72,8 @@ def get_cycle_tables(tables: set[Table]) -> set[Table]:
     :return: A set of tables that are part of a cycle but should be considered as root.
     """
 
-    def get_cycle(table: Table, cycle: set[Table] | None = None) -> set[Table] | None:
-        cycle = cycle or set()
+    def get_cycle(table: Table, _cycle: set[Table] | None = None) -> set[Table]:
+        cycle = _cycle or set()
 
         if table in cycle:
             return cycle
@@ -82,7 +82,7 @@ def get_cycle_tables(tables: set[Table]) -> set[Table]:
             if cycle := get_cycle(fk.column.table, cycle | {table}):
                 return cycle
 
-        return None
+        return set()
 
     cycle_roots: set[Table] = set()
     referenced_tables = {fk.column.table for table in tables for fk in table.foreign_keys}
@@ -126,7 +126,7 @@ def read_table(
     :param sample: Number of samples for each table to get.
     :return: A list of trees representing the relations and data for the table.
     """
-    total_rows = conn.scalar(select(func.count()).select_from(table))
+    total_rows = conn.scalar(select(func.count()).select_from(table)) or 0
     query = table.select()
 
     if total_rows > sample > 0:

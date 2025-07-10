@@ -152,12 +152,12 @@ class Metrics:
         self._current_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric)
 
     @cachedmethod(attrgetter('_cache'))
-    def _cluster_labels(self) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    def _cluster_labels(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
         entities = sorted(self._source_clustering.keys() | self._current_clustering.keys())
 
         # Use negative indices for entities that are not present
-        source_labels = tuple(self._source_clustering.get(ent, -i) for i, ent in enumerate(entities))
-        current_labels = tuple(self._current_clustering.get(ent, -i) for i, ent in enumerate(entities))
+        source_labels = tuple(self._source_clustering.get(ent, str(-i)) for i, ent in enumerate(entities))
+        current_labels = tuple(self._current_clustering.get(ent, str(-i)) for i, ent in enumerate(entities))
 
         return source_labels, current_labels
 

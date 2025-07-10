@@ -37,6 +37,9 @@ __all__ = [
     'has_type',
 ]
 
+if TYPE_CHECKING:
+    __all__ += ['_SubTree', '_TypedSubTree', '_TypedTree']
+
 TreePosition: TypeAlias = tuple[int, ...]
 TreeOID: TypeAlias = uuid.UUID
 

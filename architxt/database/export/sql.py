@@ -1,7 +1,8 @@
 import base64
+from collections import defaultdict
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BLOB,
@@ -19,7 +20,10 @@ from sqlalchemy import (
 from tqdm.auto import tqdm
 
 from architxt.schema import Group, Relation, RelationOrientation, Schema
-from architxt.tree import Forest, NodeType, Tree, has_type
+from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
+
+if TYPE_CHECKING:
+    from architxt.tree import _TypedSubTree, _TypedTree
 
 __all__ = ['export_sql']
 
@@ -97,9 +101,12 @@ def create_table_for_group(group: Group, metadata: MetaData, pk_factory: PKColum
     :param pk_factory: A column name factory for the groups primary keys.
     :return: SQLAlchemy Table object.
     """
-    columns = [Column(entity, String) for entity in group.entities]
-    columns.append(Column(pk_factory(group.name), Uuid, primary_key=True))
-    return Table(group.name, metadata, *columns)
+    return Table(
+        group.name,
+        metadata,
+        Column(pk_factory(group.name), Uuid, primary_key=True),
+        *(Column(entity, String) for entity in group.entities),
+    )
 
 
 def add_foreign_keys_to_table(
@@ -114,8 +121,8 @@ def add_foreign_keys_to_table(
     :param relation: The relation to build as a foreign key.
     :param pk_factory: A column name factory for the groups primary keys.
     """
-    left = database_schema[relation.left.replace(" ", "")]
-    right = database_schema[relation.right.replace(" ", "")]
+    left = database_schema[relation.left.replace(' ', '')]
+    right = database_schema[relation.right.replace(' ', '')]
 
     source, target = (left, right) if relation.orientation == RelationOrientation.LEFT else (right, left)
 
@@ -165,9 +172,9 @@ def export_tree(
     :param tree: Tree to export.
     :param conn: Connection to the relational database.
     :param schema: The schema.
-    :param pk_factory: A column name factory for the groups primary keys.
+    :param pk_factory: A column name factory for the groups primary key.
     """
-    data_to_export: dict[str, dict[str, Any]] = {}
+    data_to_export: dict[str, dict[TreeOID, dict[str, str]]] = {}
 
     for subtree in tree.subtrees():
         if has_type(subtree, NodeType.GROUP):
@@ -180,8 +187,8 @@ def export_tree(
 
 
 def export_relation(
-    tree: Tree,
-    data: dict[str, dict[str, Any]],
+    tree: '_TypedTree',
+    data: dict[str, dict[TreeOID, dict[str, str]]],
     schema: Schema,
     pk_factory: PKColumnFactory,
 ) -> None:
@@ -191,22 +198,26 @@ def export_relation(
     :param tree: Relation to export.
     :param data: Data to export.
     :param schema: The schema.
-    :param pk_factory: A column name factory for the groups primary keys.
+    :param pk_factory: A column name factory for the groups primary key.
     """
     relation = next(rel for rel in schema.relations if rel.name == tree.label.name)
 
     if relation.orientation == RelationOrientation.BOTH:
-        relation_data = {}
+        relation_data: dict[str, str] = {}
         for child in tree:
-            relation_data[pk_factory(child.label.name)] = data[child.label.name][str(child.oid)]
+            column_name = pk_factory(child.label.name)
+            relation_data[column_name] = data[child.label.name][child.oid][column_name]
 
-        data[relation.name] = {str(tree.oid): relation_data}
+        data[relation.name] = {tree.oid: relation_data}
 
     else:
-        left: Tree | None = None
-        right: Tree | None = None
+        left: _TypedSubTree | None = None
+        right: _TypedSubTree | None = None
 
         for child in tree:
+            if not has_type(child, NodeType.GROUP):
+                continue
+
             if child.label.name == relation.left:
                 left = child
 
@@ -216,14 +227,16 @@ def export_relation(
         if not left or not right:
             return
 
-        source, target = (left, right) if relation.orientation == RelationOrientation.LEFT else (right, left)
-        column_name = relation.name if target.label.name == source.label.name else pk_factory(target.label.name)
-        data[source.label.name][str(source.oid)][column_name] = data[target.label.name][str(target.oid)]
+        if relation.orientation == RelationOrientation.RIGHT:
+            left, right = right, left
+
+        column_name = relation.name if right.label.name == left.label.name else pk_factory(right.label.name)
+        data[left.label.name][left.oid][column_name] = data[right.label.name][right.oid][column_name]
 
 
 def export_group(
-    group: Tree,
-    data: dict[str, dict[str, Any]],
+    group: '_TypedTree',
+    data: dict[str, dict[TreeOID, dict[str, str]]],
     pk_factory: PKColumnFactory,
 ) -> None:
     """
@@ -231,7 +244,7 @@ def export_group(
 
     :param group: Group to export.
     :param data: Data to export.
-    :param pk_factory: A column name factory for the groups primary keys.
+    :param pk_factory: A column name factory for the groups primary key.
     """
     group_name = group.label.name
 
@@ -240,7 +253,8 @@ def export_group(
 
     if group_name not in data:
         data[group_name] = {}
-    data[group_name][str(group.oid)] = group_data
+
+    data[group_name][group.oid] = group_data
 
 
 def get_data_from_group(group: Tree) -> dict[str, str]:
@@ -271,7 +285,7 @@ def get_data_from_group(group: Tree) -> dict[str, str]:
 
 
 def export_data(
-    data: dict,
+    data: dict[str, dict[TreeOID, dict[str, str]]],
     conn: Connection,
 ) -> None:
     """
@@ -279,28 +293,27 @@ def export_data(
 
     :param data: Data to export.
     :param conn: Connection to the relational database.
-    :return:
     """
     if not data:
         return
-    data_to_export = {}
-    table_to_insert = {}
+
+    data_to_export: dict[str, dict[TreeOID, dict[str, str]]] = defaultdict(dict)
+    table_to_insert: dict[str, list[dict[str, str]]] = defaultdict(list)
+
     for table, dict_info in data.items():
         for oid, info in dict_info.items():
             has_foreign_key = False
+
             for name, x in info.items():
-                if isinstance(x, dict) and "primary_key_insert" not in x:
+                if isinstance(x, dict) and 'primary_key_insert' not in x:
                     has_foreign_key = True
                 elif isinstance(x, dict):
-                    data[table][oid][name] = x["primary_key_insert"]
-            if not has_foreign_key:
-                if table not in table_to_insert:
-                    table_to_insert[table] = []
-                table_to_insert[table].append(info)
-            else:
-                if table not in data_to_export:
-                    data_to_export[table] = {}
+                    data[table][oid][name] = x['primary_key_insert']
+
+            if has_foreign_key:
                 data_to_export[table][oid] = info
+            else:
+                table_to_insert[table].append(info)
 
     export_table_to_insert(table_to_insert, conn)
 
@@ -329,6 +342,7 @@ def export_table_to_insert(
                 .where(*[getattr(database_table.c, key) == value for key, value in info.items() if key in primary_keys])
             )
             result = conn.execute(query).fetchone()
+
             if not result:
                 insert_command = insert(database_table).values(info)
                 result_insert = conn.execute(insert_command)
@@ -336,5 +350,6 @@ def export_table_to_insert(
                 inserted_id = result_insert.inserted_primary_key[0]
             else:
                 inserted_id = result[0]
+
             if inserted_id:
-                info["primary_key_insert"] = inserted_id
+                info['primary_key_insert'] = inserted_id

@@ -1,6 +1,6 @@
 import math
 from collections import Counter, defaultdict
-from collections.abc import Callable, Collection, Sequence
+from collections.abc import Callable, Collection, Iterable, Sequence
 from itertools import combinations
 
 import mlflow
@@ -13,7 +13,7 @@ from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 from tqdm.auto import tqdm
 
-from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
+from architxt.tree import NodeType, Tree, TreeOID, has_type
 
 MAX_DEPTH = 5
 DECAY = 2
@@ -171,7 +171,7 @@ def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> n
 
 
 def equiv_cluster(
-    trees: Forest,
+    trees: Iterable[Tree],
     *,
     tau: float,
     metric: METRIC_FUNC = DEFAULT_METRIC,
@@ -189,6 +189,8 @@ def equiv_cluster(
     :param trees: The forest from which to extract and cluster subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
+    :param _all_subtrees: If true, compute the similarity between all subtrees, else only the given trees are compared.
+    :param _step: The MLFlow step for logging.
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
     """
     subtrees = (
@@ -198,7 +200,7 @@ def equiv_cluster(
             for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and not x.has_duplicate_entity())
         ]
         if _all_subtrees
-        else list(trees)
+        else tuple(trees)
     )
 
     if len(subtrees) < 2:
@@ -243,8 +245,9 @@ def equiv_cluster(
         center_index = cluster_indices[np.argmin(sum_distances)]
 
         # Sort the cluster based on distance to the center
-        sorted_cluster = sorted(cluster_indices, key=lambda idx: square_dist_matrix[center_index][idx])
-        sorted_cluster = tuple(subtrees[i] for i in sorted_cluster)
+        sorted_cluster = tuple(
+            subtrees[i] for i in sorted(cluster_indices, key=lambda i: square_dist_matrix[center_index][i])
+        )
 
         # Get the most common label for the cluster
         cluster_name = str(cluster_num)
@@ -291,7 +294,12 @@ def get_equiv_of(
     return None
 
 
-def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DEFAULT_METRIC) -> dict[TreeOID, str]:
+def entity_labels(
+    forest: Iterable[Tree],
+    *,
+    tau: float,
+    metric: METRIC_FUNC | None = DEFAULT_METRIC,
+) -> dict[TreeOID, str]:
     """
     Process the given forest to assign labels to entities based on clustering of their ancestor.
 
@@ -301,20 +309,15 @@ def entity_labels(forest: Forest, *, tau: float, metric: METRIC_FUNC | None = DE
                     If None, use the parent label as the equivalent class.
     :return: A dictionary mapping entities to their respective cluster name.
     """
-    entity_parents = [
+    if metric is None:
+        return {entity.oid: entity.parent.label for tree in forest for entity in tree.entities() if entity.parent}
+
+    entity_parents = (
         subtree
         for tree in forest
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
-    ]
-    equiv_subtrees: TREE_CLUSTER
-
-    if metric is None:
-        equiv_subtrees: dict[str, list[Tree]] = defaultdict(list)
-        for subtree in entity_parents:
-            equiv_subtrees[subtree.label].append(subtree)
-
-    else:
-        equiv_subtrees = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
+    )
+    equiv_subtrees: TREE_CLUSTER = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
 
     return {
         child.oid: cluster_name

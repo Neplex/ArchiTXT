@@ -175,17 +175,24 @@ class Schema(CFG):
                     rhs = tuple(sorted(set(prod.rhs())))
                     schema_productions[prod.lhs()].add(rhs)
 
-            for subtree in tree.subtrees(lambda x: has_type(x, NodeType.REL) and len(x) == 2):
-                pair = tuple(sorted((subtree[0].oid, subtree[1].oid)))
+            for subtree in tree.subtrees():
+                if not has_type(subtree, NodeType.REL) or len(subtree) != 2:
+                    continue
+
+                left_tree, right_tree = subtree
+                if not has_type(left_tree, NodeType.GROUP) or not has_type(right_tree, NodeType.GROUP):
+                    continue
+
+                left, right = sorted((left_tree.oid, right_tree.oid))
                 rel = relations_examples[subtree.label.name]
 
                 for child in subtree:
                     relations_is_multi[subtree.label.name][child.label.name] |= False
 
                     if not (existing := rel[child.label.name].get(child.oid)):
-                        rel[child.label.name][child.oid] = pair
+                        rel[child.label.name][child.oid] = (left, right)
 
-                    elif existing != pair:
+                    elif existing != (left, right):
                         relations_is_multi[subtree.label.name][child.label.name] = True
 
         del relations_examples
@@ -421,7 +428,7 @@ class Schema(CFG):
         >>> schema.find_collapsible_groups()
         set()
         """
-        group_count = Counter()
+        group_count: Counter[str] = Counter()
 
         for relation in self.relations:
             if relation.orientation == RelationOrientation.LEFT:

@@ -1,7 +1,13 @@
+from collections import defaultdict
+from typing import TYPE_CHECKING
+
 import neo4j
 
 from architxt.schema import Schema
 from architxt.tree import Forest, NodeType, Tree, has_type
+
+if TYPE_CHECKING:
+    from architxt.tree import _TypedTree
 
 __all__ = ['export_cypher']
 
@@ -36,20 +42,24 @@ def export_tree(
     :param session: Neo4j session.
     :param edge_data:
     """
-    for group in tree.subtrees(lambda st: has_type(st, NodeType.GROUP) and st.label.name not in edge_data):
-        export_group(group, session)
+    for group in tree.subtrees():
+        if has_type(group, NodeType.GROUP) and group.label.name not in edge_data:
+            export_group(group, session)
 
-    export_edge_data = {}
-    for relation in tree.subtrees(lambda subtree: has_type(subtree, NodeType.REL)):
-        if relation[0].label.name in edge_data:
-            if relation[0] not in export_edge_data:
-                export_edge_data[relation[0]] = set()
-            export_edge_data[relation[0]].add(relation[1])
+    export_edge_data: dict[_TypedTree, set[_TypedTree]] = defaultdict(set)
+    for relation in tree.subtrees():
+        if not has_type(relation, NodeType.REL) or len(relation) != 2:
+            continue
 
-        elif relation[1].label.name in edge_data:
-            if relation[1] not in export_edge_data:
-                export_edge_data[relation[1]] = set()
-            export_edge_data[relation[1]].add(relation[0])
+        left, right = relation
+        if not has_type(left, NodeType.GROUP) or not has_type(right, NodeType.GROUP):
+            continue
+
+        if left.label.name in edge_data:
+            export_edge_data[left].add(right)
+
+        elif right.label.name in edge_data:
+            export_edge_data[right].add(left)
 
         else:
             export_relation(relation, session)
@@ -58,7 +68,7 @@ def export_tree(
 
 
 def export_relation(
-    tree: Tree,
+    tree: '_TypedTree',
     session: neo4j.Session,
 ) -> None:
     """
@@ -82,7 +92,7 @@ def export_relation(
 
 
 def export_relation_edge_with_data(
-    edge_data: dict[Tree, set[Tree]],
+    edge_data: dict['_TypedTree', set['_TypedTree']],
     session: neo4j.Session,
 ) -> None:
     """
@@ -101,7 +111,7 @@ def export_relation_edge_with_data(
 
 
 def export_group(
-    group: Tree,
+    group: '_TypedTree',
     session: neo4j.Session,
 ) -> None:
     """
