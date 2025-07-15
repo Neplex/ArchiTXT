@@ -323,13 +323,6 @@
         },
         {
             "@type": "SoftwareApplication",
-            "identifier": "torch",
-            "name": "torch",
-            "runtimePlatform": "Python 3",
-            "version": "<2.3.0"
-        },
-        {
-            "@type": "SoftwareApplication",
             "identifier": "tqdm",
             "name": "tqdm",
             "runtimePlatform": "Python 3",
