@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "architxt"
-version = "0.3.0"
+version = "0.3.1"
 description = "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting."
 authors = [
     "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>",
