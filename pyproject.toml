@@ -62,9 +62,6 @@ streamlit-tags = { version = "*", optional = true }
 # Use a fixed version of nmslib
 nmslib = { git = "https://github.com/nmslib/nmslib.git", subdirectory = "python_bindings", optional = true }
 
-# PyTorch version compatible with macOS 13
-torch = "<2.3.0"
-
 # Core dependencies
 tqdm = ">=4.60"
 nltk = "^3.9"
