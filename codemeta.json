@@ -131,7 +131,7 @@
             "identifier": "aiostream",
             "name": "aiostream",
             "runtimePlatform": "Python 3",
-            "version": "^0.6.4"
+            "version": ">= 0.7"
         },
         {
             "@type": "SoftwareApplication",
