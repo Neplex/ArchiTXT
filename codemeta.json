@@ -194,7 +194,7 @@
             "identifier": "mlflow",
             "name": "mlflow",
             "runtimePlatform": "Python 3",
-            "version": "^2.6.0"
+            "version": ">= 3.1"
         },
         {
             "@type": "SoftwareApplication",
