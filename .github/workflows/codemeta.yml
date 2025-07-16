@@ -42,5 +42,7 @@ jobs:
     name: Archive (Software Heritage)
     runs-on: ubuntu-latest
     if: github.event_name == 'release' || startsWith(github.head_ref, 'ci/')
+    permissions:
+      contents: read
     steps:
       - uses: sdruskat/swh-save-action@v1.0.1
