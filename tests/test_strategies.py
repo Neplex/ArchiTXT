@@ -18,35 +18,54 @@ def schema_st(
     draw: st.DrawFn,
     *,
     entities: set[str] | None = None,
+    min_entities: int = 4,
+    max_entities: int = 10,
     groups: set[Group] | None = None,
+    max_group_count: int = 5,
+    min_group_size: int = 2,
+    max_group_size: int = 5,
     relations: set[Relation] | None = None,
+    max_relations_count: int = 4,
     collections: bool = True,
 ) -> Schema:
     """
     Hypothesis strategy for generating `Schema` objects.
 
-    :param draw: The Hypothesis draw function.
-    :param entities: A set of predefined entities, or `None` to generate randomly.
-    :param groups: A dictionary mapping group names to sets of entities, or `None` to generate randomly.
-    :param relations: A dictionary mapping relation names to group pairs, or `None` to generate randomly.
+    :param draw: The Hypothesis's `draw` function.
+
+    :param entities:  A set of predefined entity labels, or `None` to generate randomly.
+    :param min_entities: Minimum number of distinct entities to generate when `entities` is `None`.
+    :param max_entities: Maximum number of distinct entities to generate when `entities` is `None`.
+    :param groups: A set of predefined `Group` objects, or `None` to generate randomly.
+    :param max_group_count: Maximum number of groups to generate when `groups` is `None`.
+    :param min_group_size: Minimum number of entities each group must contain (applies when `groups` is `None`).
+    :param max_group_size: Maximum number of entities each group can contain (applies when `groups` is `None`).
+    :param relations: A set of predefined `Relation` objects, or `None` to generate randomly.
+    :param max_relations_count: Maximum number of relations to generate when `relations` is `None`.
+        Relations will only be generated if there are at least two groups.
     :param collections: If `True`, includes collections in the generated schema.
-    :return: A `Schema` object generated based on the provided parameters.
+    :return: A `Schema` object assembled from the drawn entities, groups, and relations.
     """
     if entities is None:
-        entities = draw(st.sets(LABEL_ST, min_size=4, max_size=16))
+        entity_list = draw(st.lists(LABEL_ST, min_size=min_entities, max_size=max_entities, unique=True))
+    else:
+        entity_list = list(entities)
 
     if groups is None:
-        group_names = draw(st.lists(LABEL_ST, min_size=1, max_size=6, unique=True))
+        min_size = max(min_group_size, len(entity_list))
+        max_size = max(min_size, min(max_group_size, len(entity_list)))
+        group_names = draw(st.lists(LABEL_ST, min_size=1, max_size=max_group_count, unique=True))
         groups = {
             Group(
                 name=group_name,
-                entities=draw(st.sets(st.sampled_from(list(entities)), min_size=2, max_size=min(5, len(entities)))),
+                entities=draw(st.sets(st.sampled_from(entity_list), min_size=min_size, max_size=max_size)),
             )
             for group_name in group_names
         }
 
-    if relations is None and len(groups) >= 2:
+    if relations is None and max_relations_count and len(groups) >= 2:
         group_pairs = list(combinations(groups, 2))
+        max_size = min(max_relations_count, len(group_pairs))
         relations = {
             Relation(
                 name=f'{left.name}<->{right.name}',
@@ -54,7 +73,7 @@ def schema_st(
                 right=right.name,
                 orientation=draw(st.sampled_from(RelationOrientation)),
             )
-            for groups in draw(st.lists(st.sampled_from(group_pairs), min_size=0, max_size=len(group_pairs)))
+            for groups in draw(st.lists(st.sampled_from(group_pairs), min_size=0, max_size=max_size))
             for left, right in [sorted(groups, key=lambda g: g.name)]
         }
 
@@ -73,13 +92,13 @@ def entity_tree_st(
 
     The entity can be drawn from a schema, restricted to a specific group, or randomly generated.
 
-    :param draw: The Hypothesis draw function.
+    :param draw: The Hypothesis's `draw` function.
     :param schema: A schema to select entities from, or `None` for random generation.
     :param group_name: If provided, restricts entity selection to a specific group in the schema.
     :param name: If provided, use this as the entity name; otherwise, generates a random one.
     :return: An entity `Tree`.
     """
-    if schema and schema.entities:
+    if not name and schema and schema.entities:
         entities = next((group.entities for group in schema.groups if group.name == group_name), schema.entities)
         entity_name = draw(st.sampled_from(list(entities)))
 
@@ -105,7 +124,7 @@ def group_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str | 
 
     The group can be drawn from a schema or randomly generated.
 
-    :param draw: The Hypothesis draw function.
+    :param draw: The Hypothesis's `draw` function.
     :param schema: A schema to select groups and entities from, or `None` for random generation.
     :param name: If provided, use this as the group name; otherwise, generates a random one.
     :return: A group `Tree`.
@@ -116,12 +135,14 @@ def group_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str | 
             st.sampled_from(list(schema.groups))
         )
         group_name = group.name
+        entity_list = list(group.entities)
 
     else:
         group_name = name or draw(LABEL_ST)
+        entity_list = list(schema.entities) if schema else draw(st.lists(LABEL_ST, min_size=1, max_size=8, unique=True))
 
-    entity_strategy = entity_tree_st(schema=schema, group_name=group_name)
-    children = draw(st.lists(entity_strategy, min_size=2, unique_by=lambda tree: tree.label.name))
+    entities = draw(st.sets(st.sampled_from(entity_list), min_size=1))
+    children = [draw(entity_tree_st(schema=schema, name=n)) for n in entities]
 
     label = NodeLabel(NodeType.GROUP, group_name)
     return Tree(label, children)
@@ -134,7 +155,7 @@ def relation_tree_st(draw: st.DrawFn, *, schema: Schema | None = None, name: str
 
     The relation can be drawn from a schema or randomly generated.
 
-    :param draw: The Hypothesis draw function.
+    :param draw: The Hypothesis's `draw` function.
     :param schema: A schema to select relations and groups from, or `None` for random generation.
     :param name: If provided, use this as the relation name; otherwise, generates a random one.
     :return: A relation `Tree`.
@@ -170,7 +191,7 @@ def collection_tree_st(draw: st.DrawFn, *, schema: Schema | None = None) -> Tree
 
     The collections can be built from groups and relations in the given schema, or it can randomly generate them.
 
-    :param draw: The Hypothesis draw function.
+    :param draw: The Hypothesis's `draw` function.
     :param schema: A schema to guide the tree generation, or `None` for random generation.
     :return: A collection `Tree`.
     """
@@ -200,7 +221,7 @@ def tree_st(draw: st.DrawFn, *, schema: Schema | None = None, has_parent: bool |
     The tree may be composed of entities, groups, relations, or collections, based on the provided schema.
     This strategy supports recursive generation to produce deeply nested tree structures.
 
-    :param draw: The Hypothesis draw function.
+    :param draw: The Hypothesis's `draw` function.
     :param schema: A schema to guide the tree structure, or `None` for random generation.
     :param has_parent: If `True`, ensures the tree has a parent; otherwise, generates a standalone tree.
     :return: An instance `Tree`.
@@ -229,8 +250,8 @@ def tree_st(draw: st.DrawFn, *, schema: Schema | None = None, has_parent: bool |
     tree = draw(
         st.recursive(
             base_strategy,
-            lambda children: st.builds(Tree, st.just(''), st.lists(children, min_size=1, max_size=10)),
-            max_leaves=6,
+            lambda children: st.builds(Tree, st.just(''), st.lists(children, min_size=1, max_size=6)),
+            max_leaves=4,
         )
     )
 
@@ -255,37 +276,97 @@ def test_schema_generation(schema: Schema) -> None:
     assert schema.verify()
 
 
-@given(schema=schema_st(), data=st.data())
-def test_entity_tree_generation(schema: Schema, data: st.DataObject) -> None:
-    """
-    Property-based test for verifying that `entity_tree_st` generates only entities from the schema.
-
-    :param schema: A `Schema` object to guide tree generation.
-    :param data: An instance of data needed to draw entity trees.
-    """
+@given(data=st.data())
+def test_entity_tree_generation(data: st.DataObject) -> None:
+    """Property-based test for verifying that `entity_tree_st` generates only entities from the schema."""
+    schema = data.draw(schema_st())
     entity_tree = data.draw(entity_tree_st(schema=schema))
-    if schema.entities:
-        assert entity_tree.label.name in schema.entities
+
+    assert entity_tree.label.type == NodeType.ENT
+    assert entity_tree.label.name in schema.entities
 
 
-@given(schema=schema_st(), data=st.data())
-def test_group_tree_generation(schema: Schema, data: st.DataObject) -> None:
-    """
-    Property-based test for verifying that `group_tree_st` generates only groups and entities from the schema.
-
-    :param schema: A `Schema` object to guide tree generation.
-    :param data: An instance of data needed to draw group trees.
-    """
+@given(data=st.data())
+def test_group_tree_generation(data: st.DataObject) -> None:
+    """Property-based test for verifying that `group_tree_st` generates only groups and entities from the schema."""
+    schema = data.draw(schema_st() | st.none())
     group_tree = data.draw(group_tree_st(schema=schema))
-    if schema.groups:
+
+    # Check that it is a group
+    assert group_tree.label.type == NodeType.GROUP
+    assert len(group_tree) > 0
+
+    # Ensure no duplicate entities inside the group
+    group_entities = [child.label.name for child in group_tree]
+    assert len(group_entities) == len(set(group_entities))
+
+    if schema:
         # Ensure the group tree's label is in the schema's groups
-        all_groups_name = [group.name for group in schema.groups]
+        all_groups_name = {group.name for group in schema.groups}
         assert group_tree.label.name in all_groups_name
 
         # Ensure the group tree's children are entities defined in the schema for that group
-        sch_entities = next((group.entities for group in schema.groups if group.name == group_tree.label.name), set())
-        group_entities = {child.label.name for child in group_tree}
-        assert group_entities.issubset(sch_entities)
+        sch_entities = next(group.entities for group in schema.groups if group.name == group_tree.label.name)
+        assert sch_entities.issuperset(group_entities)
+
+
+@given(data=st.data())
+def test_relation_tree_generation(data: st.DataObject) -> None:
+    """Property-based test to verify that `relation_tree_st` generates correct relations."""
+    schema = data.draw(schema_st() | st.none())
+    rel_tree = data.draw(relation_tree_st(schema=schema))
+
+    # Check that it is a relation
+    assert rel_tree.label.type == NodeType.REL
+    assert len(rel_tree) == 2
+
+    left_name, right_name = rel_tree[0].label.name, rel_tree[1].label.name
+    assert left_name != right_name
+
+    if schema and schema.relations:
+        # Ensure relation is defined in schema
+        relation_names = {rel.name for rel in schema.relations}
+        assert rel_tree.label.name in relation_names
+
+        # Ensure the relation tree's children are groups defined in the schema for that relation
+        relation = next(rel for rel in schema.relations if rel.name == rel_tree.label.name)
+        assert {left_name, right_name} == {relation.left, relation.right}
+
+
+@given(data=st.data())
+def test_collection_tree_generation(data: st.DataObject) -> None:
+    """Property-based test to verify that `collection_tree_st` generates correct collection trees."""
+    schema = data.draw(schema_st() | st.none())
+    coll_tree = data.draw(collection_tree_st(schema=schema))
+
+    # Check it's a collection node
+    assert coll_tree.label.type == NodeType.COLL
+    assert len(coll_tree) >= 2
+
+    child_name = coll_tree[0].label.name
+    child_type = coll_tree[0].label.type
+
+    # Only groups or relations can be part of a collection
+    assert child_type in {NodeType.GROUP, NodeType.REL}
+
+    # All children should have the same label name and type
+    assert all(child.label.name == child_name for child in coll_tree)
+    assert all(child.label.type == child_type for child in coll_tree)
+
+    if schema:
+        group_names = {group.name for group in schema.groups}
+        relation_names = {rel.name for rel in schema.relations}
+        valid_names = group_names | relation_names
+
+        # The label must exist in the schema
+        assert child_name in valid_names
+
+        # Enforce correct type-name consistency
+        if child_name in group_names:
+            assert child_type == NodeType.GROUP
+
+        else:
+            assert child_type == NodeType.REL
 
 
 @given(tree=tree_st(has_parent=False))
