@@ -107,7 +107,7 @@ datasets = "*"
 testcontainers = "^4.10.0"
 
 # Linters
-mypy = "1.15.0"
+mypy = "1.17.0"
 ruff = "0.12.4"
 deptry = "^0.23.0"
 
