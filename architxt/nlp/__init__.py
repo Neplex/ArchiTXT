@@ -20,7 +20,8 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, T
 
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.nlp.brat import load_brat_dataset
-from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
+from architxt.nlp.entity_extractor import EntityExtractor
+from architxt.nlp.entity_resolver import EntityResolver
 from architxt.nlp.parser import Parser
 from architxt.tree import Tree
 from architxt.utils import BATCH_SIZE
@@ -44,6 +45,7 @@ async def _get_cache_key(
     relations_mapping: dict[str, str] | None = None,
     language: str,
     resolver: EntityResolver | None = None,
+    extractor: EntityExtractor | None = None,
 ) -> str:
     """Generate a cache key based on the archive file's content and settings."""
     cursor = archive_file.tell()
@@ -62,6 +64,8 @@ async def _get_cache_key(
         file_hash.update('$RM'.join(sorted(f'{key}={value}' for key, value in relations_mapping.items())).encode())
     if resolver:
         file_hash.update(resolver.name.encode())
+    if extractor:
+        file_hash.update(extractor.name.encode())
 
     return file_hash.hexdigest()
 
@@ -92,6 +96,7 @@ async def _load_or_cache_corpus(  # noqa: C901
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
     resolver: EntityResolver | None = None,
+    extractor: EntityExtractor | None = None,
     cache: bool = True,
     sample: int | None = None,
     name: str | None = None,
@@ -108,6 +113,7 @@ async def _load_or_cache_corpus(  # noqa: C901
     :param language: The language to use for parsing.
     :param name: The corpus name.
     :param resolver: An optional entity resolver to use.
+    :param extractor: An optional entity extractor to use.
     :param cache: Whether to cache the computed forest or not.
 
     :returns: A list of parsed trees representing the enriched corpus.
@@ -128,6 +134,7 @@ async def _load_or_cache_corpus(  # noqa: C901
             relations_mapping=relations_mapping,
             language=language,
             resolver=resolver,
+            extractor=extractor,
         )
         if cache:
             directory = CACHE_DIR / 'corpus_cache'
@@ -186,6 +193,10 @@ async def _load_or_cache_corpus(  # noqa: C901
                         description=f'[yellow]Loading corpus {archive_file.name} from disk...[/]',
                     )
 
+                    # Extract more entities
+                    if extractor:
+                        sentences = extractor.enrich(sentences)
+
                     # Resolve entities
                     if resolver:
                         sentences = resolver.batch_sentences(sentences)
@@ -224,7 +235,8 @@ async def raw_load_corpus(
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-    resolver_name: str | None = None,
+    resolver: EntityResolver | None = None,
+    extractor: EntityExtractor | None = None,
     cache: bool = True,
     sample: int | None = None,
     batch_size: int = BATCH_SIZE,
@@ -247,7 +259,8 @@ async def raw_load_corpus(
     :param relations_filter: A set of relation types to exclude from the output. If py:`None`, no filtering is applied.
     :param entities_mapping: A dictionary mapping entities names to new values. If py:`None`, no mapping is applied.
     :param relations_mapping: A dictionary mapping relation names to new values. If py:`None`, no mapping is applied.
-    :param resolver_name: The name of the entity resolver to use. If py:`None`, no entity resolution is performed.
+    :param extractor: The entity extractor to use. If py:`None`, no extra entity extraction is performed.
+    :param resolver: The entity resolver to use. If py:`None`, no entity resolution is performed.
     :param cache: A boolean flag indicating whether to cache the computed forest for faster future access.
     :param sample: The number of examples to take in each corpus.
     :param batch_size: The number of sentences to process in each batch.
@@ -265,11 +278,7 @@ async def raw_load_corpus(
             console=console,
         ) as progress,
     ):
-        resolver_ctx = (
-            ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
-        )
-
-        async with resolver_ctx as resolver, anyio.create_task_group() as tg:
+        async with resolver or nullcontext() as resolver, anyio.create_task_group() as tg:
             send_stream, receive_stream = anyio.create_memory_object_stream(batch_size)
 
             for corpus, language in zip(corpus_archives, languages, strict=True):
@@ -285,6 +294,7 @@ async def raw_load_corpus(
                     entities_mapping,
                     relations_mapping,
                     resolver,
+                    extractor,
                     cache,
                     sample,
                 )

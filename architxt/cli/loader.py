@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.database import loader
 from architxt.nlp import raw_load_corpus
+from architxt.nlp.entity_resolver import ScispacyResolver
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
 
@@ -172,7 +173,7 @@ def load_corpus(
                 corpus_path,
                 language,
                 parser=CoreNLPParser(corenlp_url=corenlp_url),
-                resolver_name=resolver,
+                resolver=ScispacyResolver(cleanup=True, translate=True, kb_name=resolver),
                 cache=cache,
                 entities_filter=ENTITIES_FILTER,
                 relations_filter=RELATIONS_FILTER,
