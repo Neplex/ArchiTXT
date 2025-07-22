@@ -1,7 +1,7 @@
 import hashlib
 import tarfile
 import zipfile
-from collections.abc import AsyncGenerator, Iterable, Sequence
+from collections.abc import AsyncGenerator, AsyncIterable, Iterable, Sequence
 from contextlib import nullcontext
 from io import BytesIO
 from pathlib import Path
@@ -173,7 +173,7 @@ async def _load_or_cache_corpus(  # noqa: C901
                     await anyio.to_thread.run_sync(corpus.extractall, tmp_dir)
 
                     # Parse sentences and enrich the forest
-                    sentences: Iterable[AnnotatedSentence] = load_brat_dataset(
+                    sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence] = load_brat_dataset(
                         Path(tmp_dir),
                         entities_filter=entities_filter,
                         relations_filter=relations_filter,
@@ -186,8 +186,12 @@ async def _load_or_cache_corpus(  # noqa: C901
                         description=f'[yellow]Loading corpus {archive_file.name} from disk...[/]',
                     )
 
+                    # Resolve entities
+                    if resolver:
+                        sentences = resolver.batch_sentences(sentences)
+
                     batch = []
-                    async for _, tree in parser.parse_batch(sentences, language=language, resolver=resolver):
+                    async for _, tree in parser.parse_batch(sentences, language=language):
                         batch.append(tree)
 
                         if not sample or count < sample:

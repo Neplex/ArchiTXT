@@ -59,7 +59,7 @@ def convert_brat_entities(
 
         # Filter out entities with specific tags
         if tag not in allow_list:
-            yield Entity(name=tag, start=start, end=end, id=str(identity))
+            yield Entity(name=tag, start=start, end=end, id=str(identity), value=brat_entity.mention.lower())
 
 
 def convert_brat_relations(

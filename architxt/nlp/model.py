@@ -14,6 +14,7 @@ class Entity:
     start: int
     end: int
     id: str
+    value: str
 
     def __post_init__(self) -> None:
         if self.start < 0:
@@ -37,6 +38,7 @@ class TreeEntity:
 
     name: str
     positions: list[TreePosition]
+    value: str | None = None
 
     @property
     def root_pos(self) -> tuple[int, ...]:
