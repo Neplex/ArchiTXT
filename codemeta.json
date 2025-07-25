@@ -170,6 +170,13 @@
         },
         {
             "@type": "SoftwareApplication",
+            "identifier": "flair",
+            "name": "flair",
+            "runtimePlatform": "Python 3",
+            "version": "^0.15"
+        },
+        {
+            "@type": "SoftwareApplication",
             "identifier": "googletrans",
             "name": "googletrans",
             "runtimePlatform": "Python 3",
