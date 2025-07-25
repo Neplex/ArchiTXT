@@ -1,11 +1,14 @@
 import contextlib
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Iterable
 from types import TracebackType
 
+from aiostream import pipe, stream
 from googletrans import Translator
 from scispacy.candidate_generation import CandidateGenerator
 from unidecode import unidecode
+
+from architxt.nlp.model import AnnotatedSentence, Entity
 
 
 class EntityResolver(ABC):
@@ -14,7 +17,34 @@ class EntityResolver(ABC):
         return self.__class__.__name__
 
     @abstractmethod
-    async def __call__(self, texts: Iterable[str]) -> Iterable[str]: ...
+    async def __call__(self, entity: Entity) -> Entity: ...
+
+    async def batch(
+        self,
+        entities: Iterable[Entity] | AsyncIterable[Entity],
+        *,
+        batch_size: int = 16,
+    ) -> AsyncIterator[Entity]:
+        entity_stream = stream.iterate(entities) | pipe.amap(self.__call__, task_limit=batch_size)
+
+        async with entity_stream.stream() as streamer:
+            async for entity in streamer:
+                yield entity
+
+    async def batch_sentences(
+        self,
+        sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence],
+        *,
+        batch_size: int = 16,
+    ) -> AsyncIterator[AnnotatedSentence]:
+        async def _resolve(sentence: AnnotatedSentence) -> AnnotatedSentence:
+            sentence.entities = [entity async for entity in self.batch(sentence.entities, batch_size=batch_size)]
+            return sentence
+
+        sentence_stream = stream.iterate(sentences) | pipe.amap(_resolve, task_limit=1)
+        async with sentence_stream.stream() as streamer:
+            async for sent in streamer:
+                yield sent
 
 
 class ScispacyResolver(EntityResolver):
@@ -24,7 +54,6 @@ class ScispacyResolver(EntityResolver):
         kb_name: str = 'umls',
         cleanup: bool = False,
         translate: bool = False,
-        batch_size: int = 8,
         threshold: float = 0.7,
         resolve_text: bool = True,
     ) -> None:
@@ -34,13 +63,11 @@ class ScispacyResolver(EntityResolver):
         :param kb_name: The name of the knowledge base to use: `umls`, `mesh`, `rxnorm`, `go`, or `hpo`.
         :param cleanup: True if the resolved text should be uniformized.
         :param translate: True if the text should be translated if it does not correspond to the model language.
-        :param batch_size: Number of texts to process in parallel (useful for large corpora).
         :param threshold : The threshold that an entity candidate must reach to be considered.
         :param resolve_text: True if the resolver should return the canonical name instead of the identifier
         """
         self.translate = translate
         self.cleanup = cleanup
-        self.batch_size = batch_size
         self.threshold = threshold
         self.kb_name = kb_name
         self.resolve_text = resolve_text
@@ -50,7 +77,7 @@ class ScispacyResolver(EntityResolver):
 
     async def __aenter__(self) -> 'ScispacyResolver':
         if self.translate:
-            translator = Translator(list_operation_max_concurrency=self.batch_size)
+            translator = Translator()
             self.translator = await self.exit_stack.enter_async_context(translator)
 
         return self
@@ -64,19 +91,19 @@ class ScispacyResolver(EntityResolver):
     def name(self) -> str:
         return self.kb_name
 
-    async def _translate(self, texts: list[str]) -> list[str]:
+    async def _translate(self, text: str) -> str:
         """
-        Translate texts in batch asynchronously.
+        Translate text asynchronously.
 
         Use an existing translator if available, otherwise creates a temporary one.
         """
         if not self.translator:
-            async with Translator(list_operation_max_concurrency=self.batch_size) as temp_translator:
-                translations = await temp_translator.translate(texts, dest="en")
+            async with Translator() as temp_translator:
+                translation = await temp_translator.translate(text, dest="en")
         else:
-            translations = await self.translator.translate(texts, dest="en")
+            translation = await self.translator.translate(text, dest="en")
 
-        return [t.text for t in translations]
+        return translation.text
 
     def _cleanup_string(self, text: str) -> str:
         """
@@ -90,30 +117,31 @@ class ScispacyResolver(EntityResolver):
 
         return text
 
-    def _resolve(self, mention_texts: list[str]) -> Iterable[str]:
+    def _resolve(self, text: str) -> str:
         """Resolve entity names using SciSpaCy entity linker."""
-        for mention, candidates in zip(mention_texts, self.candidate_generator(mention_texts, 10), strict=False):
-            best_candidate = None
-            best_candidate_score = 0
+        candidates = self.candidate_generator([text], 10)[0]
+        best_candidate = None
+        best_candidate_score = 0
 
-            for candidate in candidates:
-                if (score := max(candidate.similarities, default=0)) > self.threshold and score > best_candidate_score:
-                    best_candidate = candidate
-                    best_candidate_score = score
+        for candidate in candidates:
+            if (score := max(candidate.similarities, default=0)) > self.threshold and score > best_candidate_score:
+                best_candidate = candidate
+                best_candidate_score = score
 
-            if not best_candidate:
-                yield mention
+        if not best_candidate:
+            return text
 
-            elif self.resolve_text:
-                yield self.candidate_generator.kb.cui_to_entity[best_candidate.concept_id].canonical_name
+        if self.resolve_text:
+            return self.candidate_generator.kb.cui_to_entity[best_candidate.concept_id].canonical_name
 
-            else:
-                yield best_candidate.concept_id
+        return best_candidate.concept_id
 
-    async def __call__(self, texts: Iterable[str]) -> Iterable[str]:
-        texts = list(texts)
-
+    async def __call__(self, entity: Entity) -> Entity:
         if self.translate:
-            texts = await self._translate(texts)
+            value = await self._translate(entity.value)
+        else:
+            value = entity.value
 
-        return map(self._cleanup_string, self._resolve(texts))
+        entity.value = self._cleanup_string(self._resolve(value))
+
+        return entity

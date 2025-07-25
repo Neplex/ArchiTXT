@@ -54,6 +54,8 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
 
+flair = { version = "^0.15", optional = true }
+
 # Optional UI dependencies
 streamlit = { version = ">=1.39.0", optional = true }
 streamlit-agraph = { version = "*", optional = true }
@@ -96,7 +98,8 @@ anyio = "^4.9.0"
 
 [tool.poetry.extras]
 ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
-all = ["streamlit", "streamlit-agraph", "streamlit-tags"]
+flair = ["flair"]
+all = ["streamlit", "streamlit-agraph", "streamlit-tags", "flair"]
 
 [tool.poetry.group.dev.dependencies]
 wheel = "^0.45.0"
@@ -138,6 +141,7 @@ antlr4-tools = "^0.2.1"
 streamlit = "*"
 streamlit-agraph = "*"
 streamlit-tags = "*"
+flair = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3"

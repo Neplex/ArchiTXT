@@ -138,11 +138,28 @@ def get_properties(node: Tree) -> dict[str, str]:
     :param node: Node to get properties from.
     :return: Dictionary of properties.
     """
-    return {
-        child.label.name: child[0] if isinstance(child[0], str | int | float | bool) else str(child[0])
-        for child in node
-        if has_type(child, NodeType.ENT)
-    }
+    data: dict[str, str] = {}
+
+    for entity in node.subtrees():
+        if not has_type(entity, NodeType.ENT):
+            continue
+
+        value = entity.metadata.get('value') or ' '.join(str(leaf) for leaf in entity.leaves())
+
+        if value.lower() in {'true', 'false'}:
+            value = value.lower() == 'true'
+
+        else:
+            for cast in (int, float):
+                try:
+                    value = cast(value)
+                    break
+                except (ValueError, TypeError):
+                    continue
+
+        data[entity.label.name] = value
+
+    return data
 
 
 def delete_id_column(

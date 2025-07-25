@@ -1,9 +1,10 @@
 import hashlib
 import tarfile
 import zipfile
-from collections.abc import AsyncGenerator, Iterable, Sequence
+from collections.abc import AsyncGenerator, AsyncIterable, Iterable, Sequence
 from contextlib import nullcontext
 from io import BytesIO
+from itertools import islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, BinaryIO
@@ -20,7 +21,8 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, T
 
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.nlp.brat import load_brat_dataset
-from architxt.nlp.entity_resolver import EntityResolver, ScispacyResolver
+from architxt.nlp.entity_extractor import EntityExtractor
+from architxt.nlp.entity_resolver import EntityResolver
 from architxt.nlp.parser import Parser
 from architxt.tree import Tree
 from architxt.utils import BATCH_SIZE
@@ -44,6 +46,7 @@ async def _get_cache_key(
     relations_mapping: dict[str, str] | None = None,
     language: str,
     resolver: EntityResolver | None = None,
+    extractor: EntityExtractor | None = None,
 ) -> str:
     """Generate a cache key based on the archive file's content and settings."""
     cursor = archive_file.tell()
@@ -62,6 +65,8 @@ async def _get_cache_key(
         file_hash.update('$RM'.join(sorted(f'{key}={value}' for key, value in relations_mapping.items())).encode())
     if resolver:
         file_hash.update(resolver.name.encode())
+    if extractor:
+        file_hash.update(extractor.name.encode())
 
     return file_hash.hexdigest()
 
@@ -92,6 +97,7 @@ async def _load_or_cache_corpus(  # noqa: C901
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
     resolver: EntityResolver | None = None,
+    extractor: EntityExtractor | None = None,
     cache: bool = True,
     sample: int | None = None,
     name: str | None = None,
@@ -108,6 +114,7 @@ async def _load_or_cache_corpus(  # noqa: C901
     :param language: The language to use for parsing.
     :param name: The corpus name.
     :param resolver: An optional entity resolver to use.
+    :param extractor: An optional entity extractor to use.
     :param cache: Whether to cache the computed forest or not.
 
     :returns: A list of parsed trees representing the enriched corpus.
@@ -128,6 +135,7 @@ async def _load_or_cache_corpus(  # noqa: C901
             relations_mapping=relations_mapping,
             language=language,
             resolver=resolver,
+            extractor=extractor,
         )
         if cache:
             directory = CACHE_DIR / 'corpus_cache'
@@ -151,49 +159,68 @@ async def _load_or_cache_corpus(  # noqa: C901
                 )
             )
 
-        with ZODBTreeBucket(storage_path=corpus_cache_path) as forest:
-            count = 0
-
-            if cache and len(forest):  # Attempt to load from cache if available
-                for tree in progress.track(
-                    forest,
-                    description=f'[green]Loading corpus {archive_file.name} from cache...[/]',
-                    total=sample,
-                ):
-                    if not sample or count < sample:
+        # If caching enabled and cache exists, attempt to load from cache if available
+        if cache and corpus_cache_path and corpus_cache_path.exists():
+            with ZODBTreeBucket(storage_path=corpus_cache_path, read_only=True) as forest:
+                if len(forest):
+                    if sample:
+                        forest = islice(forest, sample)
+                    for tree in progress.track(
+                        forest,
+                        description=f'[green]Loading corpus {archive_file.name} from cache...[/]',
+                        total=sample,
+                    ):
                         await send_stream.send(tree.copy())
-                        count += 1
+                    return
 
-            else:  # Load data from disk
-                with (
-                    open_archive(archive_file) as corpus,
-                    TemporaryDirectory() as tmp_dir,
-                ):
-                    # Extract archive contents to a temporary directory
-                    await anyio.to_thread.run_sync(corpus.extractall, tmp_dir)
+        # No cache or cache disabled: extract and parse
+        with (
+            open_archive(archive_file) as corpus,
+            TemporaryDirectory() as tmp_dir,
+        ):
+            # Extract archive contents to a temporary directory
+            await anyio.to_thread.run_sync(corpus.extractall, tmp_dir)
 
-                    # Parse sentences and enrich the forest
-                    sentences: Iterable[AnnotatedSentence] = load_brat_dataset(
-                        Path(tmp_dir),
-                        entities_filter=entities_filter,
-                        relations_filter=relations_filter,
-                        entities_mapping=entities_mapping,
-                        relations_mapping=relations_mapping,
-                    )
+            # Parse sentences and enrich the forest
+            sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence] = progress.track(
+                load_brat_dataset(
+                    Path(tmp_dir),
+                    entities_filter=entities_filter,
+                    relations_filter=relations_filter,
+                    entities_mapping=entities_mapping,
+                    relations_mapping=relations_mapping,
+                ),
+                description=f'[yellow]Loading corpus {archive_file.name} from disk...[/]',
+            )
 
-                    sentences = progress.track(
-                        sentences,
-                        description=f'[yellow]Loading corpus {archive_file.name} from disk...[/]',
-                    )
+            # Extract more entities
+            if extractor:
+                sentences = extractor.enrich(sentences)
 
+            # Resolve entities
+            if resolver:
+                sentences = resolver.batch_sentences(sentences)
+
+            # If cache disabled: sample-only short-circuit
+            if not cache:
+                count = 0
+                async for _, tree in parser.parse_batch(sentences, language=language):
+                    if sample and count >= sample:
+                        break
+
+                    await send_stream.send(tree.copy())
+                    count += 1
+
+            else:
+                with ZODBTreeBucket(storage_path=corpus_cache_path) as forest:
+                    count = 0
                     batch = []
-                    async for _, tree in parser.parse_batch(sentences, language=language, resolver=resolver):
-                        batch.append(tree)
-
+                    async for _, tree in parser.parse_batch(sentences, language=language):
                         if not sample or count < sample:
                             await send_stream.send(tree.copy())
                             count += 1
 
+                        batch.append(tree)
                         if len(batch) >= BATCH_SIZE:
                             await forest.async_update(batch)
                             batch.clear()
@@ -220,7 +247,8 @@ async def raw_load_corpus(
     relations_filter: set[str] | None = None,
     entities_mapping: dict[str, str] | None = None,
     relations_mapping: dict[str, str] | None = None,
-    resolver_name: str | None = None,
+    resolver: EntityResolver | None = None,
+    extractor: EntityExtractor | None = None,
     cache: bool = True,
     sample: int | None = None,
     batch_size: int = BATCH_SIZE,
@@ -243,7 +271,8 @@ async def raw_load_corpus(
     :param relations_filter: A set of relation types to exclude from the output. If py:`None`, no filtering is applied.
     :param entities_mapping: A dictionary mapping entities names to new values. If py:`None`, no mapping is applied.
     :param relations_mapping: A dictionary mapping relation names to new values. If py:`None`, no mapping is applied.
-    :param resolver_name: The name of the entity resolver to use. If py:`None`, no entity resolution is performed.
+    :param extractor: The entity extractor to use. If py:`None`, no extra entity extraction is performed.
+    :param resolver: The entity resolver to use. If py:`None`, no entity resolution is performed.
     :param cache: A boolean flag indicating whether to cache the computed forest for faster future access.
     :param sample: The number of examples to take in each corpus.
     :param batch_size: The number of sentences to process in each batch.
@@ -261,11 +290,7 @@ async def raw_load_corpus(
             console=console,
         ) as progress,
     ):
-        resolver_ctx = (
-            ScispacyResolver(cleanup=True, translate=True, kb_name=resolver_name) if resolver_name else nullcontext()
-        )
-
-        async with resolver_ctx as resolver, anyio.create_task_group() as tg:
+        async with resolver or nullcontext() as resolver, anyio.create_task_group() as tg:
             send_stream, receive_stream = anyio.create_memory_object_stream(batch_size)
 
             for corpus, language in zip(corpus_archives, languages, strict=True):
@@ -281,6 +306,7 @@ async def raw_load_corpus(
                     entities_mapping,
                     relations_mapping,
                     resolver,
+                    extractor,
                     cache,
                     sample,
                 )

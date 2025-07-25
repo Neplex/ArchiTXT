@@ -39,9 +39,9 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
     :yield: A list of `Entity` objects for each sentence, with entity positions relative to
             that sentence.
 
-    >>> e1 = Entity(name="Entity1", start=0, end=5, id="E1")
-    >>> e2 = Entity(name="Entity2", start=6, end=15, id="E2")
-    >>> e3 = Entity(name="Entity3", start=21, end=25, id="E3")
+    >>> e1 = Entity(name="Entity1", start=0, end=5, id="E1", value="x")
+    >>> e2 = Entity(name="Entity2", start=6, end=15, id="E2", value="y")
+    >>> e3 = Entity(name="Entity3", start=21, end=25, id="E3", value="z")
     >>> result = list(split_entities([e1, e2, e3], ["Hello world.", "This is a test."]))
     >>> len(result)
     2
@@ -80,7 +80,9 @@ def split_entities(entities: Iterable[Entity], sentences: Sequence[str]) -> Gene
 
             # Add the entity to the list of entities for this sentence
             try:
-                sent_entities.append(Entity(start=ent_start, end=ent_end, name=entity.name, id=entity.id))
+                sent_entities.append(
+                    Entity(start=ent_start, end=ent_end, name=entity.name, id=entity.id, value=entity.value)
+                )
             except ValueError as error:
                 warnings.warn(str(error))
 
@@ -105,10 +107,10 @@ def split_relations(relations: Iterable[Relation], entities: Sequence[Sequence[E
     :return: A list of lists. Each inner list corresponds to a sentence and contains `Relation` objects
              for that sentence.
 
-    >>> e1 = Entity(name="Entity1", start=0, end=1, id="E1")
-    >>> e2 = Entity(name="Entity2", start=2, end=3, id="E2")
-    >>> e3 = Entity(name="Entity3", start=4, end=5, id="E3")
-    >>> e4 = Entity(name="Entity4", start=6, end=7, id="E4")
+    >>> e1 = Entity(name="Entity1", start=0, end=1, id="E1", value="1")
+    >>> e2 = Entity(name="Entity2", start=2, end=3, id="E2", value="2")
+    >>> e3 = Entity(name="Entity3", start=4, end=5, id="E3", value="3")
+    >>> e4 = Entity(name="Entity4", start=6, end=7, id="E4", value="4")
     >>> r1 = Relation(src="E1", dst="E2", name="relates_to")
     >>> r2 = Relation(src="E3", dst="E4", name="belongs_to")
     >>> result = split_relations([r1, r2], [[e1, e2], [e3, e4]])

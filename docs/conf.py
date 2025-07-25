@@ -138,7 +138,7 @@ copybutton_prompt_is_regexp = True
 # -- Options for myst_nb extension -------------------------------------------
 # https://myst-nb.readthedocs.io/en/latest/configuration.html
 
-nb_execution_timeout = 600
+nb_execution_timeout = 1200
 nb_merge_streams = True
 nb_execution_raise_on_error = True
 nb_execution_show_tb = True

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from aiostream import pipe, stream
 from nltk.tokenize.util import align_tokens
 
-from architxt.nlp.entity_resolver import EntityResolver
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation, TreeEntity, TreeRel
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
 
@@ -30,8 +29,8 @@ class Parser(abc.ABC):
     async def parse_batch(
         self,
         sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence],
+        *,
         language: str,
-        resolver: EntityResolver | None = None,
         batch_size: int = 128,
     ) -> AsyncIterator[tuple[AnnotatedSentence, Tree]]:
         """
@@ -44,8 +43,6 @@ class Parser(abc.ABC):
 
         :param sentences: An iterable or asynchronous iterable of `AnnotatedSentence` objects to be parsed.
         :param language: The language to use for parsing.
-        :param resolver: An optional entity resolver used to resolve entities within the parsed trees.
-            If `None`, no entity resolution is performed.
         :param batch_size: The maximum number of concurrent parsing tasks that can run at once.
             It will only load at most `batch_size` elements from the input iterable.
 
@@ -73,7 +70,7 @@ class Parser(abc.ABC):
             sent_tree: tuple[AnnotatedSentence, Tree], *_: tuple[AnnotatedSentence, Tree] | None
         ) -> tuple[AnnotatedSentence, Tree] | None:
             sentence, tree = sent_tree
-            if enriched_tree := await process_tree(sentence, tree, resolver=resolver):
+            if enriched_tree := await process_tree(sentence, tree):
                 return sentence, enriched_tree
 
             return None
@@ -95,7 +92,6 @@ class Parser(abc.ABC):
         sentence: AnnotatedSentence,
         *,
         language: str,
-        resolver: EntityResolver | None = None,
     ) -> Tree | None:
         """
         Parse an annotated sentence into an enriched syntax tree.
@@ -106,8 +102,6 @@ class Parser(abc.ABC):
 
         :param sentence: The annotated sentence to parse.
         :param language: The language to use for parsing.
-        :param resolver: An optional entity resolver used to resolve entities within the parsed trees.
-            If `None`, no entity resolution is performed.
 
         :returns: An enriched tree object.
 
@@ -120,7 +114,7 @@ class Parser(abc.ABC):
 
         """
         for tree in self.raw_parse([sentence.txt], language=language, batch_size=1):
-            if enriched_tree := await process_tree(sentence, tree, resolver=resolver):
+            if enriched_tree := await process_tree(sentence, tree):
                 return enriched_tree
 
         return None
@@ -150,8 +144,6 @@ class Parser(abc.ABC):
 async def process_tree(
     sentence: AnnotatedSentence,
     tree: Tree,
-    *,
-    resolver: EntityResolver | None = None,
 ) -> Tree | None:
     # Replace specific parenthesis tokens ('-LRB-' for '(', '-RRB-' for ')') in the leaf nodes
     for subtree in tree.subtrees(lambda x: x.height == 2 and len(x) == 1 and x[0] in {'-LRB-', '-RRB-'}):
@@ -184,9 +176,6 @@ async def process_tree(
     for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT)):
         subtree.label = 'ROOT' if subtree.parent is None else f'UNDEF_{uuid.uuid4().hex}'
 
-    if resolver:
-        await resolve_tree(tree, resolver)
-
     return tree
 
 
@@ -203,16 +192,16 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
     :param relations: A list of `Relation` objects representing the relationships between entities (currently not used).
 
     >>> t = Tree.fromstring("(S (NP Alice) (VP (VB likes) (NP (NNS apples) (CCONJ and) (NNS oranges))))")
-    >>> e1 = Entity(name="person", start=0, end=5, id="E1")
-    >>> e2 = Entity(name="fruit", start=12, end=18, id="E2")
-    >>> e3 = Entity(name="fruit", start=23, end=30, id="E3")
+    >>> e1 = Entity(name="person", start=0, end=5, id="E1", value="alice")
+    >>> e2 = Entity(name="fruit", start=12, end=18, id="E2", value="apples")
+    >>> e3 = Entity(name="fruit", start=23, end=30, id="E3", value="oranges")
     >>> enrich_tree(t, "Alice likes apples and oranges", [e1, e2, e3], [])
     >>> print(t)
     (S (ENT::person Alice) (VP (NP (ENT::fruit apples) (ENT::fruit oranges))))
     >>> t = Tree.fromstring("(S (NP XXX) (NP YYY))")
-    >>> e1 = Entity(name="nested1", start=0, end=3, id="E1")
-    >>> e2 = Entity(name="nested2", start=4, end=7, id="E2")
-    >>> e3 = Entity(name="overlap", start=0, end=7, id="E3")
+    >>> e1 = Entity(name="nested1", start=0, end=3, id="E1", value="xxx")
+    >>> e2 = Entity(name="nested2", start=4, end=7, id="E2", value="yyy")
+    >>> e3 = Entity(name="overlap", start=0, end=7, id="E3", value="zzz")
     >>> enrich_tree(t, "XXX YYY", [e1, e2, e3], [])
     >>> print(t)
     (S (REL (ENT::overlap XXX YYY) (nested (ENT::nested1 XXX) (ENT::nested2 YYY))))
@@ -233,7 +222,11 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
         if is_conflicting_entity(entity, entity_span, computed_spans, tree):
             continue
 
-        tree_entity = TreeEntity(entity.name, [tree.leaf_position(i) for i in entity_span])
+        tree_entity = TreeEntity(
+            name=entity.name,
+            value=entity.value,
+            positions=[tree.leaf_position(i) for i in entity_span],
+        )
         entity_tree = ins_ent(tree, tree_entity)
         entity_trees.append(entity_tree)
         computed_spans.add(entity_span)
@@ -468,6 +461,34 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     >>> ent_tree = ins_ent(t, t_ent)
     >>> print(t)
     (S (ENT::XY x y) (ENT::YZ y z))
+
+    >>> t = Tree.fromstring("(S (NP Alice) (VP (VB like) (NP (NNS apples))))")
+    >>> tree_ent1 = TreeEntity(name="person", positions=[(0, 0)], value='xxx')
+    >>> tree_ent2 = TreeEntity(name="fruit", positions=[(1, 1, 0, 0)], value='yyy')
+    >>> ent_tree = ins_ent(t, tree_ent1)
+    >>> print(t)
+    (S (ENT::person Alice) (VP (VB like) (NP (NNS apples))))
+    >>> ent_tree = ins_ent(t, tree_ent2)
+    >>> print(t)
+    (S (ENT::person Alice) (VP (VB like) (ENT::fruit apples)))
+    >>> print(t[0].metadata.get('value'))
+    xxx
+    >>> print(t[1, 1].metadata.get('value'))
+    yyy
+
+    >>> t = Tree.fromstring("(S x y z)")
+    >>> t_ent = TreeEntity(name="XY", positions=[(0,), (1,)], value='AAA')
+    >>> ent_tree = ins_ent(t, t_ent)
+    >>> print(t)
+    (S (ENT::XY x y) z)
+    >>> t_ent = TreeEntity(name="YZ", positions=[(0, 1), (1,)], value='BBB')
+    >>> ent_tree = ins_ent(t, t_ent)
+    >>> print(t)
+    (S (ENT::XY x y) (ENT::YZ y z))
+    >>> print(t[0].metadata.get('value'))
+    AAA
+    >>> print(t[1].metadata.get('value'))
+    BBB
     """
     # Determine the insertion point based on the positions of the entity
     anchor_pos = tree_ent.root_pos
@@ -518,7 +539,13 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
             children.append(tree[child_position])
 
     # Create a new tree node for the entity and insert it into the tree
-    new_tree = Tree(NodeLabel(NodeType.ENT, tree_ent.name), children=reversed(children))
+    new_tree = Tree(
+        NodeLabel(NodeType.ENT, tree_ent.name),
+        children=reversed(children),
+        metadata={
+            'value': tree_ent.value,
+        },
+    )
     tree[anchor_pos].insert(entity_index, new_tree)
 
     # Return the modified subtree where the entity was inserted
@@ -594,13 +621,3 @@ def is_conflicting_entity(
             return False
 
     return False
-
-
-async def resolve_tree(tree: Tree, resolver: EntityResolver) -> None:
-    """Resolve entities in a tree using the provided entity resolver."""
-    ent_trees = list(tree.subtrees(lambda x: has_type(x, NodeType.ENT)))
-    ent_texts = await resolver(' '.join(ent_tree.leaves()) for ent_tree in ent_trees)
-
-    for ent_tree, ent_text in zip(ent_trees, ent_texts, strict=True):
-        ent_tree.clear()
-        ent_tree.append(ent_text)

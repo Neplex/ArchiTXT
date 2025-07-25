@@ -264,24 +264,38 @@ def get_data_from_group(group: Tree) -> dict[str, str]:
     :param group: Group to get data from.
     :return: Data from the group.
     """
-    result: dict[str, str] = {}
+    data: dict[str, str] = {}
 
-    for entity in group:
-        if entity.label.name is None or 'type' not in entity.metadata:
+    for entity in group.subtrees():
+        if not has_type(entity, NodeType.ENT):
             continue
 
-        if entity.metadata and isinstance(entity.metadata['type'], Date) and isinstance(entity[0], str):
-            entity[0] = datetime.strptime(entity[0], '%Y-%m-%d').date()
+        value = entity.metadata.get('value') or ' '.join(str(leaf) for leaf in entity.leaves())
+        dt = entity.metadata.get('type')
 
-        elif entity.metadata and isinstance(entity.metadata['type'], DateTime) and isinstance(entity[0], str):
-            entity[0] = datetime.strptime(entity[0], '%Y-%m-%d %H:%M:%S')
+        if isinstance(dt, Date):
+            value = datetime.strptime(value, '%Y-%m-%d').date()
 
-        elif entity.metadata and isinstance(entity.metadata['type'], BLOB) and isinstance(entity[0], str):
-            entity[0] = base64.b64decode(entity[0])
+        elif isinstance(dt, DateTime):
+            value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
 
-        result[entity.label.name] = entity[0]
+        elif isinstance(dt, BLOB):
+            value = base64.b64decode(value)
 
-    return result
+        elif value.lower() in {'true', 'false'}:
+            value = value.lower() == 'true'
+
+        else:
+            for cast in (int, float):
+                try:
+                    value = cast(value)
+                    break
+                except (ValueError, TypeError):
+                    continue
+
+        data[entity.label.name] = value
+
+    return data
 
 
 def export_data(
