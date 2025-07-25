@@ -4,6 +4,7 @@ import zipfile
 from collections.abc import AsyncGenerator, AsyncIterable, Iterable, Sequence
 from contextlib import nullcontext
 from io import BytesIO
+from itertools import islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, BinaryIO
@@ -158,57 +159,68 @@ async def _load_or_cache_corpus(  # noqa: C901
                 )
             )
 
-        with ZODBTreeBucket(storage_path=corpus_cache_path) as forest:
-            count = 0
-
-            if cache and len(forest):  # Attempt to load from cache if available
-                for tree in progress.track(
-                    forest,
-                    description=f'[green]Loading corpus {archive_file.name} from cache...[/]',
-                    total=sample,
-                ):
-                    if not sample or count < sample:
+        # If caching enabled and cache exists, attempt to load from cache if available
+        if cache and corpus_cache_path and corpus_cache_path.exists():
+            with ZODBTreeBucket(storage_path=corpus_cache_path, read_only=True) as forest:
+                if len(forest):
+                    if sample:
+                        forest = islice(forest, sample)
+                    for tree in progress.track(
+                        forest,
+                        description=f'[green]Loading corpus {archive_file.name} from cache...[/]',
+                        total=sample,
+                    ):
                         await send_stream.send(tree.copy())
-                        count += 1
+                    return
 
-            else:  # Load data from disk
-                with (
-                    open_archive(archive_file) as corpus,
-                    TemporaryDirectory() as tmp_dir,
-                ):
-                    # Extract archive contents to a temporary directory
-                    await anyio.to_thread.run_sync(corpus.extractall, tmp_dir)
+        # No cache or cache disabled: extract and parse
+        with (
+            open_archive(archive_file) as corpus,
+            TemporaryDirectory() as tmp_dir,
+        ):
+            # Extract archive contents to a temporary directory
+            await anyio.to_thread.run_sync(corpus.extractall, tmp_dir)
 
-                    # Parse sentences and enrich the forest
-                    sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence] = load_brat_dataset(
-                        Path(tmp_dir),
-                        entities_filter=entities_filter,
-                        relations_filter=relations_filter,
-                        entities_mapping=entities_mapping,
-                        relations_mapping=relations_mapping,
-                    )
+            # Parse sentences and enrich the forest
+            sentences: Iterable[AnnotatedSentence] | AsyncIterable[AnnotatedSentence] = progress.track(
+                load_brat_dataset(
+                    Path(tmp_dir),
+                    entities_filter=entities_filter,
+                    relations_filter=relations_filter,
+                    entities_mapping=entities_mapping,
+                    relations_mapping=relations_mapping,
+                ),
+                description=f'[yellow]Loading corpus {archive_file.name} from disk...[/]',
+            )
 
-                    sentences = progress.track(
-                        sentences,
-                        description=f'[yellow]Loading corpus {archive_file.name} from disk...[/]',
-                    )
+            # Extract more entities
+            if extractor:
+                sentences = extractor.enrich(sentences)
 
-                    # Extract more entities
-                    if extractor:
-                        sentences = extractor.enrich(sentences)
+            # Resolve entities
+            if resolver:
+                sentences = resolver.batch_sentences(sentences)
 
-                    # Resolve entities
-                    if resolver:
-                        sentences = resolver.batch_sentences(sentences)
+            # If cache disabled: sample-only short-circuit
+            if not cache:
+                count = 0
+                async for _, tree in parser.parse_batch(sentences, language=language):
+                    if sample and count >= sample:
+                        break
 
+                    await send_stream.send(tree.copy())
+                    count += 1
+
+            else:
+                with ZODBTreeBucket(storage_path=corpus_cache_path) as forest:
+                    count = 0
                     batch = []
                     async for _, tree in parser.parse_batch(sentences, language=language):
-                        batch.append(tree)
-
                         if not sample or count < sample:
                             await send_stream.send(tree.copy())
                             count += 1
 
+                        batch.append(tree)
                         if len(batch) >= BATCH_SIZE:
                             await forest.async_update(batch)
                             batch.clear()
