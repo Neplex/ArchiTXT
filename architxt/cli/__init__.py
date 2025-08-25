@@ -148,17 +148,21 @@ def compare(
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
 ) -> None:
+    # Metrics
     inspector1 = ForestInspector()
-    forest1 = load_forest([file1])
-    forest1 = inspector1(forest1)
+    forest = load_forest([file1])
+    forest = inspector1(forest)
+    with ZODBTreeBucket() as bucket:
+        bucket.update(forest)
+        metrics = Metrics(bucket, tau=tau)
 
     inspector2 = ForestInspector()
-    forest2 = load_forest([file2])
-    forest2 = inspector1(forest2)
+    forest = load_forest([file2])
+    forest = inspector2(forest)
+    with ZODBTreeBucket() as bucket:
+        bucket.update(forest)
+        metrics.update(bucket)
 
-    # Metrics
-    metrics = Metrics(list(forest1), tau=tau)
-    metrics.update(list(forest2))
     show_metrics(metrics)
 
     # Entity Count

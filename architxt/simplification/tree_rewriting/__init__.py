@@ -3,7 +3,9 @@ from __future__ import annotations
 import ctypes
 import functools
 import multiprocessing
+import re
 import sys
+from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import nullcontext
 from multiprocessing import Manager, cpu_count
@@ -62,6 +64,7 @@ def rewrite(
     debug: bool = False,
     max_workers: int | None = None,
     commit: bool | int = BATCH_SIZE,
+    simplify_names: bool = True,
 ) -> Metrics:
     """
     Rewrite a forest by applying edit operations iteratively.
@@ -79,6 +82,7 @@ def rewrite(
         - If True, commits after processing the entire forest in one transaction.
         - If an integer, commits after processing every N tree.
         To avoid memory issues with large forests, we recommend using batch commit on large forests.
+    :param simplify_names: Should the groups/relations names be simplified after the rewrite?
 
     :return: The rewritten forest.
     """
@@ -142,6 +146,10 @@ def rewrite(
                     break
 
         _post_process(forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size)
+
+        if simplify_names:
+            _simplify_names(forest)
+
         metrics.update()
 
     if mlflow.active_run():
@@ -237,6 +245,49 @@ def _post_process(
         executor=executor,
         batch_size=batch_size,
     )
+
+
+def _simplify_names(forest: Forest) -> None:
+    """
+    Simplify names in the forest by reducing complex labels to more readable forms.
+
+    :param forest: The forest to simplify names in
+    """
+    simplified_to_labels = defaultdict(list)  # simplified_name -> [original_labels]
+
+    for tree in forest:
+        for subtree in tree.subtrees(lambda x: has_type(x, NodeType.GROUP)):
+            simplified_name = _get_base_name(subtree)
+            label_list = simplified_to_labels[simplified_name]
+
+            if subtree.label.name not in label_list:
+                label_list.append(subtree.label.name)
+
+            if (idx := label_list.index(subtree.label.name)) > 0:
+                simplified_name = f'{simplified_name}_{idx}'
+
+            subtree.label = NodeLabel(NodeType.GROUP, simplified_name)
+
+    for tree in forest:
+        for subtree in tree.subtrees(lambda x: has_type(x, NodeType.REL)):
+            if (groups := subtree.groups()) and len(groups) == 2:
+                subtree.label = NodeLabel(NodeType.REL, '<->'.join(sorted(groups)))
+
+
+def _get_base_name(tree: Tree) -> str:
+    """
+    Get the simplified name for a group subtree.
+
+    Returns either:
+    - The base name (extracted from label like "Territories_1_5_2" -> "Territories")
+    - Generic "UndefinedGroup" for group without a base name
+    """
+    base_name = re.sub(r'(_\d+)+$', '', tree.label.name)
+
+    if re.match(r'^\d*$', base_name):
+        base_name = 'UndefinedGroup'
+
+    return base_name
 
 
 def apply_operations(
