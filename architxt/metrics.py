@@ -142,14 +142,20 @@ class Metrics:
         self._source_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric)
         self._current_clustering = entity_labels(self._forest, tau=self._tau)
 
-    def update(self) -> None:
-        """Update the internal state of the metrics object."""
+    def update(self, forest: Forest | None = None) -> None:
+        """
+        Update the internal state of the metrics object.
+
+        :param forest: The forest to compare against, else read the original modified forest
+        """
         self._cache.clear()
 
-        self._current_schema = Schema.from_forest(self._forest)
-        self._current_entities = {entity.oid.hex for tree in self._forest for entity in tree.entities()}
-        self._current_label_count = Counter(subtree.label for tree in self._forest for subtree in tree.subtrees())
-        self._current_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric)
+        forest = forest or self._forest
+
+        self._current_schema = Schema.from_forest(forest)
+        self._current_entities = {entity.oid.hex for tree in forest for entity in tree.entities()}
+        self._current_label_count = Counter(subtree.label for tree in forest for subtree in tree.subtrees())
+        self._current_clustering = entity_labels(forest, tau=self._tau, metric=self._metric)
 
     @cachedmethod(attrgetter('_cache'))
     def _cluster_labels(self) -> tuple[tuple[str, ...], tuple[str, ...]]:

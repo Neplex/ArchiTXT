@@ -16,6 +16,7 @@ from typer.main import get_command
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
+from architxt.metrics import Metrics
 from architxt.schema import Group, Relation, Schema
 from architxt.simplification.tree_rewriting import rewrite
 
@@ -136,6 +137,62 @@ def inspect(
     stats_table.add_row("Maximum Tree size", str(inspector.max_size))
     stats_table.add_row("Average Branching", f"{inspector.avg_branching:.3f}")
     stats_table.add_row("Maximum Branching", str(inspector.max_children))
+
+    console.print(Columns([*tables, stats_table], equal=True))
+
+
+@app.command(help="Simplify a bunch of databased together.")
+def compare(
+    file1: Path = typer.Argument(..., exists=True, readable=True, help="Path of the first data file to load."),
+    file2: Path = typer.Argument(..., exists=True, readable=True, help="Path of the first data file to load."),
+    *,
+    tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+) -> None:
+    inspector1 = ForestInspector()
+    forest1 = load_forest([file1])
+    forest1 = inspector1(forest1)
+
+    inspector2 = ForestInspector()
+    forest2 = load_forest([file2])
+    forest2 = inspector1(forest2)
+
+    # Metrics
+    metrics = Metrics(list(forest1), tau=tau)
+    metrics.update(list(forest2))
+    show_metrics(metrics)
+
+    # Entity Count
+    tables = []
+    entities = inspector1.entity_count.keys() | inspector2.entity_count.keys()
+    for chunk in more_itertools.chunked_even(entities, 10):
+        entity_table = Table()
+        entity_table.add_column("Entity", style="cyan", no_wrap=True)
+        entity_table.add_column("Count File1", style="magenta")
+        entity_table.add_column("Count File2", style="magenta")
+
+        for entity in chunk:
+            entity_table.add_row(
+                entity,
+                str(inspector1.entity_count[entity]),
+                str(inspector2.entity_count[entity]),
+            )
+
+        tables.append(entity_table)
+
+    # Display statistics
+    stats_table = Table()
+    stats_table.add_column("Metric", style="cyan", no_wrap=True)
+    stats_table.add_column("Value File1", style="magenta")
+    stats_table.add_column("Value File2", style="magenta")
+
+    stats_table.add_row("Total Trees", str(inspector1.total_trees), str(inspector2.total_trees))
+    stats_table.add_row("Total Entities", str(inspector1.total_entities), str(inspector2.total_entities))
+    stats_table.add_row("Average Tree Height", f"{inspector1.avg_height:.3f}", f"{inspector2.avg_height:.3f}")
+    stats_table.add_row("Maximum Tree Height", str(inspector1.max_height), str(inspector2.max_height))
+    stats_table.add_row("Average Tree size", f"{inspector1.avg_size:.3f}", f"{inspector2.avg_size:.3f}")
+    stats_table.add_row("Maximum Tree size", str(inspector1.max_size), str(inspector2.max_size))
+    stats_table.add_row("Average Branching", f"{inspector1.avg_branching:.3f}", f"{inspector2.avg_branching:.3f}")
+    stats_table.add_row("Maximum Branching", str(inspector1.max_children), str(inspector2.max_children))
 
     console.print(Columns([*tables, stats_table], equal=True))
 
