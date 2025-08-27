@@ -21,36 +21,52 @@ from architxt.utils import windowed_shuffle
 __all__ = ['llm_rewrite']
 
 DEFAULT_PROMPT = PromptTemplate.from_template("""
-You are converting parse trees into a standardized, minimal JSON tree for DB storage. Follow these rules strictly.
+You are tasked with standardizing a list of tree by identifying semantic nodes, naming them, and removing non-semantic ones.
 
-Rules:
-1. Wrap the entire result in a single top-level node: name = "ROOT", type = "GROUP" (or keep type neutral per schema), and return valid JSON.
-2. Allowed node types in final output: GROUP, REL, ENT. Remove all other node types.
-3. Preserve every ENT node and its leaves exactly as given (leaves are plain strings). Do not invent or alter ENT names or leaf contents.
-4. Use the original tree structure to derive semantics:
-   - If a parent node has ≥2 distinct ENT children (siblings), convert that parent into a GROUP. Give a meaningful name to the GROUP based on the semantic meaning of the parent node.
-   - If a parent node connects exactly two distinct GROUPs, convert that parent into a REL. Give a meaningful name to the REL based on the semantic meaning of the parent node
-   - Prefer naming an existing parent node rather than restructuring the tree. If needed you may delete some level or duplicate ENT to distribute it based on the semantic.
-5. GROUP constraints:
-   - Must contain at least two ENT children.
-   - No duplicate ENT names inside a GROUP.
-   - Name GROUPs according to the semantic meaning of the original parent node; reuse names across trees when appropriate.
-   - If a candidate GROUP would end up with fewer than two ENT, do NOT create the GROUP — keep the ENT nodes in place (attach them to the nearest semantic ancestor) instead.
-6. REL constraints:
-   - Must connect exactly two distinct GROUPs (no duplicate GROUP names within the REL).
-   - Name RELs according to the semantic meaning of the original parent node; reuse names across trees when appropriate.
-7. Minimize vocabulary: choose the fewest distinct GROUP and REL names that preserve semantics across all provided trees. {vocab}
-8. Remove non-semantic/untyped nodes (e.g., UNDEF) once GROUPs and RELs are formed.
-9. Ensure every node in final JSON uses the exact object shape `{{oid, name, type, metadata, children[]}}` and OIDs are preserved. If you introduce new node you should give them a null OID.
-10. Output only the final JSON structure as a numbered list, with one element per line, eg:
-    1. {{...}}
-    2. {{...}}
-    3. {{...}}
-    ...
+Hard requirements (do not omit):
+- Each tree start by a single top-level node:
+   {{
+     "oid": "...",
+     "name": "ROOT",
+     "type": null,
+     "metadata": {{}},
+     "children": [...]
+   }}
+- Allowed node types: GROUP, REL, ENT and every ENT should be in a GROUP.
+- Untyped nodes should be identified as GROUP/REL candidates or removed from the structure moving their children to it's parent.
+- You can introduce new node or duplicates subtrees if needed to express the semantics.
+- Preserve ENT nodes and their leaves exactly; do not alter names or leaf values.
+- Preserve the semantic of the tree structure, do not group ENT that are far apart for example.
+- GROUP creation:
+   * Parent with more than two distinct ENT children should be considered as a GROUP.
+   * Must have at least 2 ENT children; no duplicate ENT names.
+   * Name GROUPs based on the semantic meaning of the group (Employee, Treatment, etc).
+- REL creation:
+   * Parent connecting exactly 2 distinct GROUPs becomes a REL.
+   * Name RELs based on the semantic meaning of the relation (WorksAt, Treat, etc).
+- Attempt to minimize the number of distinct GROUP and REL name types across all trees by reusing names. {vocab}
+- Remove untyped/non-semantic nodes after forming GROUPs and RELs.
+- Every node must have the shape: {{"oid": <string|null>, "name": <string>, "type": <"GROUP"|"REL"|"ENT"|null>, "metadata": <object|null>, "children": <array of nodes|string>}}
+   * If you create a new node, set "oid": null.
+   * Leaf values for ENT nodes are plain strings and must be preserved exactly.
+   * Preserve every existing oid. Only new nodes get oid: null. Do not invent OIDs.
+- Output only the final JSON structure as a numbered list, with one element per line in the same order as the input, eg:
+    1. {{"oid": "...", "name": "ROOT", "type": "GROUP", "metadata": {{}}, "children": [...]}}
+    2. {{"oid": "...", "name": "ROOT", "type": "GROUP", "metadata": {{}}, "children": [...]}}
 
-Let's think step by step, starting by identifying meaning full groups and relations based on trees then rewriting them.
+Process:
+1) Parse input trees.
+2) Bottom-up pass: detect GROUP candidates
+3) Second pass: detect RELs
+4) Flatten/remove untyped nodes that remain non-semantic, moving children up
 
-Now simplify these trees:
+Example:
+Input:
+1. {{"oid":"1","name":"UNDEF","type":null,"children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
+Output (numbered-line):
+1. {{"oid":"1","name":"Fruit","type":"GROUP","children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
+
+Input trees:
 {trees}
 """)
 
@@ -101,7 +117,7 @@ def llm_simplify(
 
     :yield: Simplified trees objects with the same oid as input.
     """
-    vocab_str = f"Prefer using this vocabulary: {', '.join(vocab)}." if vocab else ""
+    vocab_str = f"Prefer using names from this vocabulary: {', '.join(vocab)}." if vocab else ""
     prompt = prompt.partial(vocab=vocab_str)
     chain = prompt | llm | NumberedListOutputParser()
 
