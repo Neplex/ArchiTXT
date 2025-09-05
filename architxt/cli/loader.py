@@ -166,14 +166,17 @@ def load_corpus(
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
         mlflow.start_run(description='corpus_processing')
 
+    parser = CoreNLPParser(corenlp_url=corenlp_url)
+    resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else None
+
     with ZODBTreeBucket(storage_path=output) as bucket:
         anyio.run(
             bucket.async_update,
             raw_load_corpus(
                 corpus_path,
                 language,
-                parser=CoreNLPParser(corenlp_url=corenlp_url),
-                resolver=ScispacyResolver(cleanup=True, translate=True, kb_name=resolver),
+                parser=parser,
+                resolver=resolver,
                 cache=cache,
                 entities_filter=ENTITIES_FILTER,
                 relations_filter=RELATIONS_FILTER,

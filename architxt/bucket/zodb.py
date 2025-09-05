@@ -10,7 +10,7 @@ from collections.abc import (
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
-import anyio.to_thread
+import anyio.to_process
 import more_itertools
 import transaction
 import ZODB.config
@@ -191,7 +191,7 @@ class ZODBTreeBucket(TreeBucket):
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                await anyio.to_thread.run_sync(self.update, chunk, batch_size, _memory_threshold_mb)
+                await anyio.to_process.run_sync(self.update, chunk, batch_size, _memory_threshold_mb)
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""
