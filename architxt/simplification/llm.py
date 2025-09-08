@@ -22,50 +22,27 @@ from architxt.utils import windowed_shuffle
 __all__ = ['llm_rewrite']
 
 DEFAULT_PROMPT = PromptTemplate.from_template("""
-You are tasked with standardizing a list of tree by identifying semantic nodes, naming them, and removing non-semantic ones.
+You are tasked with standardizing trees into JSON.
 
-Hard requirements (do not omit):
-- Each tree start by a single top-level node:
-   {{
-     "oid": "...",
-     "name": "ROOT",
-     "type": null,
-     "metadata": {{}},
-     "children": [...]
-   }}
-- Allowed node types: GROUP, REL, ENT and every ENT should be in a GROUP.
-- Untyped nodes should be identified as GROUP/REL candidates or removed from the structure moving their children to it's parent.
-- You can introduce new node or duplicates subtrees if needed to express the semantics.
-- Preserve ENT nodes and their leaves exactly; do not alter names or leaf values.
-- Preserve the semantic of the tree structure, do not group ENT that are far apart for example.
-- GROUP creation:
-   * Parent with more than two distinct ENT children should be considered as a GROUP.
-   * Must have at least 2 ENT children; no duplicate ENT names.
-   * Name GROUPs based on the semantic meaning of the group (Employee, Treatment, etc).
-- REL creation:
-   * Parent connecting exactly 2 distinct GROUPs becomes a REL.
-   * Name RELs based on the semantic meaning of the relation (WorksAt, Treat, etc).
-- Attempt to minimize the number of distinct GROUP and REL name types across all trees by reusing names. {vocab}
-- Remove untyped/non-semantic nodes after forming GROUPs and RELs.
-- Every node must have the shape: {{"oid": <string|null>, "name": <string>, "type": <"GROUP"|"REL"|"ENT"|null>, "metadata": <object|null>, "children": <array of nodes|string>}}
-   * If you create a new node, set "oid": null.
-   * Leaf values for ENT nodes are plain strings and must be preserved exactly.
-   * Preserve every existing oid. Only new nodes get oid: null. Do not invent OIDs.
-- Output only the final JSON structure as a numbered list, with one element per line in the same order as the input, eg:
-    1. {{"oid": "...", "name": "ROOT", "type": null, "metadata": {{}}, "children": [...]}}
-    2. {{"oid": "...", "name": "ROOT", "type": null, "metadata": {{}}, "children": [...]}}
+Rules:
+- Root node: {{ "oid": "...", "name": "ROOT", "type": null, "metadata": {{}}, "children": [...] }}
+- Allowed types: GROUP, REL, ENT
+- ENT nodes must be inside a GROUP; ENT names and leaf values unchanged
+- Untyped nodes -> either GROUP/REL or removed (promote children)
+- GROUP: ≥2 ENT children, unique ENT names, semantically meaningful name
+- REL: exactly 2 GROUPs, semantic name
+- Reuse GROUP/REL names when possible. {vocab}
+- Node format: {{ "oid": <string|null>, "name": <string>, "type": "GROUP"|"REL"|"ENT"|null, "metadata": <object|null>, "children": [...] }}
+  * Preserve given oids; new nodes: oid=null
 
-Process:
-1) Parse input trees.
-2) Bottom-up pass: detect GROUP candidates
-3) Second pass: detect RELs
-4) Flatten/remove untyped nodes that remain non-semantic, moving children up
+Output:
+- **Only** a numbered list of JSON trees
+- No explanations, no reasoning, no notes
 
 Example:
-Input:
-1. {{"oid":"1","name":"UNDEF","type":null,"children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
-Output (numbered-line):
-1. {{"oid":"1","name":"Fruit","type":"GROUP","children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
+
+* Input: 1. {{"oid":"d4ce2104-29ca-4157-ab57-adf1cc5380eb","name":"UNDEF","type":null,"children":[{{"oid":"14a9b5cd-ba65-47f5-9f9c-8486b0a10ce9","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"41d551f7-4bef-473a-806d-669ce86c5e36","name":"Color","type":"ENT","children":["yellow"]}}]}}
+* Output: 1. {{"oid":"d4ce2104-29ca-4157-ab57-adf1cc5380eb","name":"Fruit","type":"GROUP","children":[{{"oid":"14a9b5cd-ba65-47f5-9f9c-8486b0a10ce9","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"41d551f7-4bef-473a-806d-669ce86c5e36","name":"Color","type":"ENT","children":["yellow"]}}]}}
 
 Input trees:
 {trees}
@@ -138,6 +115,8 @@ def llm_simplify(
             tree = _parse_tree_output(simplified, fallback=tree, debug=debug)
             if tree:
                 yield tree
+
+        return
 
 
 def get_vocab(forest: Iterable[Tree], min_support: int) -> tuple[str, ...]:
