@@ -394,4 +394,10 @@ class Metrics:
             rooted_forest = Tree('ROOT', (tree.copy() for tree in self._forest))
             mlflow.log_text(rooted_forest.to_svg(), f'debug/{iteration}/tree.html')
             mlflow.log_text(self._current_schema.as_cfg(), f'debug/{iteration}/schema.txt')
-            mlflow.log_table(pd.DataFrame(self._current_clustering.items()), f'debug/{iteration}/clusters.json')
+
+            cluster_table = pd.DataFrame(
+                self._current_clustering.items(),
+                columns=['tree oid', 'cluster'],
+                dtype=str,
+            ).sort_values('cluster')
+            mlflow.log_table(cluster_table, f'debug/{iteration}/clusters.json')
