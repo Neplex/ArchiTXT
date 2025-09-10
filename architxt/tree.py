@@ -18,6 +18,7 @@ from functools import partial, total_ordering
 from typing import TYPE_CHECKING, Any, Literal, TextIO, TypeAlias, TypeGuard, overload
 from urllib.parse import quote, unquote
 
+import more_itertools
 import pandas as pd
 from cachetools import cachedmethod, keys
 from nltk import slice_bounds
@@ -1076,6 +1077,55 @@ class Tree(PersistentList['_SubTree | str']):
             child.pformat(margin, indent + 2) if isinstance(child, Tree) else f'{pad}  {quote(child)}' for child in self
         )
         return f"{pad}({self._label} {child_lines})"
+
+    def to_json(self) -> dict[str, Any]:
+        """
+        Convert the current tree instance to a JSON-serializable dictionary.
+
+        :return: A dictionary containing the JSON-serializable representation
+            of the object instance. Keys include 'oid', 'type', 'name',
+            'metadata', and 'children'.
+        """
+        is_typed = has_type(self)
+
+        return {
+            'oid': str(self.oid),
+            'type': self.label.type if is_typed else None,
+            'name': self.label.name if is_typed else self.label,
+            'metadata': dict(self.metadata),
+            'children': [child.to_json() if isinstance(child, Tree) else child for child in self],
+        }
+
+    @classmethod
+    def from_json(cls, json_data: dict[str, Any]) -> 'Tree':
+        """
+        Create a Tree object from a JSON data dictionary.
+
+        :param json_data: Dictionary containing the JSON representation of the tree.
+        :return: A fully constructed Tree instance based on the data provided in the JSON dictionary.
+        """
+        try:
+            label: NodeLabel | str = json_data.get('name') or ''
+
+            if tree_type := json_data.get('type'):
+                label = NodeLabel(NodeType(tree_type), label)
+
+            oid = json_data.get('oid')
+            children = [
+                child if isinstance(child, str) else cls.from_json(child)
+                for child in more_itertools.flatten(json_data.get('children', []))
+            ]
+
+            return cls(
+                label=label,
+                oid=uuid.UUID(oid) if oid else None,
+                metadata=json_data.get('metadata'),
+                children=children,
+            )
+
+        except Exception as e:
+            msg = f'Failed to parse JSON data: {json_data}'
+            raise ValueError(msg) from e
 
 
 if TYPE_CHECKING:
