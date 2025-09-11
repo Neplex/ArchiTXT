@@ -29,27 +29,32 @@ from architxt.utils import windowed_shuffle
 __all__ = ['llm_rewrite']
 
 DEFAULT_PROMPT = PromptTemplate.from_template("""
-You are tasked with standardizing trees into JSON.
+Restructure JSON trees into a single uniform schema. Edit nodes by Add/Remove/Move/Rename.
+ENT = property, GROUP = table, REL = relation.
+
+Node format:
+{{"oid":<str|null>,"name":<str>,"type":"GROUP"|"REL"|"ENT"|null,"metadata":<obj|null>,"children":[...]}}
 
 Rules:
-- Root node: {{ "oid": "...", "name": "ROOT", "type": null, "metadata": {{}}, "children": [...] }}
-- Allowed types: GROUP, REL, ENT
-- ENT nodes must be inside a GROUP; ENT names and leaf values unchanged
-- Untyped nodes -> either GROUP/REL or removed (promote children)
-- GROUP: ≥2 ENT children, unique ENT names, semantically meaningful name
-- REL: exactly 2 GROUPs, semantic name
-- Reuse GROUP/REL names when possible. {vocab}
-- Node format: {{ "oid": <string|null>, "name": <string>, "type": "GROUP"|"REL"|"ENT"|null, "metadata": <object|null>, "children": [...] }}
-- Preserve given oids; new nodes: oid=null
-- Output **Only** a numbered list of JSON trees, without explanations or notes
+- Do NOT modify, rename or add new ENT nodes; keep them unchanged!
+- You can duplicates ENT nodes if needed.
+- Return one simplified tree per input. No notes or explanations.
+- Each output tree must start with root:
+  {{"oid":null,"name":"ROOT","type":null,"metadata":{{}},"children":[...]}}
+- Create meaningful GROUP nodes to collect related ENT nodes.
+- Link GROUPs with REL nodes where appropriate.
+- Preserve original oids; any new node gets "oid":null.
+{vocab}
 
-Example:
-Input:
+Example input:
 1. {{"oid":"1","name":"UNDEF","type":null,"children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
-Output (numbered-line):
-1. {{"oid":"1","name":"Fruit","type":"GROUP","children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
+2. {{"oid":"4","name":"UNDEF","type":null,"children":[{{"oid":"5","name":"FruitName","type":"ENT","children":["orange"]}},{{"oid":"6","name":"PersonName","type":"ENT","children":["Alice"]}},{{"oid":"7","name":"Age","type":"ENT","children":["30"]}}]}}
 
-Input trees:
+Example output:
+1. {{"oid":null,"name":"ROOT","type":null,"children":[{{"oid":"1","name":"Fruit","type":"GROUP","children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}]}}
+2. {{"oid":null,"name":"ROOT","type":null,"children":[{{"oid":null,"name":"Eat","type":"REL","children":[{{"oid":null,"name":"Fruit","type":"GROUP","children":[{{"oid":"5","name":"FruitName","type":"ENT","children":["orange"]}}]}},{{"oid":null,"name":"Person","type":"GROUP","children":[{{"oid":"6","name":"PersonName","type":"ENT","children":["Alice"]}},{{"oid":"7","name":"Age","type":"ENT","children":["30"]}}]}}]}}]}}
+
+Now normalize these trees:
 {trees}
 """)
 
@@ -107,7 +112,7 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
 
     except ValueError as error:
         if debug:
-            warnings.warn(f'Failed to parse tree {error}:\n> {raw_output}', RuntimeWarning)
+            warnings.warn(str(error), RuntimeWarning)
 
     return fallback
 
