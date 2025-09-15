@@ -5,6 +5,7 @@ from pathlib import Path
 import mlflow
 import more_itertools
 import typer
+from langchain_huggingface import HuggingFacePipeline
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
 from platformdirs import user_cache_path
@@ -18,6 +19,7 @@ from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
 from architxt.metrics import Metrics
 from architxt.schema import Group, Relation, Schema
+from architxt.simplification.llm import llm_rewrite
 from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
@@ -86,6 +88,69 @@ def simplify(
         )
         result_metrics = rewrite(
             forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers
+        )
+
+        # Generate schema
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
+        show_schema(schema)
+
+        if metrics:
+            show_metrics(result_metrics)
+
+
+@app.command(help="Simplify a bunch of databased together.")
+def simplify_llm(
+    files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
+    *,
+    tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    min_support: int = typer.Option(20, help="Minimum support for vocab.", min=1),
+    refining_steps: int = typer.Option(0, help="Number of refining steps."),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
+    debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
+    metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
+    log: bool = typer.Option(False, help="Enable logging to MLFlow."),
+    model: str = typer.Option('HuggingFaceTB/SmolLM2-135M-Instruct', help="Model to use for the LLM."),
+    max_tokens: int = typer.Option(2048, help="Maximum number of tokens to generate."),
+    openvino: bool = typer.Option(False, help="Enable Intel OpenVINO optimizations."),
+) -> None:
+    if log:
+        console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
+        mlflow.start_run(description='llm simplification')
+        mlflow.langchain.autolog()
+        for file in files:
+            mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
+
+    llm = HuggingFacePipeline.from_model_id(
+        model_id=model,
+        task='text-generation',
+        device_map='auto',
+        backend='openvino' if openvino else 'pt',
+        model_kwargs={'export': True} if openvino else {},
+        pipeline_kwargs={
+            'use_cache': True,
+            'do_sample': True,
+            'return_full_text': False,
+            'max_new_tokens': max_tokens,
+            'temperature': 0.2,
+            'repetition_penalty': 1.1,
+            'num_return_sequences': 1,
+            'pad_token_id': 0,
+            'torch_dtype': 'auto',
+        },
+    )
+
+    with ZODBTreeBucket(storage_path=output) as forest:
+        forest.update(load_forest(files))
+
+        console.print(f'[blue]Rewriting {len(forest)} trees with model={model}[/]')
+        result_metrics = llm_rewrite(
+            forest,
+            llm=llm,
+            max_token=max_tokens,
+            tau=tau,
+            min_support=min_support,
+            refining_steps=refining_steps,
+            debug=debug,
         )
 
         # Generate schema
