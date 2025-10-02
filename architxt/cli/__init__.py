@@ -5,7 +5,8 @@ from pathlib import Path
 import mlflow
 import more_itertools
 import typer
-from langchain_huggingface import HuggingFacePipeline
+from langchain.chat_models import init_chat_model
+from langchain_core.rate_limiters import InMemoryRateLimiter
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
 from platformdirs import user_cache_path
@@ -109,9 +110,12 @@ def simplify_llm(
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
+    model_provider: str = typer.Option('langchain', help="Provider of the model."),
     model: str = typer.Option('HuggingFaceTB/SmolLM2-135M-Instruct', help="Model to use for the LLM."),
     max_tokens: int = typer.Option(2048, help="Maximum number of tokens to generate."),
+    local: bool = typer.Option(True, help="Use local model."),
     openvino: bool = typer.Option(False, help="Enable Intel OpenVINO optimizations."),
+    rate_limit: float | None = typer.Option(None, help="Rate limit for the LLM."),
 ) -> None:
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
@@ -120,24 +124,39 @@ def simplify_llm(
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
-    llm = HuggingFacePipeline.from_model_id(
-        model_id=model,
-        task='text-generation',
-        device_map='auto',
-        backend='openvino' if openvino else 'pt',
-        model_kwargs={'export': True} if openvino else {},
-        pipeline_kwargs={
-            'use_cache': True,
-            'do_sample': True,
-            'return_full_text': False,
-            'max_new_tokens': max_tokens,
-            'temperature': 0.2,
-            'repetition_penalty': 1.1,
-            'num_return_sequences': 1,
-            'pad_token_id': 0,
-            'torch_dtype': 'auto',
-        },
-    )
+    rate_limiter = InMemoryRateLimiter(requests_per_second=rate_limit) if rate_limit else None
+
+    if model_provider == 'langchain' and local:
+        from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
+
+        pipeline = HuggingFacePipeline.from_model_id(
+            model_id=model,
+            task='text-generation',
+            device_map='auto',
+            backend='openvino' if openvino else 'pt',
+            model_kwargs={'export': True} if openvino else {},
+            pipeline_kwargs={
+                'use_cache': True,
+                'do_sample': True,
+                'return_full_text': False,
+                'max_new_tokens': max_tokens,
+                'temperature': 0.2,
+                'repetition_penalty': 1.1,
+                'num_return_sequences': 1,
+                'pad_token_id': 0,
+                'torch_dtype': 'auto',
+            },
+        )
+        llm = ChatHuggingFace(llm=pipeline, rate_limiter=rate_limiter)
+
+    else:
+        llm = init_chat_model(
+            model_provider=model_provider,
+            model=model,
+            temperature=0.9,
+            max_tokens=max_tokens,
+            rate_limiter=rate_limiter,
+        )
 
     with ZODBTreeBucket(storage_path=output) as forest:
         forest.update(load_forest(files))

@@ -9,9 +9,11 @@ import json_repair
 import mlflow
 import more_itertools
 import torch
-from langchain_core.language_models import BaseLLM
+from httpx import HTTPStatusError
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import NumberedListOutputParser
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain_core.runnables import (
     Runnable,
     RunnableLambda,
@@ -28,7 +30,9 @@ from architxt.utils import windowed_shuffle
 
 __all__ = ['llm_rewrite']
 
-DEFAULT_PROMPT = PromptTemplate.from_template("""
+DEFAULT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        SystemMessagePromptTemplate.from_template("""
 Restructure JSON trees into a single uniform schema. Edit nodes by Add/Remove/Move/Rename.
 ENT = property, GROUP = table, REL = relation.
 
@@ -46,17 +50,23 @@ Rules:
 - Preserve original oids; any new node gets "oid":null.
 {vocab}
 
-Example input:
-1. {{"oid":"1","name":"UNDEF","type":null,"children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}
-2. {{"oid":"4","name":"UNDEF","type":null,"children":[{{"oid":"5","name":"FruitName","type":"ENT","children":["orange"]}},{{"oid":"6","name":"PersonName","type":"ENT","children":["Alice"]}},{{"oid":"7","name":"Age","type":"ENT","children":["30"]}}]}}
-
-Example output:
-1. {{"oid":null,"name":"ROOT","type":null,"children":[{{"oid":"1","name":"Fruit","type":"GROUP","children":[{{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]}},{{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}}]}}]}}
-2. {{"oid":null,"name":"ROOT","type":null,"children":[{{"oid":null,"name":"Eat","type":"REL","children":[{{"oid":null,"name":"Fruit","type":"GROUP","children":[{{"oid":"5","name":"FruitName","type":"ENT","children":["orange"]}}]}},{{"oid":null,"name":"Person","type":"GROUP","children":[{{"oid":"6","name":"PersonName","type":"ENT","children":["Alice"]}},{{"oid":"7","name":"Age","type":"ENT","children":["30"]}}]}}]}}]}}
-
-Now normalize these trees:
-{trees}
-""")
+Your response should be a numbered list with each item on a new line (do not put linebreak in the resulting json).
+For example:
+1. {{...}}
+2. {{...}}
+3. {{...}}
+"""),
+        HumanMessage("""
+1. {"oid":"1","name":"UNDEF","type":null,"children":[{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]},{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}]}
+2. {"oid":"4","name":"UNDEF","type":null,"children":[{"oid":"5","name":"FruitName","type":"ENT","children":["orange"]},{"oid":"6","name":"PersonName","type":"ENT","children":["Alice"]},{"oid":"7","name":"Age","type":"ENT","children":["30"]}]}
+        """),
+        AIMessage("""
+1. {"oid":null,"name":"ROOT","type":null,"children":[{"oid":"1","name":"Fruit","type":"GROUP","children":[{"oid":"2","name":"FruitName","type":"ENT","children":["banana"]},{"oid":"3","name":"Color","type":"ENT","children":["yellow"]}]}]}
+2. {"oid":null,"name":"ROOT","type":null,"children":[{"oid":null,"name":"Eat","type":"REL","children":[{"oid":null,"name":"Fruit","type":"GROUP","children":[{"oid":"5","name":"FruitName","type":"ENT","children":["orange"]}]},{"oid":null,"name":"Person","type":"GROUP","children":[{"oid":"6","name":"PersonName","type":"ENT","children":["Alice"]},{"oid":"7","name":"Age","type":"ENT","children":["30"]}]}]}]}
+        """),
+        HumanMessagePromptTemplate.from_template("{trees}"),
+    ]
+)
 
 
 def _tree_to_list(trees: Iterable[Tree]) -> str:
@@ -118,12 +128,20 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
 
 
 def _build_simplify_langchain_graph(
-    llm: BaseLLM,
-    prompt: PromptTemplate,
+    llm: BaseChatModel,
+    prompt: ChatPromptTemplate,
     debug: bool = False,
 ) -> Runnable[Sequence[Tree], Sequence[Tree]]:
     to_json = RunnableLambda(lambda trees: {"trees": _tree_to_list(trees)})
-    llm_chain = to_json | prompt | llm | NumberedListOutputParser()
+    llm_chain = (
+        to_json
+        | prompt
+        | llm.with_retry(
+            stop_after_attempt=6,
+            retry_if_exception_type=(HTTPStatusError,),
+        )
+        | NumberedListOutputParser()
+    )
     parallel = RunnableParallel(origin=RunnablePassthrough(), simplified=llm_chain)
     tree_parser = RunnableLambda(
         lambda result: [
@@ -138,9 +156,9 @@ def _build_simplify_langchain_graph(
 
 @torch.inference_mode()
 def llm_simplify(
-    llm: BaseLLM,
+    llm: BaseChatModel,
     max_token: int,
-    prompt: PromptTemplate,
+    prompt: ChatPromptTemplate,
     trees: Iterable[Tree],
     debug: bool,
     vocab: Collection[str] | None = None,
@@ -162,8 +180,7 @@ def llm_simplify(
     chain = _build_simplify_langchain_graph(llm, prompt, debug=debug)
 
     def count_tokens(documents: Iterable[Tree]) -> int:
-        full_prompt = prompt.format(trees=_tree_to_list(documents))
-        return llm.get_num_tokens(full_prompt)
+        return llm.get_num_tokens(_tree_to_list(documents))
 
     # Group trees respecting max_token
     batches = more_itertools.constrained_batches(
@@ -190,13 +207,13 @@ def get_vocab(forest: Iterable[Tree], min_support: int) -> tuple[str, ...]:
 def llm_rewrite(
     forest: Forest,
     *,
-    llm: BaseLLM,
+    llm: BaseChatModel,
     max_token: int,
     tau: float = 0.7,
     min_support: int | None = None,
     refining_steps: int = 0,
     metric: METRIC_FUNC = DEFAULT_METRIC,
-    prompt: PromptTemplate = DEFAULT_PROMPT,
+    prompt: ChatPromptTemplate = DEFAULT_PROMPT,
     debug: bool = False,
 ) -> Metrics:
     """
