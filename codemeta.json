@@ -361,7 +361,7 @@
             "identifier": "xmltodict",
             "name": "xmltodict",
             "runtimePlatform": "Python 3",
-            "version": "^0.14.2"
+            "version": ">= 0.14.2"
         },
         {
             "@type": "SoftwareApplication",
