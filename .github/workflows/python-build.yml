@@ -19,13 +19,14 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
         os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
     steps:
-      - uses: rcmdnk/python-action@v1
+      - uses: rcmdnk/python-action@v2
         with:
           pre-commit: true
           pytest-tests-path: "."
           pytest-cov-path: "architxt"
-          pytest-ignore: 'tests/simplification/tree_rewriting/operations/test_operations.py,dev/maccrobat.py'
+          pytest-ignore: 'tests/simplification/tree_rewriting/operations/test_operations.py'
           python-version: "${{ matrix.python-version }}"
+          cache: "pip"
         env:
           PYTEST_ADDOPTS: "--doctest-modules --beartype-skip-packages=architxt/grammar"
           TOKENIZERS_PARALLELISM: false
@@ -83,7 +84,7 @@ jobs:
           name: package-dist
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.12.4
+      - uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           verbose: true
           repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}

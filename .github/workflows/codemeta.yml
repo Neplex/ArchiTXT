@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
+        uses: abatilo/actions-poetry@v4
         with:
           poetry-plugins: 'poetry-dynamic-versioning'
 
