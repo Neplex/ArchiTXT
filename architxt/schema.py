@@ -12,6 +12,7 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.Errors import CancellationException
 from antlr4.error.ErrorStrategy import BailErrorStrategy
 from nltk import CFG, Nonterminal, Production
+from tqdm.auto import tqdm
 
 from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
@@ -143,7 +144,7 @@ class Schema(CFG):
         )
         relations_is_multi: dict[str, dict[str, bool]] = defaultdict(lambda: defaultdict(lambda: False))
 
-        for tree in forest:
+        for tree in tqdm(forest, desc='Extract schema', leave=False):
             for prod in tree.productions():
                 if prod.is_lexical() or prod.lhs().symbol() == 'ROOT':
                     continue
@@ -374,15 +375,21 @@ class Schema(CFG):
         :param forest: The input forest to extract datasets from.
         :return: A mapping from group names to datasets.
         """
-        return {
-            group.name: dataset
-            for group in self.groups
-            if not (
-                dataset := pd.concat(
-                    [tree.group_instances(group.name) for tree in forest], ignore_index=True
-                ).drop_duplicates()
-            ).empty
-        }
+        datasets = defaultdict(pd.DataFrame)
+        groups_names = {group.name for group in self.groups}
+
+        for tree in tqdm(forest, desc='Extract groups datasets', leave=False):
+            for group in tree.groups():
+                if group in groups_names:
+                    datasets[group] = pd.concat(
+                        [
+                            datasets[group],
+                            tree.group_instances(group),
+                        ],
+                        ignore_index=True,
+                    ).drop_duplicates()
+
+        return datasets
 
     def find_collapsible_groups(self) -> set[str]:
         """

@@ -133,6 +133,8 @@ class Metrics:
         self._source_schema = Schema.from_forest(self._forest)
         self._current_schema = self._source_schema
 
+        self._datasets = self._current_schema.extract_datasets(self._forest)
+
         self._source_entities = {entity.oid.hex for tree in self._forest for entity in tree.entities()}
         self._current_entities = self._source_entities
 
@@ -153,6 +155,7 @@ class Metrics:
         forest = forest or self._forest
 
         self._current_schema = Schema.from_forest(forest)
+        self._datasets = self._current_schema.extract_datasets(forest)
         self._current_entities = {entity.oid.hex for tree in forest for entity in tree.entities()}
         self._current_label_count = Counter(subtree.label for tree in forest for subtree in tree.subtrees())
         self._current_clustering = entity_labels(forest, tau=self._tau, metric=self._metric)
@@ -235,8 +238,7 @@ class Metrics:
             - 0 indicates no redundancy
             - 1 indicates complete redundancy
         """
-        datasets = self._current_schema.extract_datasets(self._forest)
-        group_redundancy = pd.Series(list(datasets.values())).map(lambda df: redundancy_score(df, tau=tau))
+        group_redundancy = pd.Series(self._datasets.values()).map(lambda df: redundancy_score(df, tau=tau))
         redundancy = group_redundancy[group_redundancy > 0].median()
 
         return redundancy if redundancy is not pd.NA else 0.0
