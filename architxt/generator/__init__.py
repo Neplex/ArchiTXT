@@ -7,9 +7,6 @@ from architxt.tree import NodeLabel, NodeType, Tree
 
 __all__ = ['gen_instance']
 
-GROUP_SCHEMA = dict[str, tuple[str, ...]]
-REL_SCHEMA = dict[str, tuple[str, str]]
-
 
 def gen_group(schema: Schema, name: str) -> Tree:
     """

@@ -32,3 +32,13 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: v2.14
+    hooks:
+      - id: vulture
+
+  - repo: https://github.com/fpgmaas/deptry
+    rev: 0.23.0
+    hooks:
+      - id: deptry

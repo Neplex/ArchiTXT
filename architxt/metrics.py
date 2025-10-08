@@ -361,6 +361,7 @@ class Metrics:
             {
                 'nodes.count': self.num_nodes(),
                 'unlabeled.count': self.num_unlabeled_nodes(),
+                'unlabeled.ratio': self.ratio_unlabeled_nodes(),
                 'redundancy': self.redundancy(),
                 # Clustering
                 'clustering.cluster_count': len(set(self._current_clustering.values())),
