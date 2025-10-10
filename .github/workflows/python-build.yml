@@ -26,6 +26,7 @@ jobs:
           pytest-cov-path: "architxt"
           pytest-ignore: 'tests/simplification/tree_rewriting/operations/test_operations.py'
           python-version: "${{ matrix.python-version }}"
+          setup-cmd: "poetry install --no-cache --all-extras --with=test"
           cache: "pip"
         env:
           PYTEST_ADDOPTS: "--doctest-modules --beartype-skip-packages=architxt/grammar"
@@ -88,3 +89,4 @@ jobs:
         with:
           verbose: true
           repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
+          skip-existing: ${{ github.event_name != 'release' }}

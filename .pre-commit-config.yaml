@@ -20,11 +20,9 @@ repos:
         args: [ --autofix, --no-ensure-ascii, --no-sort-keys ]
 
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.8.3
+    rev: 2.2.1
     hooks:
       - id: poetry-check
-      - id: poetry-install
-        args: [ --sync ]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.0
