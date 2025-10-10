@@ -1,6 +1,6 @@
 FROM python:3.12 AS builder
 
-RUN pip install poetry==1.8.2
+RUN pip install poetry==2.2.1
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY pyproject.toml ./
 
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --extras all --without dev --no-root
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --all-extras --no-root
 
 FROM python:3.12-slim AS runtime
 

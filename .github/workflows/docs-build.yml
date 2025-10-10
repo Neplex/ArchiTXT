@@ -32,7 +32,7 @@ jobs:
         uses: abatilo/actions-poetry@v4
 
       - name: Install Dependencies
-        run: poetry install
+        run: poetry install --all-extras --with=docs
 
       - name: Cache Jupyter/MyST notebook execution cache
         uses: actions/cache@v4

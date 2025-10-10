@@ -1,18 +1,16 @@
-[tool.poetry]
+[project]
 name = "architxt"
-version = "0.4.0"
 description = "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting."
 authors = [
-    "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>",
-    "Mirian Halfeld-Ferrari <mirian@univ-orleans.fr>",
-    "Jacques Chabin <jacques.chabin@univ-orleans.fr>"
+    { name = "Jacques Chabin", email = "jacques.chabin@univ-orleans.fr" },
+    { name = "Mirian Halfeld-Ferrari", email = "mirian@univ-orleans.fr" },
+    { name = "Nicolas Hiot", email = "nicolas.hiot@univ-orleans.fr" }
 ]
 maintainers = [
-    "Nicolas Hiot <nicolas.hiot@univ-orleans.fr>"
+    { name = "Nicolas Hiot", email = "nicolas.hiot@univ-orleans.fr" }
 ]
 readme = "README.md"
-repository = "https://github.com/neplex/ArchiTXT"
-documentation = "https://neplex.github.io/ArchiTXT"
+license-files = ["LICEN[CS]E*", "AUTHORS.md", "CONTRIBUTORS.md"]
 keywords = [
     "python",
     "nlp",
@@ -31,18 +29,119 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Database",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
-    "Typing :: Typed",
+    "Typing :: Typed"
 ]
 
-[tool.poetry.scripts]
+dynamic = ["version"]
+
+requires-python = '>=3.10,<3.13'
+dependencies = [
+    'tqdm>=4.60',
+    'nltk>=3.9,<4.0',
+    'unidecode',
+    'benepar',
+    'pandas>=2.3.0,<3.0.0',
+    'numpy>=1.16,<2.0',
+    'levenshtein',
+    'more-itertools',
+    'pybrat>=0.1.7,<0.2.0',
+    'mlflow>=3.1,<3.5',
+    'psutil>=7.0.0,<8.0.0',
+    'typer>=0.15.1,<0.18.0',
+    'click<8.3.0',
+    'rich>=13.9.4,<15.0.0',
+    'antlr4-python3-runtime>=4.13,<5',
+    'cachetools>=5.5.0,<6.0.0',
+    'googletrans>=4.0.2,<5.0.0',
+    'aiostream>=0.7,<0.8',
+    'sqlalchemy>=2.0.39,<3.0.0',
+    'spacy>=3.7.0,<4.0.0',
+    'scispacy>=0.5.5,<0.6.0',
+    'plotly<6.0',
+    'xmltodict>=0.14.2,<1.1.0',
+    'xlrd>=2.0.1,<3.0.0',
+    'neo4j>=5.28.1,<6.0.0',
+    'zodb>=6.0,<7.0',
+    'relstorage>=4.1.1,<5.0.0',
+    'anyio>=4.9.0,<5.0.0',
+    'toml>=0.10.0,<0.11.0',
+    'scikit-learn>=1.7.0,<2.0.0',
+    'platformdirs>=4.4.0,<5.0.0',
+    'ruamel.yaml>=0.18.0,<0.19.0',
+    'scipy>=1.15.0,<2.0.0'
+]
+
+[project.optional-dependencies]
+ui = ['streamlit>=1.39.0', 'streamlit-agraph', 'streamlit-tags']
+flair = ['flair>=0.15,<0.16']
+
+[project.urls]
+documentation = "https://neplex.github.io/ArchiTXT"
+
+[project.scripts]
 architxt = "architxt.cli:app"
 
-[tool.poetry-dynamic-versioning]
-enable = true
-metadata = false
+[dependency-groups]
+docs = [
+    "sphinx>=8.1.3,<9.0.0",
+    "sphinx-book-theme",
+    "sphinx-toolbox",
+    "sphinx-design",
+    "sphinx-sitemap",
+    "sphinx-copybutton",
+    "sphinxcontrib-typer",
+    "sphinxcontrib-mermaid",
+    "myst-nb>=1.2.0",
+    "notebook>=7.3.3",
+    "itables>=2.3.0",
+    "ipywidgets>=8.1.7",
+    "yfiles-jupyter-graphs>=1.10.7",
+    "yfiles-jupyter-graphs-for-neo4j>=1.7.0",
+]
+
+dev = [
+    "devtools>=0.12.0,<1.0.0",
+    "py-spy>=0.4.0,<0.5.0",
+    "pre-commit>=4.0.1,<5.0.0",
+    "datasets",
+    "testcontainers>=4.10.0,<5.0.0",
+    # linters/analysis
+    "mypy==1.17.1",
+    "ruff==0.13.0",
+    "deptry>=0.23.0,<1.0.0",
+    "vulture==2.14",
+    # typing stubs
+    "scipy-stubs",
+    "pandas-stubs",
+    "types-tqdm",
+    "types-cachetools",
+    "types-toml",
+    # parser tools
+    "antlr4-tools>=0.2.1",
+     # fixed version of nmslib
+    'nmslib @ git+https://github.com/nmslib/nmslib.git#subdirectory=python_bindings'
+]
+
+test = [
+    "pytest>=8.3",
+    "pytest-cov",
+    "pytest-xdist",
+    "pytest-mock",
+    # Property testing
+    "hypothesis>=6.68.0",
+    # Runtime type checking
+    "beartype>=0.19,<0.22",
+    "pytest-beartype>=0.2.0",
+    # Async testing
+    "trio>=0.28,<0.31",
+]
 
 [build-system]
 requires = [
@@ -51,119 +150,12 @@ requires = [
 ]
 build-backend = "poetry_dynamic_versioning.backend"
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+[tool.poetry]
+version = "0.4.0"
 
-flair = { version = "^0.15", optional = true }
-
-# Optional UI dependencies
-streamlit = { version = ">=1.39.0", optional = true }
-streamlit-agraph = { version = "*", optional = true }
-streamlit-tags = { version = "*", optional = true }
-
-# Use a fixed version of nmslib
-nmslib = { git = "https://github.com/nmslib/nmslib.git", subdirectory = "python_bindings", optional = true }
-
-# Core dependencies
-tqdm = ">=4.60"
-nltk = "^3.9"
-unidecode = "*"
-benepar = "*"
-pandas = "^2.3.0"
-numpy = "^1.16"
-levenshtein = "*"
-more-itertools = "*"
-pybrat = "^0.1.7"
-mlflow = ">=3.1,<3.5"
-psutil = "^7.0.0"
-typer = ">=0.15.1,<0.18.0"
-click = "<8.3.0"
-rich = ">=13.9.4,<15.0.0"
-antlr4-python3-runtime = ">=4.13,<5"
-cachetools = "^5.5.0"
-googletrans = "^4.0.2"
-aiostream = ">=0.7,<0.8"
-sqlalchemy = "^2.0.39"
-spacy = "^3.7.0"
-scispacy = "^0.5.5"
-plotly = "<6.0"
-xmltodict = ">=0.14.2,<1.1.0"
-xlrd = "^2.0.1"
-neo4j = "^5.28.1"
-zodb = "^6.0"
-relstorage = "^4.1.1"
-anyio = "^4.9.0"
-toml = "^0.10.0"
-scikit-learn = "^1.7.0"
-platformdirs = "^4.4.0"
-ruamel-yaml = "^0.18.0"
-scipy = "^1.15.0"
-
-[tool.poetry.extras]
-ui = ["streamlit", "streamlit-agraph", "streamlit-tags"]
-flair = ["flair"]
-all = ["streamlit", "streamlit-agraph", "streamlit-tags", "flair"]
-
-[tool.poetry.group.dev.dependencies]
-wheel = "^0.45.0"
-devtools = "^0.12.0"
-py-spy = "~0.4.0"
-pre-commit = "^4.0.1"
-datasets = "*"
-testcontainers = "^4.10.0"
-
-# Linters
-mypy = "1.17.1"
-ruff = "0.13.0"
-deptry = "^0.23.0"
-vulture = "2.14"
-
-# Documentation
-sphinx = "^8.1.3"
-sphinx-book-theme = "*"
-sphinx-toolbox = "*"
-sphinx-design = "*"
-sphinx-sitemap = "*"
-sphinx-copybutton = "*"
-sphinxcontrib-typer = "*"
-sphinxcontrib-mermaid = "*"
-myst-nb = "^1.2.0"
-notebook = "^7.3.3"
-itables = "^2.3.0"
-ipywidgets = "^8.1.7"
-yfiles-jupyter-graphs = "^1.10.7"
-yfiles-jupyter-graphs-for-neo4j = "^1.7.0"
-
-# Typing stubs
-scipy-stubs = "*"
-pandas-stubs = "*"
-types-tqdm = "*"
-types-cachetools = "*"
-types-toml = "*"
-
-# Tools for generating grammar parsers
-antlr4-tools = "^0.2.1"
-
-# All packages in dev mode
-streamlit = "*"
-streamlit-agraph = "*"
-streamlit-tags = "*"
-flair = "*"
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.3"
-pytest-cov = "*"
-pytest-xdist = "*"
-pytest-mock = "*"
-
-beartype = ">=0.19,<0.22"
-pytest-beartype = "^0.2.0"
-
-hypothesis = "^6.68.0"
-
-# Async testing libraries
-asyncio = ">=3.4,<5.0"
-trio = ">=0.28,<0.31"
+[tool.poetry-dynamic-versioning]
+enable = true
+metadata = false
 
 [tool.pytest.ini_options]
 minversion = "7.0"
