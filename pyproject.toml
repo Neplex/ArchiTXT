@@ -126,7 +126,9 @@ dev = [
     # parser tools
     "antlr4-tools>=0.2.1",
      # fixed version of nmslib
-    'nmslib @ git+https://github.com/nmslib/nmslib.git#subdirectory=python_bindings'
+    'nmslib @ git+https://github.com/nmslib/nmslib.git#subdirectory=python_bindings',
+    # Broken version of transformers
+    'transformers!=4.57.0'
 ]
 
 test = [
