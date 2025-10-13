@@ -50,5 +50,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          provenance: mode=max
-          sbom: true
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
+          provenance: ${{ github.event_name == 'release' }}
+          sbom: ${{ github.event_name == 'release' }}
