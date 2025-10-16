@@ -8,6 +8,7 @@ from typing import Any
 
 import pandas as pd
 from cachetools import cachedmethod
+from cachetools.keys import methodkey
 from tqdm.auto import tqdm
 
 from .schema import Schema
@@ -181,7 +182,7 @@ class Metrics:
         self._current_label_count = Counter(subtree.label for tree in forest for subtree in tree.subtrees())
         self._current_clustering = entity_labels(forest, tau=self._tau, metric=self._metric)
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='_cluster_labels'))
     def _cluster_labels(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
         entities = sorted(self._source_clustering.keys() | self._current_clustering.keys())
 
@@ -191,7 +192,7 @@ class Metrics:
 
         return source_labels, current_labels
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='coverage'))
     def coverage(self) -> float:
         """
         Compute the coverage between initial and current forest states.
@@ -205,7 +206,7 @@ class Metrics:
         """
         return jaccard(self._source_entities, self._current_entities)
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='cluster_ami'))
     def cluster_ami(self) -> float:
         """
         Compute the Adjusted Mutual Information (AMI) score between original and current clusters.
@@ -225,7 +226,7 @@ class Metrics:
         source_labels, current_labels = self._cluster_labels()
         return adjusted_mutual_info_score(source_labels, current_labels)
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='cluster_completeness'))
     def cluster_completeness(self) -> float:
         """
         Compute the completeness score between original and current clusters.
@@ -244,7 +245,7 @@ class Metrics:
         source_labels, current_labels = self._cluster_labels()
         return completeness_score(source_labels, current_labels)
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='redundancy'))
     def redundancy(self, *, tau: float = 1.0) -> float:
         """
         Compute the redundancy score for the current forest state.
@@ -271,7 +272,7 @@ class Metrics:
 
         return redundancy if redundancy is not pd.NA else 0.0
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='group_overlap_origin'))
     def group_overlap_origin(self) -> float:
         """
         Get the origin schema group overlap ratio.
@@ -280,7 +281,7 @@ class Metrics:
         """
         return self._source_schema.group_overlap
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='group_overlap'))
     def group_overlap(self) -> float:
         """
         Get the schema group overlap ratio.
@@ -289,7 +290,7 @@ class Metrics:
         """
         return self._current_schema.group_overlap
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='group_balance_score_origin'))
     def group_balance_score_origin(self) -> float:
         """
         Get the origin group balance score.
@@ -298,7 +299,7 @@ class Metrics:
         """
         return self._source_schema.group_balance_score
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='group_balance_score'))
     def group_balance_score(self) -> float:
         """
         Get the group balance score.
@@ -307,44 +308,44 @@ class Metrics:
         """
         return self._current_schema.group_balance_score
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_productions_origin'))
     def num_productions_origin(self) -> int:
         """Get the number of productions in the origin schema."""
         return len(self._source_schema.productions())
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_productions'))
     def num_productions(self) -> int:
         """Get the number of productions in the schema."""
         return len(self._current_schema.productions())
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='ratio_productions'))
     def ratio_productions(self) -> float:
         """Get the ratio of productions in the schema compare to the origin schema."""
         origin_productions = self.num_productions_origin()
         return self.num_productions() / origin_productions if origin_productions else 0
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_non_terminal'))
     def num_non_terminal(self) -> int:
         """Get the number of non-terminal nodes in the schema."""
         return len(self._current_label_count)
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_nodes'))
     def num_nodes(self) -> int:
         """Get the total number of nodes in the forest."""
         return sum(self._current_label_count.values())
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_unlabeled_nodes'))
     def num_unlabeled_nodes(self) -> int:
         """Get the total number of unlabeled nodes in the forest."""
         return sum(count for label, count in self._current_label_count.items() if not has_type(label))
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='ratio_unlabeled_nodes'))
     def ratio_unlabeled_nodes(self) -> float:
         """Get the ratio of unlabeled nodes in the forest."""
         nb_nodes = self.num_nodes()
         return self.num_unlabeled_nodes() / nb_nodes if nb_nodes else 0
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_distinct_type'))
     def num_distinct_type(self, node_type: NodeType) -> int:
         """
         Get the number of distinct labels in the schema that match the given node type.
@@ -353,7 +354,7 @@ class Metrics:
         """
         return sum(has_type(label, node_type) for label in self._current_label_count)
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_type'))
     def num_type(self, node_type: NodeType) -> int:
         """
         Get the total number of nodes in the forest that match the given node type.
@@ -362,7 +363,7 @@ class Metrics:
         """
         return sum(count for label, count in self._current_label_count.items() if has_type(label, node_type))
 
-    @cachedmethod(attrgetter('_cache'))
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='ratio_type'))
     def ratio_type(self, node_type: NodeType) -> float:
         """
         Return the average number of nodes per distinct label for the given node type.
