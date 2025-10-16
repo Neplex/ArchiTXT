@@ -150,17 +150,16 @@ def compare(
 ) -> None:
     # Metrics
     inspector1 = ForestInspector()
-    forest = load_forest([file1])
-    forest = inspector1(forest)
-    with ZODBTreeBucket() as bucket:
-        bucket.update(forest)
+    inspector2 = ForestInspector()
+
+    with ZODBTreeBucket(storage_path=file1, read_only=True) as bucket:
+        for _ in inspector1(bucket):
+            pass
         metrics = Metrics(bucket, tau=tau)
 
-    inspector2 = ForestInspector()
-    forest = load_forest([file2])
-    forest = inspector2(forest)
-    with ZODBTreeBucket() as bucket:
-        bucket.update(forest)
+    with ZODBTreeBucket(storage_path=file2, read_only=True) as bucket:
+        for _ in inspector2(bucket):
+            pass
         metrics.update(bucket)
 
     show_metrics(metrics)
