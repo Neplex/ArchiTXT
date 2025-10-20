@@ -1,94 +1,70 @@
 {
-    "@context": [
-        "https://w3id.org/codemeta/3.0",
-        "https://w3id.org/software-iodata",
-        "https://raw.githubusercontent.com/jantman/repostatus.org/master/badges/latest/ontology.jsonld",
-        "https://schema.org",
-        "https://w3id.org/software-types"
-    ],
-    "@type": "SoftwareSourceCode",
-    "author": [
-        {
-            "@id": "https://orcid.org/0000-0003-1460-9979",
-            "@type": "Person",
-            "affiliation": {
-                "@type": "Organization",
-                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-            },
-            "familyName": "Chabin",
-            "givenName": "Jacques"
-        },
-        {
-            "@id": "https://orcid.org/0000-0003-2601-3224",
-            "@type": "Person",
-            "affiliation": {
-                "@type": "Organization",
-                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-            },
-            "familyName": "Halfeld-Ferrari",
-            "givenName": "Mirian"
-        },
-        {
-            "@id": "https://orcid.org/0000-0003-4318-4906",
-            "@type": "Person",
-            "affiliation": {
-                "@type": "Organization",
-                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-            },
-            "familyName": "Hiot",
-            "givenName": "Nicolas"
-        }
-    ],
-    "codeRepository": "https://github.com/Neplex/ArchiTXT",
-    "contributor": [
-        {
-            "@id": "https://orcid.org/0000-0003-1460-9979",
-            "@type": "Person",
-            "affiliation": {
-                "@type": "Organization",
-                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-            },
-            "familyName": "Chabin",
-            "givenName": "Jacques"
-        },
-        {
-            "@id": "https://orcid.org/0000-0003-2601-3224",
-            "@type": "Person",
-            "affiliation": {
-                "@type": "Organization",
-                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-            },
-            "familyName": "Halfeld-Ferrari",
-            "givenName": "Mirian"
-        },
-        {
-            "@id": "https://orcid.org/0000-0003-4318-4906",
-            "@type": "Person",
-            "affiliation": {
-                "@type": "Organization",
-                "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-            },
-            "familyName": "Hiot",
-            "givenName": "Nicolas"
-        }
-    ],
-    "developmentStatus": "https://www.repostatus.org/#suspended",
-    "identifier": "data",
-    "license": "http://spdx.org/licenses/CC-BY-NC-4.0",
-    "maintainer": {
-        "@id": "https://orcid.org/0000-0003-1460-9979",
-        "@type": "Person",
-        "affiliation": {
-            "@type": "Organization",
-            "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
-        },
-        "familyName": "Chabin",
-        "givenName": "Jacques"
-    },
-    "name": "ArchiTXT",
-    "producer": {
+  "@context": [
+    "https://w3id.org/codemeta/3.0",
+    "https://w3id.org/software-iodata",
+    "https://raw.githubusercontent.com/jantman/repostatus.org/master/badges/latest/ontology.jsonld",
+    "https://schema.org",
+    "https://w3id.org/software-types"
+  ],
+  "@type": "SoftwareSourceCode",
+  "author": [
+    {
+      "@id": "https://orcid.org/0000-0003-1460-9979",
+      "@type": "Person",
+      "affiliation": {
         "@type": "Organization",
         "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+      },
+      "familyName": "Chabin",
+      "givenName": "Jacques"
     },
-    "url": "https://github.com/Neplex/ArchiTXT"
+    {
+      "@id": "https://orcid.org/0000-0003-2601-3224",
+      "@type": "Person",
+      "affiliation": {
+        "@type": "Organization",
+        "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+      },
+      "familyName": "Halfeld-Ferrari",
+      "givenName": "Mirian"
+    },
+    {
+      "@id": "https://orcid.org/0000-0003-4318-4906",
+      "@type": "Person",
+      "affiliation": {
+        "@type": "Organization",
+        "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+      },
+      "familyName": "Hiot",
+      "givenName": "Nicolas"
+    }
+  ],
+  "downloadUrl": "https://pypi.org/project/ArchiTXT/",
+  "codeRepository": "https://github.com/Neplex/ArchiTXT",
+  "continuousIntegration": "https://github.com/Neplex/ArchiTXT/actions",
+  "contributor": [
+    {
+      "@id": "baptiste.haudebourg@etu.univ-orleans.fr",
+      "@type": "Person",
+      "familyName": "Haudebourg",
+      "givenName": "Baptiste"
+    }
+  ],
+  "developmentStatus": "https://www.repostatus.org/#suspended",
+  "identifier": "data",
+  "license": "http://spdx.org/licenses/CC-BY-NC-4.0",
+  "maintainer": "https://orcid.org/0000-0003-4318-4906",
+  "name": "ArchiTXT",
+  "dateCreated": "2024-04-01",
+  "producer": {
+    "@type": "Organization",
+    "legalName": "Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France"
+  },
+  "funder": {
+    "@type": "Organization",
+    "legalName": "JUNON Program, Région Centre-Val de Loire, France"
+  },
+  "url": "https://github.com/Neplex/ArchiTXT",
+  "issueTracker": "https://github.com/Neplex/ArchiTXT/issues",
+  "referencePublication": "https://hal.science/hal-04740818"
 }
