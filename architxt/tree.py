@@ -1079,11 +1079,16 @@ class Tree(PersistentList['_SubTree | str']):
 
     def to_json(self) -> dict[str, Any]:
         """
-        Convert the current tree instance to a JSON-serializable dictionary.
-
-        :return: A dictionary containing the JSON-serializable representation
-            of the object instance. Keys include 'oid', 'type', 'name',
-            'metadata', and 'children'.
+        Serialize the tree into a JSON-serializable dictionary.
+        
+        Returns:
+            dict: Dictionary with keys:
+                - "oid": string UUID of the tree.
+                - "type": node type name (e.g., "ENT", "GROUP") when the node is typed, or None.
+                - "name": node name when typed, otherwise the raw label value.
+                - "metadata": a plain dict containing the node's metadata.
+                - "children": list of child entries where each child is either a serialized child
+                  dictionary (for subtree children) or the leaf value.
         """
         is_typed = has_type(self)
 
@@ -1098,10 +1103,21 @@ class Tree(PersistentList['_SubTree | str']):
     @classmethod
     def from_json(cls, json_data: dict[str, Any]) -> 'Tree':
         """
-        Create a Tree object from a JSON data dictionary.
-
-        :param json_data: Dictionary containing the JSON representation of the tree.
-        :return: A fully constructed Tree instance based on the data provided in the JSON dictionary.
+        Constructs a Tree from a JSON-like mapping containing keys 'oid', 'type', 'name', 'metadata', and 'children'.
+        
+        Parameters:
+            json_data (dict[str, Any]): Mapping produced by Tree.to_json (or equivalent). Expected keys:
+                - 'type' (optional): string name of a NodeType; if present a typed NodeLabel is created.
+                - 'name' (optional): node name or label (defaults to empty string when absent).
+                - 'oid' (optional): UUID string; parsed into a uuid.UUID when provided.
+                - 'metadata' (optional): mapping stored as the Tree's metadata.
+                - 'children' (optional): list of either leaf strings or nested child mappings to be recursively converted.
+        
+        Returns:
+            Tree: The reconstructed Tree instance.
+        
+        Raises:
+            ValueError: If the input mapping cannot be parsed into a valid Tree (includes context of the failing input).
         """
         try:
             label: NodeLabel | str = json_data.get('name') or ''
