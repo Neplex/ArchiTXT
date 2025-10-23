@@ -73,6 +73,20 @@ def simplify(
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
 ) -> None:
+    """
+    Simplify a collection of tree databases by iteratively rewriting them and optionally logging and displaying metrics.
+    
+    Parameters:
+    	files (list[Path]): Paths to input data files to load and simplify.
+    	tau (float): Similarity threshold used during rewriting (0 to 1).
+    	epoch (int): Number of rewriting iterations to perform.
+    	min_support (int): Minimum support required for tree patterns to be considered.
+    	workers (int | None): Number of parallel worker processes to use; defaults to available CPU count when None.
+    	output (Path | None): Path to persist the resulting ZODB tree bucket; when None, uses a temporary/local store.
+    	debug (bool): Enable verbose debug output during rewriting.
+    	metrics (bool): If true, display simplification metrics after rewriting.
+    	log (bool): If true, enable MLflow logging and record input datasets and the run.
+    """
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
         mlflow.start_run(description='simplification')
@@ -116,6 +130,31 @@ def simplify_llm(
     rate_limit: float | None = typer.Option(None, help="Rate limit for the LLM."),
     estimate: bool = typer.Option(False, help="Estimate the number of tokens to generate."),
 ) -> None:
+    """
+    Simplify a collection of tree databases using a large language model (LLM) and produce a derived schema.
+    
+    Performs LLM-driven rewriting of the loaded forests with the given parameters, optionally logs the run to MLFlow, estimates token usage, and displays the resulting schema and optional metrics.
+    
+    Parameters:
+        files (list[Path]): Paths to data files to load.
+        tau (float): Similarity threshold used during rewriting (0.0–1.0).
+        min_support (int): Minimum vocabulary support required to consider a pattern.
+        refining_steps (int): Number of iterative refinement steps for LLM-guided rewriting.
+        output (Path | None): Path to save the resulting ZODB tree bucket; uses an in-memory bucket if None.
+        debug (bool): Enable verbose debug behavior for the rewrite process.
+        metrics (bool): Show and print metrics produced by the rewriting process.
+        log (bool): Enable MLFlow logging for the run.
+        model_provider (str): Provider identifier for the chat model (e.g., 'huggingface', other LangChain providers).
+        model (str): Model identifier or name to instantiate the LLM.
+        max_tokens (int): Maximum number of tokens the model may generate per call.
+        local (bool): Use a local HuggingFace-based model when True; otherwise initialize via the specified provider.
+        openvino (bool): When using a local HuggingFace model, enable OpenVINO backend optimizations if True.
+        rate_limit (float | None): Requests-per-second rate limit for the LLM; no rate limiting if None.
+        estimate (bool): If True, only estimate and print token usage without performing rewriting.
+    
+    Raises:
+        typer.Exit: If optional LLM-related dependencies are missing; exits with code 2 after printing guidance.
+    """
     try:
         from langchain.chat_models import init_chat_model
         from langchain_core.rate_limiters import InMemoryRateLimiter

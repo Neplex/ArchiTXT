@@ -81,6 +81,15 @@ For example:
 
 
 def _trees_to_markdown_list(trees: Iterable[Tree]) -> str:
+    """
+    Create a numbered Markdown list where each line is a compact, stable JSON representation of a Tree.
+    
+    Parameters:
+        trees (Iterable[Tree]): Iterable of items; only elements that are instances of Tree are included.
+    
+    Returns:
+        str: A string with one line per tree in the form "N. <json>", using compact separators, stable key ordering, and UTF-8 characters preserved.
+    """
     return '\n'.join(
         f'{i}. {json.dumps(tree.to_json(), ensure_ascii=False, separators=(",", ":"), sort_keys=True)}'
         for i, tree in enumerate(trees, start=1)
@@ -89,7 +98,15 @@ def _trees_to_markdown_list(trees: Iterable[Tree]) -> str:
 
 
 def _validate(tree: Tree) -> Tree:
-    """Validate tree structure, removing invalid groups and relations."""
+    """
+    Validate and sanitize a Tree by marking invalid REL and GROUP nodes with an `UNDEF_<oid>` label.
+    
+    For each REL node: if it does not have exactly two children or any child is not a GROUP, its label is replaced with `UNDEF_<oid>` where `<oid>` is the node's hex oid.
+    For each GROUP node: if any child is not an ENT, its label is replaced with `UNDEF_<oid>`.
+    
+    Returns:
+        tree (Tree): The original tree object, possibly modified in place with updated labels.
+    """
     for rel in tree.subtrees(lambda x: has_type(x, NodeType.REL)):
         if len(rel) != 2 or not all(has_type(child, NodeType.GROUP) for child in rel):
             rel.label = f'UNDEF_{rel.oid.hex}'
@@ -102,7 +119,19 @@ def _validate(tree: Tree) -> Tree:
 
 
 def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = False) -> Tree:
-    """Try parsing raw LLM output into a Tree, fallback if parsing fails."""
+    """
+    Parse a raw LLM output string into a Tree, returning the provided fallback when parsing fails or output is empty.
+    
+    Attempts to repair and load JSON from raw_output, convert the first object (or the object itself) into a Tree, and wrap the parsed content under a ROOT node that reuses the fallback's oid before validating the result. If parsing fails or the JSON does not contain a suitable object, the original fallback Tree is returned.
+    
+    Parameters:
+        raw_output (str | None): Raw text produced by an LLM; may be None or empty.
+        fallback (Tree): Tree to return when parsing fails; its oid is reused for the resulting ROOT node when parsing succeeds.
+        debug (bool): If True, emit warnings on parse errors and attach JSON repair/parse metadata to an active MLflow span when available.
+    
+    Returns:
+        Tree: The parsed and validated Tree wrapped under a ROOT node that reuses fallback.oid, or the original fallback if parsing is unsuccessful.
+    """
     if not raw_output:
         return fallback
 
@@ -149,6 +178,17 @@ def _build_simplify_langchain_graph(
     prompt: ChatPromptTemplate,
     debug: bool = False,
 ) -> Runnable[Sequence[Tree], Sequence[Tree]]:
+    """
+    Builds a LangChain Runnable graph that simplifies Tree objects using the provided chat model and prompt.
+    
+    Parameters:
+        llm (BaseChatModel): Chat model used to generate simplified tree outputs.
+        prompt (ChatPromptTemplate): Prompt template that guides the model's rewrite of the trees.
+        debug (bool): If true, enables more verbose parsing behavior for LLM outputs.
+    
+    Returns:
+        Runnable[Sequence[Tree], Sequence[Tree]]: A runnable that accepts a sequence of Trees and returns a sequence of simplified Trees in the same order; when an output cannot be parsed, the original tree is used as the fallback.
+    """
     to_json = RunnableLambda(lambda trees: {"trees": _trees_to_markdown_list(trees)})
     llm_chain = (
         to_json
@@ -173,11 +213,10 @@ def _build_simplify_langchain_graph(
 
 def count_tokens(llm: BaseLanguageModel, trees: Iterable[Tree]) -> int:
     """
-    Count the number of tokens in the prompt for a set of trees.
-
-    :param llm: LLM model to use.
-    :param trees: Sequence of trees to simplify.
-    :return: Number of tokens in the formatted prompt.
+    Compute the number of tokens required to represent the given trees when formatted for the model.
+    
+    Returns:
+        Number of tokens required to represent the given trees when formatted for the model.
     """
     json_trees = _trees_to_markdown_list(trees)
     return llm.get_num_tokens(json_trees)
@@ -193,15 +232,16 @@ def estimate_tokens(
     error_adjustment: float = 1.2,
 ) -> int:
     """
-    Estimate the total number of tokens required for a rewrite.
-
-    :param trees: Sequence of trees to simplify.
-    :param llm: LM model to use.
-    :param max_tokens: Maximum number of tokens to allow per prompt.
-    :param prompt: Prompt template to use.
-    :param refining_steps: Number of refining steps to perform after the initial rewrite.
-    :param error_adjustment: Factor to adjust the estimated number of tokens for error.
-    :return: The total number of tokens estimated for a rewrite.
+    Estimate total tokens required to rewrite a collection of trees with the given model and prompt.
+    
+    This accounts for prompt tokens, batches the trees to respect the per-prompt max_tokens limit, sums tokens for each batch, and scales the total by (refining_steps + 1) and the error_adjustment factor.
+    
+    Parameters:
+        refining_steps (int): Number of additional refine passes to include beyond the initial rewrite.
+        error_adjustment (float): Multiplicative safety factor applied to the final estimate.
+    
+    Returns:
+        int: Estimated total number of tokens required.
     """
     prompt_tokens = llm.get_num_tokens(prompt.format())
     batches = more_itertools.constrained_batches(
@@ -226,17 +266,19 @@ async def llm_simplify(
     task_limit: int = 4,
 ) -> AsyncGenerator[Tree, None]:
     """
-    Simplify parse trees using an LLM.
-
-    :param llm: LLM model to use.
-    :param max_tokens: Maximum number of tokens to allow per prompt.
-    :param prompt: Prompt template to use.
-    :param trees: Sequence of trees to simplify.
-    :param debug: Whether to enable debug logging.
-    :param vocab: Optional list of vocabulary words to use in the prompt.
-    :param task_limit: Maximum number of concurrent requests to make.
-
-    :yield: Simplified trees objects with the same oid as input.
+    Produce simplified Tree objects from the input iterable using the provided chat model and prompt.
+    
+    Parameters:
+        llm (BaseChatModel): Chat model used to generate simplifications.
+        max_tokens (int): Maximum number of tokens allowed for each prompt (including prompt overhead).
+        prompt (ChatPromptTemplate): Prompt template; a partial with `vocab` is applied when `vocab` is provided.
+        trees (Iterable[Tree]): Trees to simplify.
+        debug (bool): Enable additional debug logging and diagnostic metadata when available.
+        vocab (Collection[str] | None): Optional vocabulary terms the model should prefer when normalizing labels.
+        task_limit (int): Maximum number of concurrent LLM requests.
+    
+    Returns:
+        Tree: Simplified Tree objects preserving their original `oid`, yielded as results become available.
     """
     vocab_str = f"Prefer using names from this vocabulary: {', '.join(vocab)}." if vocab else ""
     prompt = prompt.partial(vocab=vocab_str)
@@ -264,6 +306,16 @@ async def llm_simplify(
 
 
 def get_vocab(forest: Iterable[Tree], min_support: int) -> tuple[str, ...]:
+    """
+    Build a vocabulary of labels that appear in GROUP or REL subtrees with at least a given support.
+    
+    Parameters:
+        forest (Iterable[Tree]): An iterable of Tree objects to extract labels from.
+        min_support (int): Minimum number of occurrences required for a label to be included.
+    
+    Returns:
+        tuple[str, ...]: Labels (in descending frequency order) whose occurrence count is greater than or equal to `min_support`.
+    """
     vocab_counter = Counter(
         subtree.label
         for tree in forest
@@ -285,20 +337,22 @@ async def llm_rewrite(
     prompt: ChatPromptTemplate = DEFAULT_PROMPT,
 ) -> Metrics:
     """
-    Rewrite a forest into a valid schema using a LLM agent.
-
-    :param forest: A forest to be rewritten in place.
-    :param llm: The LLM model to interact with for rewriting and simplification tasks.
-    :param max_tokens: The token limit of the prompt.
-    :param tau: Threshold for subtree similarity when clustering.
-    :param min_support: Minimum support for vocab.
-    :param refining_steps: Number of refining steps to perform after the initial rewrite.
-    :param debug: Whether to enable debug logging.
-    :param task_limit: Maximum number of concurrent requests to make.
-    :param metric: The metric function used to compute similarity between subtrees.
-    :param prompt: The prompt template to use for the LLM during the simplification.
-
-    :return: A `Metrics` object encapsulating the results and metrics calculated for the LLM rewrite process.
+    Rewrite the given forest in place using an LLM-driven simplification pipeline and return run metrics.
+    
+    Parameters:
+    	forest (Forest): Forest to be rewritten; its contents are updated in place.
+    	llm (BaseChatModel): Chat model used to perform simplification and normalization.
+    	max_tokens (int): Maximum token budget per LLM request (used to batch trees).
+    	tau (float): Similarity threshold used by the metrics/clusterer when assessing subtree similarity.
+    	min_support (int | None): Minimum occurrence count for labels to be included in the vocabulary; if None a default is derived from forest size.
+    	refining_steps (int): Number of additional refinement iterations to run after the initial rewrite (0 runs only the initial pass).
+    	debug (bool): Enable verbose/debugging behaviors where supported.
+    	task_limit (int): Maximum number of concurrent LLM tasks to run.
+    	metric (METRIC_FUNC): Function used to compute subtree similarity for metrics and clustering.
+    	prompt (ChatPromptTemplate): Prompt template driving the LLM simplification instructions.
+    
+    Returns:
+    	Metrics: Object containing computed metrics and summary information for the rewriting process.
     """
     metrics = Metrics(forest, tau=tau, metric=metric)
     min_support = min_support or max((len(forest) // 20), 2)
