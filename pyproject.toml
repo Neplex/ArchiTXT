@@ -43,6 +43,7 @@ dynamic = ["version"]
 
 requires-python = '>=3.10,<3.13'
 dependencies = [
+    'httpx',
     'tqdm>=4.60',
     'nltk>=3.9,<4.0',
     'unidecode',
@@ -81,6 +82,7 @@ dependencies = [
 [project.optional-dependencies]
 ui = ['streamlit>=1.39.0', 'streamlit-agraph', 'streamlit-tags']
 flair = ['flair>=0.15,<0.16']
+llm = [ 'langchain>=0.3,<0.4', 'langchain-core', 'langchain-huggingface', 'json-repair>=0.52,<0.53' ]
 
 [project.urls]
 documentation = "https://neplex.github.io/ArchiTXT"
@@ -125,6 +127,9 @@ dev = [
     "types-toml",
     # parser tools
     "antlr4-tools>=0.2.1",
+    # LLM Providers
+    "langchain-openai",
+    "langchain-mistralai",
      # fixed version of nmslib
     'nmslib @ git+https://github.com/nmslib/nmslib.git#subdirectory=python_bindings',
     # Broken version of transformers
