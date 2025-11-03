@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 
 import anyio
@@ -72,14 +73,17 @@ def simplify(
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
+    log_system_metrics: bool = typer.Option(False, help="Enable logging of system metrics to MLFlow."),
 ) -> None:
+    run_ctx = nullcontext()
+
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
-        mlflow.start_run(description='simplification')
+        run_ctx = mlflow.start_run(description='simplification', log_system_metrics=log_system_metrics)
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
-    with ZODBTreeBucket(storage_path=output) as forest:
+    with run_ctx, ZODBTreeBucket(storage_path=output) as forest:
         forest.update(load_forest(files))
 
         console.print(
@@ -108,6 +112,7 @@ def simplify_llm(
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
+    log_system_metrics: bool = typer.Option(False, help="Enable logging of system metrics to MLFlow."),
     model_provider: str = typer.Option('huggingface', help="Provider of the model."),
     model: str = typer.Option('HuggingFaceTB/SmolLM2-135M-Instruct', help="Model to use for the LLM."),
     max_tokens: int = typer.Option(2048, help="Maximum number of tokens to generate."),
@@ -132,9 +137,11 @@ def simplify_llm(
         )
         raise typer.Exit(code=2)
 
+    run_ctx = nullcontext()
+
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
-        mlflow.start_run(description='llm simplification')
+        run_ctx = mlflow.start_run(description='llm simplification', log_system_metrics=log_system_metrics)
         mlflow.langchain.autolog()
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
@@ -186,7 +193,7 @@ def simplify_llm(
             console.print(f'[blue]Estimated number of queries: {num_queries} queries[/]')
         return
 
-    with ZODBTreeBucket(storage_path=output) as forest:
+    with run_ctx, ZODBTreeBucket(storage_path=output) as forest:
         forest.update(load_forest(files))
 
         console.print(f'[blue]Rewriting {len(forest)} trees with model={model}[/]')
