@@ -1077,6 +1077,66 @@ class Tree(PersistentList['_SubTree | str']):
         )
         return f"{pad}({self._label} {child_lines})"
 
+    def to_json(self) -> dict[str, Any]:
+        """
+        Serialize the tree into a JSON-serializable dictionary.
+
+        :return: A dictionary containing the JSON-serializable representation with keys:
+            - `oid`: string representation of the tree OID.
+            - `type`: node type name (e.g., "ENT", "GROUP") when the node is typed, or None.
+            - `name`: node name when typed, otherwise the raw label value.
+            - `metadata`: a plain dict containing the node's metadata.
+            - `children`: list of child entries where each child is either a serialized child
+                dictionary (for subtree children) or the leaf value.
+        """
+        is_typed = has_type(self)
+
+        return {
+            'oid': str(self.oid),
+            'type': self.label.type.value if is_typed else None,
+            'name': self.label.name if is_typed else self.label,
+            'metadata': dict(self.metadata),
+            'children': [child.to_json() if isinstance(child, Tree) else child for child in self],
+        }
+
+    @classmethod
+    def from_json(cls, json_data: dict[str, Any]) -> 'Tree':
+        """
+        Construct a Tree from a JSON-like mapping containing keys 'oid', 'type', 'name', 'metadata', and 'children'.
+
+        Expected keys:
+        - `oid` (optional): UUID string; parsed into a :py:class:`~uuid.UUID` when provided. Default to random one.
+        - `type` (optional): string name of a NodeType; if present a typed NodeLabel is created.
+        - `name` (optional): node name or label (defaults to empty string when absent).
+        - `metadata` (optional): mapping stored as the Tree's metadata.
+        - `children` (optional): list of either leaf strings or nested child mappings to be recursively converted.
+
+        :param json_data: Dictionary containing the JSON-serializable representation of the tree.
+        :return: The reconstructed Tree instance.
+        :raises ValueError: If the JSON-like mapping is invalid.
+        """
+        try:
+            label: NodeLabel | str = json_data.get('name') or ''
+
+            if tree_type := json_data.get('type'):
+                label = NodeLabel(NodeType(tree_type), label)
+
+            oid = json_data.get('oid')
+            children = [
+                child if isinstance(child, str) else cls.from_json(child) for child in json_data.get('children', [])
+            ]
+
+            return cls(
+                label=label,
+                oid=uuid.UUID(oid) if oid else None,
+                metadata=json_data.get('metadata'),
+                children=children,
+            )
+
+        except Exception as e:
+            msg = f'Failed to parse JSON data: {json_data}'
+            raise ValueError(msg) from e
+
 
 if TYPE_CHECKING:
 
