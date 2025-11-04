@@ -1,4 +1,5 @@
 import gc
+import time
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -51,15 +52,20 @@ def simplify(
 
         for size in sizes:
             for nb_worker in workers:
-                with (
-                    console.status(f"[cyan]Benchmarking instances size={size}, workers={nb_worker}..."),
-                    ZODBTreeBucket() as bench_forest,
+                bench_run_ctx = (
                     mlflow.start_run(
                         description='bench-simplification', nested=True, log_system_metrics=log_system_metrics
                     )
                     if mlflow.active_run()
-                    else nullcontext(),
+                    else nullcontext()
+                )
+
+                with (
+                    bench_run_ctx,
+                    console.status(f"[cyan]Benchmarking instances size={size}, workers={nb_worker}..."),
+                    ZODBTreeBucket() as bench_forest,
                 ):
+                    console.print("\x1b[1E")
                     bench_forest.update(forest[oid].copy() for oid in oid_list[:size])
                     mlflow.log_params(
                         {
@@ -67,12 +73,20 @@ def simplify(
                             'workers': nb_worker,
                         }
                     )
-                    rewrite(
-                        bench_forest,
-                        tau=tau,
-                        epoch=epoch,
-                        min_support=min_support,
-                        debug=debug,
-                        max_workers=nb_worker,
-                    )
+
+                    start = time.perf_counter()
+                    try:
+                        rewrite(
+                            bench_forest,
+                            tau=tau,
+                            epoch=epoch,
+                            min_support=min_support,
+                            debug=debug,
+                            max_workers=nb_worker,
+                            commit=min(1024, int(size / nb_worker)),
+                        )
+                    finally:
+                        elapsed = time.perf_counter() - start
+                        console.print(f"[magenta]Run completed (size={size}, workers={nb_worker}) in {elapsed:.2f}s[/]")
+
                 gc.collect()
