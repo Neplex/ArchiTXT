@@ -10,7 +10,6 @@ import json_repair
 import mlflow
 import more_itertools
 from aiostream import Stream, pipe, stream
-from httpx import HTTPStatusError
 from langchain_core.language_models import BaseChatModel, BaseLanguageModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import NumberedListOutputParser
@@ -187,18 +186,7 @@ def _build_simplify_langchain_graph(
     :return: A Runnable LangChain graph that simplifies :py:class:`~architxt.tree.Tree`.
     """
     to_json = RunnableLambda(lambda trees: {"trees": _trees_to_markdown_list(trees)})
-    llm_chain = (
-        to_json
-        | prompt
-        | llm.with_retry(
-            stop_after_attempt=10,
-            retry_if_exception_type=(
-                HTTPStatusError,
-                TimeoutError,
-            ),
-        )
-        | NumberedListOutputParser()
-    )
+    llm_chain = to_json | prompt | llm.with_retry(stop_after_attempt=10) | NumberedListOutputParser()
     parallel = RunnableParallel(origin=RunnablePassthrough(), simplified=llm_chain)
     tree_parser = RunnableLambda(
         lambda result: [

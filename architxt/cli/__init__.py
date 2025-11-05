@@ -121,6 +121,7 @@ def simplify_llm(
     openvino: bool = typer.Option(False, help="Enable Intel OpenVINO optimizations."),
     rate_limit: float | None = typer.Option(None, help="Rate limit for the LLM."),
     estimate: bool = typer.Option(False, help="Estimate the number of tokens to generate."),
+    temperature: float = typer.Option(0.2, help="Temperature for the LLM."),
 ) -> None:
     try:
         from langchain.chat_models import init_chat_model
@@ -161,7 +162,7 @@ def simplify_llm(
                 'do_sample': True,
                 'return_full_text': False,
                 'max_new_tokens': max_tokens,
-                'temperature': 0.2,
+                'temperature': temperature,
                 'repetition_penalty': 1.1,
                 'num_return_sequences': 1,
                 'pad_token_id': 0,
@@ -173,7 +174,7 @@ def simplify_llm(
         llm = init_chat_model(
             model_provider=model_provider,
             model=model,
-            temperature=0.9,
+            temperature=temperature,
             max_tokens=max_tokens,
             rate_limiter=rate_limiter,
         )

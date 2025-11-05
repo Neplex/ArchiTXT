@@ -43,7 +43,6 @@ dynamic = ["version"]
 
 requires-python = '>=3.10,<3.13'
 dependencies = [
-    'httpx',
     'tqdm>=4.60',
     'nltk>=3.9,<4.0',
     'unidecode',
