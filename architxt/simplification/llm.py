@@ -4,6 +4,7 @@ import warnings
 from collections import Counter
 from collections.abc import AsyncGenerator, Collection, Iterable, Sequence
 from contextlib import nullcontext
+from pathlib import Path
 
 import json_repair
 import mlflow
@@ -29,6 +30,7 @@ from mlflow.entities import SpanEvent
 from tqdm.auto import tqdm, trange
 
 from architxt.bucket import TreeBucket
+from architxt.forest import export_forest_to_jsonl
 from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
 from architxt.tree import Forest, NodeType, Tree, has_type
@@ -340,6 +342,7 @@ async def llm_rewrite(
     min_support: int | None = None,
     refining_steps: int = 0,
     debug: bool = False,
+    intermediate_output_path: Path | None = None,
     task_limit: int = 4,
     metric: METRIC_FUNC = DEFAULT_METRIC,
     prompt: ChatPromptTemplate = DEFAULT_PROMPT,
@@ -354,6 +357,7 @@ async def llm_rewrite(
     :param min_support: Minimum support for vocab.
     :param refining_steps: Number of refining steps to perform after the initial rewrite.
     :param debug: Whether to enable debug logging.
+    :param intermediate_output_path: Optional path to save intermediate results after each iteration.
     :param task_limit: Maximum number of concurrent requests to make.
     :param metric: The metric function used to compute similarity between subtrees.
     :param prompt: The prompt template to use for the LLM during the simplification.
@@ -405,6 +409,11 @@ async def llm_rewrite(
 
                 else:
                     forest[:] = [tree async for tree in simplification]
+
+                if intermediate_output_path:
+                    intermediate_output_path.mkdir(parents=True, exist_ok=True)
+                    intermediate_file = intermediate_output_path / f'intermediate_{iteration}.jsonl'
+                    export_forest_to_jsonl(intermediate_file, forest)
 
                 if mlflow.active_run():
                     metrics.update()
