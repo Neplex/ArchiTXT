@@ -271,6 +271,21 @@ async def llm_simplify(
     """
     Simplify parse trees using an LLM.
 
+    It uses the following flow where the tree parser falls back to the original tree in case of parsing errors:
+
+    .. mermaid::
+        :alt: ArchiTXT Schema
+        :align: center
+
+        ---
+        config:
+          theme: neutral
+        ---
+        flowchart LR
+            A[Trees] --> B[Convert to JSON] --> C[LLM]
+            A & C --> E[Tree parser]
+            E --> F[Simplified trees]
+
     :param llm: LLM model to use.
     :param max_tokens: Maximum number of tokens to allow per prompt.
     :param prompt: Prompt template to use.

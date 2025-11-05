@@ -28,9 +28,8 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
 
     **Available Implementations**
 
-    .. inheritance-diagram:: architxt.bucket.TreeBucket architxt.bucket.zodb.ZODBTreeBucket
-        :top-classes: architxt.bucket.TreeBucket
-        :parts: 1
+    .. autoclasstree:: architxt.bucket.TreeBucket
+        :full:
 
     """
 
