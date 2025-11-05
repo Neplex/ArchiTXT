@@ -134,7 +134,7 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
 
     try:
         raw_output = raw_output.strip()
-        json_data = json_repair.loads(raw_output, logging=debug)
+        json_data = json_repair.loads(raw_output, skip_json_loads=True, logging=debug)
 
         if debug:
             json_data, fixes = json_data
@@ -189,8 +189,11 @@ def _build_simplify_langchain_graph(
         to_json
         | prompt
         | llm.with_retry(
-            stop_after_attempt=6,
-            retry_if_exception_type=(HTTPStatusError,),
+            stop_after_attempt=10,
+            retry_if_exception_type=(
+                HTTPStatusError,
+                TimeoutError,
+            ),
         )
         | NumberedListOutputParser()
     )
