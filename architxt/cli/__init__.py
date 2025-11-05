@@ -109,6 +109,7 @@ def simplify_llm(
     min_support: int = typer.Option(20, help="Minimum support for vocab.", min=1),
     refining_steps: int = typer.Option(0, help="Number of refining steps."),
     output: Path | None = typer.Option(None, help="Path to save the result."),
+    intermediate_output: Path | None = typer.Option(None, help="Path to save intermediate results."),
     debug: bool = typer.Option(False, help="Enable debug mode for more verbose output."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
@@ -206,6 +207,7 @@ def simplify_llm(
             min_support,
             refining_steps,
             debug,
+            intermediate_output,
         )
 
         # Generate schema
