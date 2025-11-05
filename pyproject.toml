@@ -130,6 +130,8 @@ dev = [
     # LLM Providers
     "langchain-openai",
     "langchain-mistralai",
+    "langchain-deepseek",
+    "langchain-nvidia-ai-endpoints",
      # fixed version of nmslib
     'nmslib @ git+https://github.com/nmslib/nmslib.git#subdirectory=python_bindings',
     # Broken version of transformers
