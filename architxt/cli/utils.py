@@ -9,6 +9,7 @@ from rich.progress import Progress
 from rich.table import Table
 
 from architxt.bucket.zodb import ZODBTreeBucket
+from architxt.forest import import_forest_from_jsonl
 from architxt.metrics import Metrics
 from architxt.schema import Schema
 from architxt.tree import Tree
@@ -64,19 +65,26 @@ def show_metrics(metrics: Metrics) -> None:
 
 def load_forest(files: Iterable[str | Path]) -> Generator[Tree, None, None]:
     """
-    Load a forest from a list of zodb files.
+    Load a forest from a list of storage paths (ZODB directories or JSONL files).
 
     :param files: List of file paths to read into a forest.
     :yield: Trees from the list of data files.
 
-    >>> forest = load_forest(['forest1.data', 'forest2.data']) # doctest: +SKIP
+    >>> forest = load_forest(['forest_dir/', 'forest.jsonl']) # doctest: +SKIP
     """
     with Progress() as progress:
         task_ids = [progress.add_task(f'Reading {file_path}...', start=False) for file_path in files]
 
         for file_path, task_id in zip(files, task_ids):
             progress.start_task(task_id)
+            file_path = Path(file_path)
 
-            with ZODBTreeBucket(storage_path=Path(file_path), read_only=True) as forest:
-                for tree in progress.track(forest, task_id=task_id):
-                    yield tree.copy()
+            if file_path.is_dir():
+                with ZODBTreeBucket(storage_path=file_path, read_only=True) as forest:
+                    for tree in progress.track(forest, task_id=task_id):
+                        # For ZODB, we need to create a copy of the tree to unlink it from the DBMS.
+                        yield tree.copy()
+
+            else:
+                forest = import_forest_from_jsonl(file_path)
+                yield from progress.track(forest, task_id=task_id)
