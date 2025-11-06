@@ -3,7 +3,6 @@ import json
 import warnings
 from collections import Counter
 from collections.abc import AsyncGenerator, Collection, Iterable, Sequence
-from contextlib import nullcontext
 from pathlib import Path
 
 import json_repair
@@ -175,7 +174,7 @@ def _build_simplify_langchain_graph(
     llm: BaseChatModel,
     prompt: ChatPromptTemplate,
     debug: bool = False,
-) -> Runnable[Sequence[Tree], Sequence[Tree]]:
+) -> Runnable[Sequence[Tree], Sequence[tuple[Tree, bool]]]:
     """
     Build a LangChain graph that simplifies :py:class:`~architxt.tree.Tree` using the provided model and prompt.
 
@@ -190,7 +189,7 @@ def _build_simplify_langchain_graph(
     parallel = RunnableParallel(origin=RunnablePassthrough(), simplified=llm_chain)
     tree_parser = RunnableLambda(
         lambda result: [
-            tree
+            (tree, tree is not orig)
             for orig, simp in itertools.zip_longest(result['origin'], result['simplified'][: len(result['origin'])])
             if (tree := _parse_tree_output(simp, fallback=orig, debug=debug))
         ]
@@ -267,7 +266,7 @@ async def llm_simplify(
     debug: bool,
     vocab: Collection[str] | None = None,
     task_limit: int = 4,
-) -> AsyncGenerator[Tree, None]:
+) -> AsyncGenerator[tuple[Tree, bool], None]:
     """
     Simplify parse trees using an LLM.
 
@@ -311,14 +310,14 @@ async def llm_simplify(
     )
 
     # Run queries concurrently
-    tree_stream: Stream[Sequence[Tree]] = stream.iterate(batches) | pipe.amap(
+    tree_stream: Stream[Sequence[tuple[Tree, bool]]] = stream.iterate(batches) | pipe.amap(
         chain.ainvoke, ordered=False, task_limit=task_limit
     )
 
     async with tree_stream.stream() as streamer:
         async for batch in streamer:
-            for tree in batch:
-                yield tree
+            for tree, simplified in batch:
+                yield tree, simplified
 
 
 def get_vocab(forest: Iterable[Tree], min_support: int) -> set[str]:
@@ -346,7 +345,7 @@ async def llm_rewrite(
     refining_steps: int = 0,
     debug: bool = False,
     intermediate_output_path: Path | None = None,
-    task_limit: int = 4,
+    task_limit: int = 1,
     metric: METRIC_FUNC = DEFAULT_METRIC,
     prompt: ChatPromptTemplate = DEFAULT_PROMPT,
 ) -> Metrics:
@@ -382,17 +381,13 @@ async def llm_rewrite(
         )
         metrics.log_to_mlflow(0, debug=debug)
 
-    with mlflow.start_span('rewriting') if mlflow.active_run() else nullcontext():
+    with mlflow.start_span('rewriting'):
         for iteration in trange(refining_steps + 1, leave=False, desc='rewriting iterations'):
-            with (
-                mlflow.start_span(
-                    'iteration',
-                    attributes={
-                        'step': iteration,
-                    },
-                )
-                if mlflow.active_run()
-                else nullcontext()
+            with mlflow.start_span(
+                'iteration',
+                attributes={
+                    'step': iteration,
+                },
             ):
                 vocab = get_vocab(forest, min_support)
 
@@ -407,20 +402,36 @@ async def llm_rewrite(
                     task_limit=task_limit,
                 )
 
+                # Track if any tree was modified
+                any_modified = False
+
+                async def _simplification_wrap() -> AsyncGenerator[Tree, None]:
+                    nonlocal any_modified
+                    async for tree, simplified in simplification:
+                        if simplified:
+                            any_modified = True
+                        yield tree
+
                 if isinstance(forest, TreeBucket):
-                    await forest.async_update(simplification)
-
+                    await forest.async_update(_simplification_wrap())
                 else:
-                    forest[:] = [tree async for tree in simplification]
+                    forest[:] = [tree async for tree in _simplification_wrap()]
 
+                # Save intermediate results
                 if intermediate_output_path:
                     intermediate_output_path.mkdir(parents=True, exist_ok=True)
                     intermediate_file = intermediate_output_path / f'intermediate_{iteration}.jsonl'
                     export_forest_to_jsonl(intermediate_file, forest)
 
+                # Log metrics to MLflow
                 if mlflow.active_run():
                     metrics.update()
                     metrics.log_to_mlflow(iteration + 1, debug=debug)
+                    mlflow.get_current_active_span().set_attribute('simplified', any_modified)
+
+                # Early stopping if no tree was modified
+                if not any_modified:
+                    break
 
     metrics.update()
     return metrics
