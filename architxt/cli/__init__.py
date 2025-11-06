@@ -145,6 +145,17 @@ def simplify_llm(
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
         run_ctx = mlflow.start_run(description='llm simplification', log_system_metrics=log_system_metrics)
         mlflow.langchain.autolog()
+        mlflow.log_params(
+            {
+                'model_provider': model_provider,
+                'model': model,
+                'max_tokens': max_tokens,
+                'local': local,
+                'openvino': openvino,
+                'rate_limit': rate_limit,
+                'temperature': temperature,
+            }
+        )
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
