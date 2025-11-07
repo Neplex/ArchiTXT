@@ -24,7 +24,7 @@ from langchain_core.runnables import (
     RunnableParallel,
     RunnablePassthrough,
 )
-from mlflow.entities import SpanEvent
+from mlflow.entities import SpanEvent, SpanType
 from tqdm.auto import tqdm, trange
 
 from architxt.bucket import TreeBucket
@@ -310,8 +310,9 @@ async def llm_simplify(
     )
 
     # Run queries concurrently
+    traced_invoke = mlflow.trace(chain.ainvoke, span_type=SpanType.CHAIN)
     tree_stream: Stream[Sequence[tuple[Tree, bool]]] = stream.iterate(batches) | pipe.amap(
-        chain.ainvoke, ordered=False, task_limit=task_limit
+        traced_invoke, ordered=False, task_limit=task_limit
     )
 
     async with tree_stream.stream() as streamer:
@@ -320,6 +321,7 @@ async def llm_simplify(
                 yield tree, simplified
 
 
+@mlflow.trace(span_type=SpanType.PARSER)
 def get_vocab(forest: Iterable[Tree], min_support: int) -> set[str]:
     """
     Extract a set of labels that appear in GROUP or REL subtrees with at least a given support.
@@ -381,15 +383,17 @@ async def llm_rewrite(
         )
         metrics.log_to_mlflow(0, debug=debug)
 
-    with mlflow.start_span('rewriting'):
+    with mlflow.start_span('llm-rewriting', span_type=SpanType.CHAIN):
         for iteration in trange(refining_steps + 1, leave=False, desc='rewriting iterations'):
             with mlflow.start_span(
-                'iteration',
+                'llm-rewriting-iteration',
+                span_type=SpanType.CHAIN,
                 attributes={
                     'step': iteration,
                 },
-            ):
+            ) as iteration_span:
                 vocab = get_vocab(forest, min_support)
+                iteration_span.set_attribute('vocab', sorted(vocab))
 
                 simplification = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
                 simplification = llm_simplify(
@@ -417,6 +421,8 @@ async def llm_rewrite(
                 else:
                     forest[:] = [tree async for tree in _simplification_wrap()]
 
+                iteration_span.set_attribute('simplified', any_modified)
+
                 # Save intermediate results
                 if intermediate_output_path:
                     intermediate_output_path.mkdir(parents=True, exist_ok=True)
@@ -427,7 +433,6 @@ async def llm_rewrite(
                 if mlflow.active_run():
                     metrics.update()
                     metrics.log_to_mlflow(iteration + 1, debug=debug)
-                    mlflow.get_current_active_span().set_attribute('simplified', any_modified)
 
                 # Early stopping if no tree was modified
                 if not any_modified:
