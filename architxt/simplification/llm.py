@@ -164,8 +164,7 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
         if debug:
             warnings.warn(str(error), RuntimeWarning)
             if span := mlflow.get_current_active_span():
-                event = SpanEvent(name='JSON parsing error', attributes={'error': str(error)})
-                span.add_event(event)
+                span.record_exception(error)
 
     return fallback
 
@@ -237,7 +236,7 @@ def estimate_tokens(
         trees,
         max_size=max_tokens - prompt_tokens,
         get_len=lambda x: count_tokens(llm, [x]),
-        strict=True,
+        strict=False,
     )
 
     queries = 0
@@ -306,13 +305,24 @@ async def llm_simplify(
         trees,
         max_size=max_tokens - prompt_tokens,
         get_len=lambda x: count_tokens(llm, [x]),
-        strict=True,
+        strict=False,
     )
 
+    @mlflow.trace(name='llm-invoke', span_type=SpanType.CHAIN)
+    async def _safe_traced_invoke(tree_batch: Sequence[Tree]) -> Sequence[tuple[Tree, bool]]:
+        try:
+            return await chain.ainvoke(tree_batch)
+
+        except Exception as error:
+            warnings.warn(str(error), RuntimeWarning)
+            if span := mlflow.get_current_active_span():
+                span.record_exception(error)
+
+            return [(orig_tree, False) for orig_tree in tree_batch]
+
     # Run queries concurrently
-    traced_invoke = mlflow.trace(chain.ainvoke, span_type=SpanType.CHAIN)
     tree_stream: Stream[Sequence[tuple[Tree, bool]]] = stream.iterate(batches) | pipe.amap(
-        traced_invoke, ordered=False, task_limit=task_limit
+        _safe_traced_invoke, ordered=False, task_limit=task_limit
     )
 
     async with tree_stream.stream() as streamer:
