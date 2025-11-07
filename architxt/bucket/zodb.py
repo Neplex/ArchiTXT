@@ -10,7 +10,6 @@ from collections.abc import (
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
-import anyio.to_process
 import more_itertools
 import transaction
 import ZODB.config
@@ -180,7 +179,7 @@ class ZODBTreeBucket(TreeBucket):
         Asynchronously add multiple :py:class:`~architxt.tree.Tree` to the bucket.
 
         This method mirrors the behavior of :py:meth:`~ZODBTreeBucket.update` but supports asynchronous iteration.
-        Internally, it delegates each chunk to a background thread.
+        Internally, it processes each chunk synchronously within the async context to ensure cache is handled correctly.
 
         :param trees: Trees to add to the bucket.
         :param batch_size: The number of trees to be added at once.
@@ -191,7 +190,7 @@ class ZODBTreeBucket(TreeBucket):
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                await anyio.to_process.run_sync(self.update, chunk, batch_size, _memory_threshold_mb)
+                self.update(chunk, batch_size, _memory_threshold_mb)
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""

@@ -173,6 +173,7 @@ addopts = [
     "--doctest-modules",
     "--beartype-skip-packages=architxt/grammar"
 ]
+anyio_mode = "auto"
 
 [tool.coverage.run]
 source = ["architxt"]
