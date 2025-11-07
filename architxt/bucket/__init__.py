@@ -42,7 +42,7 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
         :param batch_size: The number of trees to be added at once.
         """
 
-    async def async_update(self, trees: AsyncIterable[Tree], batch_size: int = BATCH_SIZE) -> None:
+    async def async_update(self, trees: Iterable[Tree] | AsyncIterable[Tree], batch_size: int = BATCH_SIZE) -> None:
         """
         Asynchronously add multiple :py:class:`~architxt.tree.Tree` to the bucket.
 
@@ -52,12 +52,12 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
         :param trees: Trees to add to the bucket.
         :param batch_size: The number of trees to be added at once.
         """
-        chunk_stream: Stream[list[Tree]] = stream.chunks(trees, batch_size)
+        chunk_stream: Stream[list[Tree]] = stream.chunks(stream.iterate(trees), batch_size)
         chunk: list[Tree]
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                await anyio.to_thread.run_sync(self.update, chunk)
+                await anyio.to_thread.run_sync(self.update, chunk, batch_size)
 
     @abstractmethod
     def close(self) -> None:
