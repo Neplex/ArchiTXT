@@ -1,14 +1,18 @@
 import itertools
 import json
+import re
+import unicodedata
 import warnings
 from collections import Counter
 from collections.abc import AsyncGenerator, Collection, Iterable, Sequence
+from difflib import get_close_matches
 from pathlib import Path
 
 import json_repair
 import mlflow
 import more_itertools
 from aiostream import Stream, pipe, stream
+from json_repair import JSONReturnType
 from langchain_core.language_models import BaseChatModel, BaseLanguageModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import NumberedListOutputParser
@@ -32,7 +36,7 @@ from architxt.forest import export_forest_to_jsonl
 from architxt.metrics import Metrics
 from architxt.schema import Schema
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
-from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import windowed_shuffle
 
 __all__ = ['estimate_tokens', 'llm_rewrite']
@@ -42,9 +46,11 @@ DEFAULT_PROMPT = ChatPromptTemplate.from_messages(
         SystemMessagePromptTemplate.from_template("""
 You are a data-engineer agent whose task is deterministic JSON tree normalization and schema induction for noisy JSON trees.
 Goal: produce one simplified, canonical JSON tree per input tree.
-All tree should share the same vocabulary.
 You can restructure JSON trees by adding, removing, renaming, or moving nodes.
 ENT = property, GROUP = table, REL = relation.
+Keep existing groups and relations when possible.
+All trees should share the same vocabulary, rename groups and relations according to the relevant vocabulary.
+{vocab}
 
 Node format:
 {{"oid":<str|null>,"name":<str>,"type":"GROUP"|"REL"|"ENT"|null,"metadata":<obj|null>,"children":[...]}}
@@ -59,8 +65,7 @@ Rules:
 - Link GROUPs with REL nodes where appropriate.
 - Preserve original oids; any new node gets "oid":null.
 - Keep the tree structure as close as possible to the original one.
-- Use generic semantic group names (eg. Person). Avoid dataset- or domain-specific proper nouns.
-{vocab}
+- Create generic semantic group names (eg. Person). Avoid dataset- or domain-specific names (eg. prefer Exam over EGC).
 
 Your response should be a numbered list with each item on a new line (do not put linebreak in the resulting json).
 For example:
@@ -89,11 +94,42 @@ def _trees_to_markdown_list(trees: Iterable[Tree]) -> str:
 
     :return: A string with one line per tree in the form "N. <json>", using compact separators and stable key ordering.
     """
-    return '\n'.join(
+    return '\n\n'.join(
         f'{i}. {json.dumps(tree.to_json(), ensure_ascii=False, separators=(",", ":"), sort_keys=True)}'
         for i, tree in enumerate(trees, start=1)
         if isinstance(tree, Tree)
     )
+
+
+def _parse_tree(json_data: JSONReturnType) -> Tree:
+    """
+    Parse a JSON object into a Tree.
+
+    :param json_data: The JSON object to parse.
+    :raise ValueError: If the JSON object is not a valid tree.
+    :raise TypeError: If the JSON object is of an invalid type.
+    :return: The parsed Tree.
+    """
+    if not json_data:
+        msg = 'Empty JSON data cannot be parsed into a tree.'
+        raise TypeError(msg)
+
+    if isinstance(json_data, dict):
+        tree = Tree.from_json(json_data)
+
+    elif isinstance(json_data, list):
+        children = [Tree.from_json(sub_tree) for sub_tree in json_data if isinstance(sub_tree, dict)]
+        if children:
+            tree = Tree('ROOT', children)
+        else:
+            msg = 'No valid tree objects found in JSON list data.'
+            raise ValueError(msg)
+
+    else:
+        msg = f'Invalid JSON data type for tree parsing: {type(json_data)}.'
+        raise TypeError(msg)
+
+    return tree
 
 
 def _sanitize(tree: Tree, oid: TreeOID) -> Tree:
@@ -122,7 +158,34 @@ def _sanitize(tree: Tree, oid: TreeOID) -> Tree:
     return tree
 
 
-def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = False) -> tuple[Tree, bool]:  # noqa: C901
+def _fix_vocab(tree: Tree, vocab: Collection[str], vocab_similarity: float = 0.6) -> Tree:
+    """
+    Fix the vocabulary in the tree by updating GROUP and REL labels in-place to match canonical forms.
+
+    :param tree: Trees to fix.
+    :param vocab: Collection of canonical labels.
+    :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.
+    :return: An updated tree with fixed vocabulary.
+    """
+    for subtree in tree.subtrees(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL})):
+        if (
+            subtree.label
+            and (label := _normalize(subtree.label.name))
+            and (matches := get_close_matches(label, vocab, n=1, cutoff=vocab_similarity))
+        ):
+            subtree.label = NodeLabel(subtree.label.type, matches[0])
+
+    return tree
+
+
+def _parse_tree_output(
+    raw_output: str | None,
+    *,
+    fallback: Tree,
+    vocab: Collection[str] | None = None,
+    vocab_similarity: float = 0.6,
+    debug: bool = False,
+) -> tuple[Tree, bool]:
     """
     Parse a raw LLM output string into a Tree, returning the provided fallback when parsing fails or output is empty.
 
@@ -133,6 +196,8 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
 
     :param raw_output: The raw LLM output string to parse.
     :param fallback: The fallback original :py:class:`~architxt.tree.Tree` to return when parsing fails.
+    :param vocab: Collection of canonical labels.
+    :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.
     :param debug: If True, emit warnings on parse errors and log JSON repair/parse metadata to MLflow.
 
     :return: The parsed :py:class:`~architxt.tree.Tree`, or the original fallback if parsing is unsuccessful.
@@ -150,25 +215,13 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
                 event = SpanEvent(name='JSON fixes', attributes=fixes)
                 span.add_event(event)
 
-        if not json_data:
-            return fallback, False
-
-        if isinstance(json_data, dict):
-            tree = Tree.from_json(json_data)
-
-        elif isinstance(json_data, list):
-            children = [Tree.from_json(sub_tree) for sub_tree in json_data if isinstance(sub_tree, dict)]
-            if children:
-                tree = Tree('ROOT', children)
-            else:
-                return fallback, False
-
-        else:
-            return fallback, False
-
+        tree = _parse_tree(json_data)
         tree = _sanitize(tree, oid=fallback.oid)
 
-    except ValueError as error:
+        if vocab:
+            tree = _fix_vocab(tree, vocab=vocab, vocab_similarity=vocab_similarity)
+
+    except (ValueError, TypeError) as error:
         if debug:
             warnings.warn(str(error), RuntimeWarning)
             if span := mlflow.get_current_active_span():
@@ -183,6 +236,9 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
 def _build_simplify_langchain_graph(
     llm: BaseChatModel,
     prompt: ChatPromptTemplate,
+    *,
+    vocab: Collection[str] | None = None,
+    vocab_similarity: float = 0.6,
     debug: bool = False,
 ) -> Runnable[Sequence[Tree], Sequence[tuple[Tree, bool]]]:
     """
@@ -199,7 +255,7 @@ def _build_simplify_langchain_graph(
     parallel = RunnableParallel(origin=RunnablePassthrough(), simplified=llm_chain)
     tree_parser = RunnableLambda(
         lambda result: tuple(
-            _parse_tree_output(simplified, fallback=origin, debug=debug)
+            _parse_tree_output(simplified, fallback=origin, vocab=vocab, vocab_similarity=vocab_similarity, debug=debug)
             for origin, simplified in itertools.zip_longest(
                 result['origin'], result['simplified'][: len(result['origin'])]
             )
@@ -274,9 +330,10 @@ async def llm_simplify(
     prompt: ChatPromptTemplate,
     trees: Iterable[Tree],
     *,
-    debug: bool,
     vocab: Collection[str] | None = None,
+    vocab_similarity: float = 0.6,
     task_limit: int = 4,
+    debug: bool = False,
 ) -> AsyncGenerator[tuple[Tree, bool], None]:
     """
     Simplify parse trees using an LLM.
@@ -300,15 +357,16 @@ async def llm_simplify(
     :param max_tokens: Maximum number of tokens to allow per prompt.
     :param prompt: Prompt template to use.
     :param trees: Sequence of trees to simplify.
-    :param debug: Whether to enable debug logging.
     :param vocab: Optional list of vocabulary words to use in the prompt.
+    :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.
     :param task_limit: Maximum number of concurrent requests to make.
+    :param debug: Whether to enable debug logging.
 
     :yield: Simplified trees objects with the same oid as input.
     """
-    vocab_str = f"Prefer using names from this vocabulary: {', '.join(vocab)}." if vocab else ""
+    vocab_str = f"Prefer these labels : {', '.join(vocab)}." if vocab else ""
     prompt = prompt.partial(vocab=vocab_str)
-    chain = _build_simplify_langchain_graph(llm, prompt, debug=debug)
+    chain = _build_simplify_langchain_graph(llm, prompt, vocab=vocab, vocab_similarity=vocab_similarity, debug=debug)
 
     prompt_tokens = llm.get_num_tokens(prompt.format(trees=''))
 
@@ -343,21 +401,65 @@ async def llm_simplify(
                 yield tree, simplified
 
 
-@mlflow.trace(span_type=SpanType.PARSER)
-def get_vocab(forest: Iterable[Tree], min_support: int) -> set[str]:
+def _normalize(s: str) -> str:
     """
-    Extract a set of labels that appear in GROUP or REL subtrees with at least a given support.
+    Normalize a string for vocabulary extraction.
+
+    Applies Unicode NFKC normalization, removes non-alphanumeric characters,
+    and converts to upper snake_case (e.g., "hello, world" -> "HELLO_WORLD").
+
+    :param s: String to normalize.
+    :return: Normalized upper snake_case string, or empty string if no alphanumeric characters.
+    """
+    # unicode normalize
+    s = unicodedata.normalize('NFKC', s)
+    # keep alnum and spaces
+    s = ''.join(ch if ch.isalnum() else ' ' for ch in s)
+    # convert to upper case
+    s = s.strip().upper()
+    # convert to snake_case
+    return re.sub(r'\s+', '_', s)
+
+
+@mlflow.trace(span_type=SpanType.PARSER)
+def extract_vocab(forest: Forest, min_support: int, min_similarity: float, close_match: int = 3) -> set[str]:
+    """
+    Extract a normalized set of labels that appear in GROUP or REL subtrees with at least a given support.
+
+    - Normalization: Unicode NFKC, remove non-alphanumeric chars, collapse spaces, upper snake_case.
+    - Aggregation: merge labels that are similar above `min_similarity` (SequenceMatcher ratio).
+        We select the one with the most occurrences as canonical label if multiple match.
+    - Returns: Set of canonical labels.
 
     :param forest: Forest to extract vocabulary from.
     :param min_support: Minimum support threshold for vocabulary.
-    :return: Set of labels.
+    :param min_similarity: Similarity threshold in [0, 1] for merging labels.
+    :param close_match: Number of close matches to consider when merging labels.
+    :return: Set of canonical labels.
     """
-    vocab_counter = Counter(
-        subtree.label
-        for tree in forest
-        for subtree in tree.subtrees(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL}))
-    )
-    return {label for label, cnt in vocab_counter.most_common() if cnt >= min_support}
+    vocab_counter = Counter()
+
+    for tree in forest:
+        for subtree in tree.subtrees(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL})):
+            if not subtree.label or not (label := _normalize(subtree.label.name)):
+                continue
+
+            matches = get_close_matches(label, vocab_counter.keys(), n=close_match, cutoff=min_similarity)
+            canonical_label = max(matches, default=label, key=lambda x: vocab_counter[x])
+            vocab_counter.update([canonical_label])
+
+    selected_vocab = {label for label, cnt in vocab_counter.items() if cnt >= min_support}
+
+    if span := mlflow.get_current_active_span():
+        span.set_attributes(
+            {
+                'vocab.total_unique': len(vocab_counter),
+                'vocab.selected_size': len(selected_vocab),
+                'vocab.top10_counts': sorted(vocab_counter.most_common(10), key=lambda x: x[1], reverse=True),
+            }
+        )
+
+    return selected_vocab
 
 
 def _get_mlflow_schema(forest: Forest) -> dict:
@@ -366,8 +468,8 @@ def _get_mlflow_schema(forest: Forest) -> dict:
         'forest.size': len(forest),
         'schema.size': len(schema.productions()),
         'schema.entities': sorted(schema.entities),
-        'schema.groups': sorted(group.name for group in schema.groups),
-        'schema.relations': sorted(relation.name for relation in schema.relations),
+        'schema.groups': sorted({group.name for group in schema.groups}),
+        'schema.relations': sorted({relation.name for relation in schema.relations}),
     }
 
 
@@ -377,6 +479,7 @@ async def llm_rewrite(
     max_tokens: int,
     tau: float = 0.7,
     min_support: int | None = None,
+    vocab_similarity: float = 0.6,
     refining_steps: int = 0,
     debug: bool = False,
     intermediate_output_path: Path | None = None,
@@ -392,6 +495,7 @@ async def llm_rewrite(
     :param max_tokens: The token limit of the prompt.
     :param tau: Threshold for subtree similarity when clustering.
     :param min_support: Minimum support for vocab.
+    :param vocab_similarity: Similarity threshold in [0, 1] for merging vocabulary labels.
     :param refining_steps: Number of refining steps to perform after the initial rewrite.
     :param debug: Whether to enable debug logging.
     :param intermediate_output_path: Optional path to save intermediate results after each iteration.
@@ -410,6 +514,7 @@ async def llm_rewrite(
                 'nb_sentences': len(forest),
                 'tau': tau,
                 'min_support': min_support,
+                'vocab_similarity': vocab_similarity,
                 'metric': metric.__name__,
                 'refining_steps': refining_steps,
             }
@@ -428,8 +533,7 @@ async def llm_rewrite(
         ) as iteration_span:
             iteration_span.set_inputs(mlflow_schema)
 
-            vocab = get_vocab(forest, min_support)
-            iteration_span.set_attribute('vocab', sorted(vocab))
+            vocab = extract_vocab(forest, min_support, vocab_similarity)
 
             simplification = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
             simplification = llm_simplify(
@@ -437,9 +541,10 @@ async def llm_rewrite(
                 max_tokens,
                 prompt,
                 simplification,
-                debug=debug,
                 vocab=vocab,
+                vocab_similarity=vocab_similarity,
                 task_limit=task_limit,
+                debug=debug,
             )
 
             # Track if any tree was modified
