@@ -30,6 +30,7 @@ from tqdm.auto import tqdm, trange
 from architxt.bucket import TreeBucket
 from architxt.forest import export_forest_to_jsonl
 from architxt.metrics import Metrics
+from architxt.schema import Schema
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
 from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
 from architxt.utils import windowed_shuffle
@@ -359,6 +360,17 @@ def get_vocab(forest: Iterable[Tree], min_support: int) -> set[str]:
     return {label for label, cnt in vocab_counter.most_common() if cnt >= min_support}
 
 
+def _get_mlflow_schema(forest: Forest) -> dict:
+    schema = Schema.from_forest(forest)
+    return {
+        'forest.size': len(forest),
+        'schema.size': len(schema.productions()),
+        'schema.entities': sorted(schema.entities),
+        'schema.groups': sorted(group.name for group in schema.groups),
+        'schema.relations': sorted(relation.name for relation in schema.relations),
+    }
+
+
 async def llm_rewrite(
     forest: Forest,
     llm: BaseChatModel,
@@ -404,60 +416,65 @@ async def llm_rewrite(
         )
         metrics.log_to_mlflow(0, debug=debug)
 
-    with mlflow.start_span('llm-rewriting', span_type=SpanType.CHAIN):
-        for iteration in trange(refining_steps + 1, leave=False, desc='rewriting iterations'):
-            with mlflow.start_span(
-                'llm-rewriting-iteration',
-                span_type=SpanType.CHAIN,
-                attributes={
-                    'step': iteration,
-                },
-            ) as iteration_span:
-                vocab = get_vocab(forest, min_support)
-                iteration_span.set_attribute('vocab', sorted(vocab))
+    mlflow_schema = _get_mlflow_schema(forest)
 
-                simplification = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
-                simplification = llm_simplify(
-                    llm,
-                    max_tokens,
-                    prompt,
-                    simplification,
-                    debug=debug,
-                    vocab=vocab,
-                    task_limit=task_limit,
-                )
+    for iteration in trange(refining_steps + 1, leave=False, desc='rewriting iterations'):
+        with mlflow.start_span(
+            'llm-rewriting',
+            span_type=SpanType.CHAIN,
+            attributes={
+                'step': iteration,
+            },
+        ) as iteration_span:
+            iteration_span.set_inputs(mlflow_schema)
 
-                # Track if any tree was modified
-                any_modified = False
+            vocab = get_vocab(forest, min_support)
+            iteration_span.set_attribute('vocab', sorted(vocab))
 
-                async def _simplification_wrap() -> AsyncGenerator[Tree, None]:
-                    nonlocal any_modified
-                    async for tree, simplified in simplification:
-                        if simplified:
-                            any_modified = True
-                        yield tree
+            simplification = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
+            simplification = llm_simplify(
+                llm,
+                max_tokens,
+                prompt,
+                simplification,
+                debug=debug,
+                vocab=vocab,
+                task_limit=task_limit,
+            )
 
-                if isinstance(forest, TreeBucket):
-                    await forest.async_update(_simplification_wrap())
-                else:
-                    forest[:] = [tree async for tree in _simplification_wrap()]
+            # Track if any tree was modified
+            any_modified = False
 
-                iteration_span.set_attribute('simplified', any_modified)
+            async def _simplification_wrap() -> AsyncGenerator[Tree, None]:
+                nonlocal any_modified
+                async for tree, simplified in simplification:
+                    if simplified:
+                        any_modified = True
+                    yield tree
 
-                # Save intermediate results
-                if intermediate_output_path:
-                    intermediate_output_path.mkdir(parents=True, exist_ok=True)
-                    intermediate_file = intermediate_output_path / f'intermediate_{iteration}.jsonl'
-                    export_forest_to_jsonl(intermediate_file, forest)
+            if isinstance(forest, TreeBucket):
+                await forest.async_update(_simplification_wrap())
+            else:
+                forest[:] = [tree async for tree in _simplification_wrap()]
 
-                # Log metrics to MLflow
-                if mlflow.active_run():
-                    metrics.update()
-                    metrics.log_to_mlflow(iteration + 1, debug=debug)
+            mlflow_schema = _get_mlflow_schema(forest)
+            iteration_span.set_outputs(mlflow_schema)
+            iteration_span.set_attribute('simplified', any_modified)
 
-                # Early stopping if no tree was modified
-                if not any_modified:
-                    break
+            # Save intermediate results
+            if intermediate_output_path:
+                intermediate_output_path.mkdir(parents=True, exist_ok=True)
+                intermediate_file = intermediate_output_path / f'intermediate_{iteration}.jsonl'
+                export_forest_to_jsonl(intermediate_file, forest)
+
+            # Log metrics to MLflow
+            if mlflow.active_run():
+                metrics.update()
+                metrics.log_to_mlflow(iteration + 1, debug=debug)
+
+            # Early stopping if no tree was modified
+            if not any_modified:
+                break
 
     metrics.update()
     return metrics
