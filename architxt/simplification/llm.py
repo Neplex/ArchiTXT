@@ -31,7 +31,7 @@ from architxt.bucket import TreeBucket
 from architxt.forest import export_forest_to_jsonl
 from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
-from architxt.tree import Forest, NodeType, Tree, has_type
+from architxt.tree import Forest, NodeType, Tree, TreeOID, has_type
 from architxt.utils import windowed_shuffle
 
 __all__ = ['estimate_tokens', 'llm_rewrite']
@@ -95,18 +95,25 @@ def _trees_to_markdown_list(trees: Iterable[Tree]) -> str:
     )
 
 
-def _sanitize(tree: Tree) -> Tree:
+def _sanitize(tree: Tree, oid: TreeOID) -> Tree:
     """
     Sanitize a :py:class:`~architxt.tree.Tree` in-place by renaming invalid nodes with a `UNDEF_<oid>` label.
 
     :param tree: The tree to sanitize.
+    :param oid: The Tree OID to use.
 
     :return: The sanitized tree.
     """
+    # ensure ROOT and assign old oid to avoid duplicates
+    children = [tree] if has_type(tree) else [child.detach() for child in tree]
+    tree = Tree('ROOT', children, oid=oid)
+
+    # ensure groups are valid
     for group in tree.subtrees(lambda x: has_type(x, NodeType.GROUP)):
         if not all(has_type(child, NodeType.ENT) for child in group):
             group.label = f'UNDEF_{group.oid.hex}'
 
+    # ensure relations are valid
     for rel in tree.subtrees(lambda x: has_type(x, NodeType.REL)):
         if len(rel) != 2 or not all(has_type(child, NodeType.GROUP) for child in rel):
             rel.label = f'UNDEF_{rel.oid.hex}'
@@ -114,7 +121,7 @@ def _sanitize(tree: Tree) -> Tree:
     return tree
 
 
-def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = False) -> Tree:
+def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = False) -> tuple[Tree, bool]:  # noqa: C901
     """
     Parse a raw LLM output string into a Tree, returning the provided fallback when parsing fails or output is empty.
 
@@ -130,7 +137,7 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
     :return: The parsed :py:class:`~architxt.tree.Tree`, or the original fallback if parsing is unsuccessful.
     """
     if not raw_output:
-        return fallback
+        return fallback, False
 
     try:
         raw_output = raw_output.strip()
@@ -143,22 +150,22 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
                 span.add_event(event)
 
         if not json_data:
-            return fallback
+            return fallback, False
 
         if isinstance(json_data, dict):
             tree = Tree.from_json(json_data)
 
-        elif isinstance(json_data, list) and isinstance(json_data[0], dict):
-            tree = Tree.from_json(json_data[0])
+        elif isinstance(json_data, list):
+            children = [Tree.from_json(sub_tree) for sub_tree in json_data if isinstance(sub_tree, dict)]
+            if children:
+                tree = Tree('ROOT', children)
+            else:
+                return fallback, False
 
         else:
-            return fallback
+            return fallback, False
 
-        # assign old oid to avoid duplicates
-        children = [tree] if has_type(tree) else [child.detach() for child in tree]
-        tree = Tree('ROOT', children, oid=fallback.oid)
-
-        return _sanitize(tree)
+        tree = _sanitize(tree, oid=fallback.oid)
 
     except ValueError as error:
         if debug:
@@ -166,7 +173,10 @@ def _parse_tree_output(raw_output: str | None, *, fallback: Tree, debug: bool = 
             if span := mlflow.get_current_active_span():
                 span.record_exception(error)
 
-    return fallback
+    else:
+        return tree, tree != fallback
+
+    return fallback, False
 
 
 def _build_simplify_langchain_graph(
@@ -187,11 +197,12 @@ def _build_simplify_langchain_graph(
     llm_chain = to_json | prompt | llm.with_retry(stop_after_attempt=10) | NumberedListOutputParser()
     parallel = RunnableParallel(origin=RunnablePassthrough(), simplified=llm_chain)
     tree_parser = RunnableLambda(
-        lambda result: [
-            (tree, tree is not orig)
-            for orig, simp in itertools.zip_longest(result['origin'], result['simplified'][: len(result['origin'])])
-            if (tree := _parse_tree_output(simp, fallback=orig, debug=debug))
-        ]
+        lambda result: tuple(
+            _parse_tree_output(simplified, fallback=origin, debug=debug)
+            for origin, simplified in itertools.zip_longest(
+                result['origin'], result['simplified'][: len(result['origin'])]
+            )
+        )
     )
 
     return parallel | tree_parser
