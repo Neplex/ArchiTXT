@@ -11,6 +11,7 @@ from collections.abc import (
     Iterable,
     Iterator,
     MutableMapping,
+    MutableSet,
     Sequence,
 )
 from copy import copy, deepcopy
@@ -31,6 +32,7 @@ from architxt.utils import ExceptionGroup
 
 __all__ = [
     'Forest',
+    'MutableForest',
     'NodeLabel',
     'NodeType',
     'Tree',
@@ -1284,3 +1286,4 @@ def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) 
 
 
 Forest: TypeAlias = Collection[Tree]
+MutableForest: TypeAlias = MutableSet[Tree]
