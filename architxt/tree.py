@@ -9,6 +9,7 @@ from collections.abc import (
     Generator,
     Hashable,
     Iterable,
+    Iterator,
     MutableMapping,
     Sequence,
 )
@@ -24,6 +25,7 @@ from nltk import slice_bounds
 from nltk.grammar import Nonterminal, Production
 from persistent.list import PersistentList
 from persistent.mapping import PersistentMapping
+from typing_extensions import Self
 
 from architxt.utils import ExceptionGroup
 
@@ -364,11 +366,30 @@ class Tree(PersistentList['_SubTree | str']):
 
         return leaves
 
-    def subtrees(self, filter_fn: Callable[['Tree'], bool] | None = None) -> Generator['Tree', None, None]:
+    @overload
+    def subtrees(
+        self: Self,
+        filter_fn: Callable[['Tree'], bool] | None = None,
+        include_self: Literal[True] = True,
+    ) -> Iterator[Self]: ...
+
+    @overload
+    def subtrees(
+        self: "Tree",
+        filter_fn: Callable[['Tree'], bool] | None = None,
+        include_self: Literal[False] = False,
+    ) -> Iterator["_SubTree"]: ...
+
+    def subtrees(
+        self,
+        filter_fn: Callable[["Tree"], bool] | None = None,
+        include_self: bool = True,
+    ) -> Iterator["Tree"]:
         """
         Get all the subtrees of this tree, optionally restricted to trees matching the filter function.
 
         :param filter_fn: The function to filter all local trees
+        :param include_self: Whether to include this tree in the output.
 
         >>> t = Tree.fromstring("(S (NP (D the) (N dog)) (VP (V chased) (NP (D the) (N cat))))")
         >>> for s in t.subtrees(lambda t: t.height == 2):
@@ -379,7 +400,7 @@ class Tree(PersistentList['_SubTree | str']):
         (D the)
         (N cat)
         """
-        if not filter_fn or filter_fn(self):
+        if include_self and (not filter_fn or filter_fn(self)):
             yield self
 
         for child in self:
@@ -679,16 +700,21 @@ class Tree(PersistentList['_SubTree | str']):
                     break
 
     @overload
+    def __getitem__(self, pos: tuple[()]) -> 'Self': ...
+
+    @overload
     def __getitem__(self, pos: TreePosition | int) -> '_SubTree | str': ...
 
     @overload
     def __getitem__(self, pos: slice) -> 'list[_SubTree | str]': ...
 
-    def __getitem__(self, pos: TreePosition | int | slice) -> '_SubTree | str | list[_SubTree | str]':
+    def __getitem__(self, pos: TreePosition | int | slice) -> 'Tree | str | list[_SubTree | str]':
         """
         Retrieve a child or subtree using an index, a slice, or a tree position.
 
         >>> t = Tree.fromstring('(S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))')
+        >>> print(t[()])
+        (S (X (ENT::person Alice) (ENT::fruit apple)) (Y (ENT::person Bob) (ENT::animal rabbit)))
         >>> print(t[0])
         (X (ENT::person Alice) (ENT::fruit apple))
         >>> print(t[0, 1])
@@ -701,16 +727,27 @@ class Tree(PersistentList['_SubTree | str']):
             # to the parent class, which would return a Tree instead of a plain list.
             return self.data[pos]
 
-        if isinstance(pos, tuple):
-            if len(pos) == 0:
-                return self
-            if len(pos) == 1:
-                return self[pos[0]]
+        if not isinstance(pos, tuple):
+            msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
+            raise TypeError(msg)
 
-            return self[pos[0]][pos[1:]]
+        node = self
+        for depth, idx in enumerate(pos):
+            if not isinstance(idx, int):
+                msg = f'multi-level indices must be integers, not {type(pos).__name__}'
+                raise TypeError(msg)
 
-        msg = f'{type(self).__name__} indices must be integers, not {type(pos).__name__}'
-        raise TypeError(msg)
+            if not isinstance(node, Tree):
+                msg = f'index {idx} out of range at position {pos[:depth]} (leaf node reached)'
+                raise IndexError(msg)
+
+            try:
+                node = node.data[idx]
+            except IndexError:
+                msg = f'index {idx} out of range at position {pos[:depth]}'
+                raise IndexError(msg)
+
+        return node
 
     @overload
     def __setitem__(self, pos: TreePosition | int, subtree: 'Tree | str') -> None: ...
@@ -761,19 +798,24 @@ class Tree(PersistentList['_SubTree | str']):
             super().__setitem__(pos, subtree)
 
         elif isinstance(pos, tuple):
+            if not isinstance(subtree, Tree | str):
+                msg = f'subtree must be a Tree or str, not {type(subtree).__name__}'
+                raise TypeError(msg)
+
             # ptree[()] = subtree
             if len(pos) == 0:
-                msg = 'The tree position () may not be assigned to.'
+                msg = 'position () may not be assigned to'
                 raise IndexError(msg)
-            # ptree[(i,)] = subtree
-            if len(pos) == 1:
-                self[pos[0]] = subtree
+
             # ptree[i1, i2, i3] = subtree
-            else:
-                self[pos[0]][pos[1:]] = subtree
+            node = self[pos[:-1]]
+            if not isinstance(node, Tree):
+                msg = f'index {pos[-1]} out of range at position {pos[:-1]} (leaf node reached)'
+                raise IndexError(msg)
+            node[pos[-1]] = subtree
 
         else:
-            msg = f'{type(self).__name__} indices must be integers, not {type(pos).__name__}'
+            msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
             raise TypeError(msg)
 
         self._invalidate_cache()
@@ -805,17 +847,18 @@ class Tree(PersistentList['_SubTree | str']):
         elif isinstance(pos, tuple):
             # del ptree[()]
             if len(pos) == 0:
-                msg = 'The tree position () may not be deleted.'
+                msg = 'position () may not be deleted'
                 raise IndexError(msg)
-            # del ptree[(i,)]
-            if len(pos) == 1:
-                del self[pos[0]]
+
             # del ptree[i1, i2, i3]
-            else:
-                del self[pos[0]][pos[1:]]
+            node = self[pos[:-1]]
+            if not isinstance(node, Tree):
+                msg = f'index {pos[-1]} out of range at position {pos[:-1]} (leaf node reached)'
+                raise IndexError(msg)
+            del node[pos[-1]]
 
         else:
-            msg = f'{type(self).__name__} indices must be integers, not {type(pos).__name__}'
+            msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
             raise TypeError(msg)
 
         self._invalidate_cache()
@@ -841,14 +884,14 @@ class Tree(PersistentList['_SubTree | str']):
         super().extend(children)
         self._invalidate_cache()
 
-    def remove(self, child: 'Tree | str', *, recursive: bool = True) -> None:
+    def remove(self, child: '_SubTree | str', *, recursive: bool = True) -> None:
         super().remove(child)
 
         if isinstance(child, Tree):
             child._v_parent = None
 
-        if recursive and len(self) == 0 and (parent := self.parent) is not None:
-            parent.remove(self)
+        if recursive and len(self) == 0 and is_sub_tree(self):
+            self.parent.remove(self)
 
         self._invalidate_cache()
 
@@ -890,8 +933,8 @@ class Tree(PersistentList['_SubTree | str']):
         if isinstance(child, Tree):
             child._v_parent = None
 
-        if recursive and len(self) == 0 and (parent := self.parent) is not None:
-            parent.remove(self)
+        if recursive and len(self) == 0 and is_sub_tree(self):
+            self.parent.remove(self)
 
         self._invalidate_cache()
 
@@ -1089,12 +1132,10 @@ class Tree(PersistentList['_SubTree | str']):
             - `children`: list of child entries where each child is either a serialized child
                 dictionary (for subtree children) or the leaf value.
         """
-        is_typed = has_type(self)
-
         return {
             'oid': str(self.oid),
-            'type': self.label.type.value if is_typed else None,
-            'name': self.label.name if is_typed else self.label,
+            'type': self.label.type.value if has_type(self) else None,
+            'name': self.label.name if has_type(self) else self.label,
             'metadata': dict(self.metadata),
             'children': [child.to_json() if isinstance(child, Tree) else child for child in self],
         }
@@ -1177,11 +1218,7 @@ def has_type(
 
 
 @overload
-def has_type(t: Tree, types: set[NodeType | str] | NodeType | str | None = None) -> TypeGuard['_TypedTree']: ...
-
-
-@overload
-def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool: ...
+def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> TypeGuard['_TypedTree']: ...
 
 
 def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool:
