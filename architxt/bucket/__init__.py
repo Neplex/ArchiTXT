@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable, Generator, Iterable, MutableSet
-from contextlib import AbstractContextManager
-from types import TracebackType
-from typing import overload
+from typing import TYPE_CHECKING, overload
 
 import anyio.to_thread
 from aiostream import Stream, stream
+from typing_extensions import Self
 
 from architxt.tree import Forest, Tree, TreeOID
 from architxt.utils import BATCH_SIZE
+
+if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
+    from types import TracebackType
 
 __all__ = ['TreeBucket']
 
@@ -97,7 +102,7 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
             - bucket[[oid1, oid2, ...]] -> [tree1, tree2, ...]
         """
 
-    def __enter__(self) -> 'TreeBucket':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

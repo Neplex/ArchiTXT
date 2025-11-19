@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import hashlib
 import tarfile
 import zipfile
-from collections.abc import AsyncGenerator, AsyncIterable, Iterable, Sequence
 from contextlib import nullcontext
-from io import BytesIO
 from itertools import islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, BinaryIO
 import anyio
 import anyio.to_thread
 import mlflow
-from anyio.abc import ObjectSendStream
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
 from platformdirs import user_cache_path
@@ -21,14 +20,20 @@ from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, T
 
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.nlp.brat import load_brat_dataset
-from architxt.nlp.entity_extractor import EntityExtractor
-from architxt.nlp.entity_resolver import EntityResolver
-from architxt.nlp.parser import Parser
-from architxt.tree import Tree
 from architxt.utils import BATCH_SIZE
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, AsyncIterable, Iterable, Sequence
+    from io import BytesIO
+
+    from anyio.abc import ObjectSendStream
+    from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+
+    from architxt.nlp.entity_extractor import EntityExtractor
+    from architxt.nlp.entity_resolver import EntityResolver
     from architxt.nlp.model import AnnotatedSentence
+    from architxt.nlp.parser import Parser
+    from architxt.tree import Tree
 
 __all__ = ['raw_load_corpus']
 
@@ -123,7 +128,7 @@ async def _load_or_cache_corpus(  # noqa: C901
     corpus_cache_path: Path | None = None
 
     if isinstance(archive_file, str | Path):
-        archive_file = Path(archive_file).open('rb')  # noqa: SIM115
+        archive_file = Path(archive_file).open('rb')  # noqa: ASYNC230, SIM115
         should_close = True
 
     try:
@@ -163,10 +168,8 @@ async def _load_or_cache_corpus(  # noqa: C901
         if cache and corpus_cache_path and corpus_cache_path.exists():
             with ZODBTreeBucket(storage_path=corpus_cache_path, read_only=True) as forest:
                 if len(forest):
-                    if sample:
-                        forest = islice(forest, sample)
                     for tree in progress.track(
-                        forest,
+                        islice(forest, sample) if sample else forest,
                         description=f'[green]Loading corpus {archive_file.name} from cache...[/]',
                         total=sample,
                     ):
@@ -291,6 +294,8 @@ async def raw_load_corpus(
         ) as progress,
     ):
         async with resolver or nullcontext() as resolver, anyio.create_task_group() as tg:
+            send_stream: MemoryObjectSendStream[Tree]
+            receive_stream: MemoryObjectReceiveStream[Tree]
             send_stream, receive_stream = anyio.create_memory_object_stream(batch_size)
 
             for corpus, language in zip(corpus_archives, languages, strict=True):

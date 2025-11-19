@@ -1,7 +1,8 @@
 """Dataset loader for BRAT (BRAT Rapid Annotation Tool) format."""
 
-from collections.abc import Generator, Iterable
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from pybrat.parser import BratParser, Example
 from pybrat.parser import Entity as BratEntity
@@ -9,6 +10,10 @@ from pybrat.parser import Relation as BratRelation
 
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation
 from architxt.nlp.utils import split_entities, split_relations, split_sentences
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+    from pathlib import Path
 
 __all__ = ['load_brat_dataset']
 

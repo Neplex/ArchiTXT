@@ -1,12 +1,8 @@
+from __future__ import annotations
+
 import gc
 import tempfile
 import uuid
-from collections.abc import (
-    AsyncIterable,
-    Generator,
-    Iterable,
-    Iterator,
-)
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
@@ -15,7 +11,6 @@ import transaction
 import ZODB.config
 from aiostream import stream
 from BTrees.OOBTree import OOBTree
-from ZODB.Connection import Connection
 
 from architxt.tree import Tree, TreeOID
 from architxt.utils import BATCH_SIZE, is_memory_low
@@ -23,7 +18,10 @@ from architxt.utils import BATCH_SIZE, is_memory_low
 from . import TreeBucket
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, Generator, Iterable, Iterator
+
     from aiostream.core import Stream
+    from ZODB.Connection import Connection
 
 __all__ = ['ZODBTreeBucket']
 

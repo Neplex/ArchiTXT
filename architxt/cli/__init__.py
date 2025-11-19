@@ -1,7 +1,8 @@
 import shutil
 import subprocess
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import anyio
 import mlflow
@@ -25,6 +26,9 @@ from architxt.simplification.tree_rewriting import rewrite
 from .export import app as export_app
 from .loader import app as loader_app
 from .utils import console, load_forest, show_metrics, show_schema
+
+if TYPE_CHECKING:
+    from langchain_core.language_models import BaseChatModel
 
 app = typer.Typer(
     help="ArchiTXT is a tool for structuring textual data into a valid database model. "
@@ -75,7 +79,7 @@ def simplify(
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
     log_system_metrics: bool = typer.Option(False, help="Enable logging of system metrics to MLFlow."),
 ) -> None:
-    run_ctx = nullcontext()
+    run_ctx: AbstractContextManager = nullcontext()
 
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
@@ -140,7 +144,7 @@ def simplify_llm(
         )
         raise typer.Exit(code=2)
 
-    run_ctx = nullcontext()
+    run_ctx: AbstractContextManager = nullcontext()
 
     if log:
         console.print(f'[green]MLFlow logging enabled. Logs will be send to {mlflow.get_tracking_uri()}[/]')
@@ -161,6 +165,7 @@ def simplify_llm(
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
     rate_limiter = InMemoryRateLimiter(requests_per_second=rate_limit) if rate_limit else None
+    llm: BaseChatModel
 
     if model_provider == 'huggingface' and local:
         pipeline = HuggingFacePipeline.from_model_id(

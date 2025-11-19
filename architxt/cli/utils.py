@@ -1,5 +1,7 @@
-from collections.abc import Generator, Iterable
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import mlflow
 from rich.columns import Columns
@@ -10,9 +12,13 @@ from rich.table import Table
 
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.forest import import_forest_from_jsonl
-from architxt.metrics import Metrics
-from architxt.schema import Schema
-from architxt.tree import Tree
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from architxt.metrics import Metrics
+    from architxt.schema import Schema
+    from architxt.tree import Tree
 
 __all__ = ['console', 'load_forest', 'show_metrics', 'show_schema']
 
@@ -73,18 +79,18 @@ def load_forest(files: Iterable[str | Path]) -> Generator[Tree, None, None]:
     >>> forest = load_forest(['forest_dir/', 'forest.jsonl']) # doctest: +SKIP
     """
     with Progress() as progress:
-        task_ids = [progress.add_task(f'Reading {file_path}...', start=False) for file_path in files]
+        file_tasks = [(file_path, progress.add_task(f'Reading {file_path}...', start=False)) for file_path in files]
 
-        for file_path, task_id in zip(files, task_ids):
+        for file_path, task_id in file_tasks:
             progress.start_task(task_id)
             file_path = Path(file_path)
 
             if file_path.is_dir():
-                with ZODBTreeBucket(storage_path=file_path, read_only=True) as forest:
-                    for tree in progress.track(forest, task_id=task_id):
+                with ZODBTreeBucket(storage_path=file_path, read_only=True) as bucket:
+                    for tree in progress.track(bucket, task_id=task_id):
                         # For ZODB, we need to create a copy of the tree to unlink it from the DBMS.
                         yield tree.copy()
 
             else:
-                forest = import_forest_from_jsonl(file_path)
-                yield from progress.track(forest, task_id=task_id)
+                trees = import_forest_from_jsonl(file_path)
+                yield from progress.track(trees, task_id=task_id)

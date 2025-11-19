@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import json
-from collections.abc import Generator, Iterable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from architxt.tree import Tree
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+    from pathlib import Path
 
 __all__ = ['export_forest_to_jsonl', 'import_forest_from_jsonl']
 

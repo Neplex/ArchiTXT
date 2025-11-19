@@ -1,7 +1,12 @@
-from collections import Counter
-from collections.abc import Generator, Iterable
+from __future__ import annotations
 
-from architxt.tree import Tree
+from collections import Counter
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from architxt.tree import Tree
 
 __all__ = ['ForestInspector']
 
