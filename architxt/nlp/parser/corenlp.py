@@ -1,5 +1,6 @@
-from collections.abc import Iterable, Iterator
-from types import TracebackType
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import more_itertools
 from nltk import CoreNLPParser as NLTKParser
@@ -7,6 +8,10 @@ from nltk import CoreNLPParser as NLTKParser
 from architxt.tree import Tree
 
 from . import Parser
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+    from types import TracebackType
 
 __all__ = ['CoreNLPParser']
 

@@ -1,23 +1,38 @@
+from __future__ import annotations
+
+import abc
 import contextlib
-from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, AsyncIterator, Iterable
-from types import TracebackType
+from contextlib import AbstractAsyncContextManager
+from typing import TYPE_CHECKING
 
 from aiostream import pipe, stream
 from googletrans import Translator
 from scispacy.candidate_generation import CandidateGenerator
+from typing_extensions import Self
 from unidecode import unidecode
 
-from architxt.nlp.model import AnnotatedSentence, Entity
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, AsyncIterator, Iterable
+    from types import TracebackType
+
+    from architxt.nlp.model import AnnotatedSentence, Entity
 
 
-class EntityResolver(ABC):
+class EntityResolver(AbstractAsyncContextManager):
     @property
     def name(self) -> str:
         return self.__class__.__name__
 
-    @abstractmethod
+    @abc.abstractmethod
     async def __call__(self, entity: Entity) -> Entity: ...
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        pass
 
     async def batch(
         self,
@@ -71,11 +86,12 @@ class ScispacyResolver(EntityResolver):
         self.threshold = threshold
         self.kb_name = kb_name
         self.resolve_text = resolve_text
+        self.translator: Translator | None = None
 
         self.exit_stack = contextlib.AsyncExitStack()
         self.candidate_generator = CandidateGenerator(name=self.kb_name)
 
-    async def __aenter__(self) -> 'ScispacyResolver':
+    async def __aenter__(self) -> Self:
         if self.translate:
             translator = Translator()
             self.translator = await self.exit_stack.enter_async_context(translator)

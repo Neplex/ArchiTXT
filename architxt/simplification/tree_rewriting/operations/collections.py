@@ -1,12 +1,17 @@
-from itertools import groupby
-from typing import Any
+from __future__ import annotations
+
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any
 
 import more_itertools
 
-from architxt.similarity import TREE_CLUSTER
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
 
 from .operation import Operation
+
+if TYPE_CHECKING:
+    from architxt.similarity import TREE_CLUSTER
+    from architxt.tree import _TypedSubTree
 
 __all__ = [
     'FindCollectionsOperation',
@@ -52,53 +57,48 @@ class FindCollectionsOperation(Operation):
                 continue
 
             # Group nodes by shared label and organize them into collection sets for structural modification
-            for coll_tree_set in sorted(
-                filter(
-                    lambda x: len(x) > 1,
-                    (
-                        sorted(equiv_set, key=lambda x: x.parent_index)
-                        for _, equiv_set in groupby(
-                            sorted(
-                                filter(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL, NodeType.COLL}), subtree),
-                                key=lambda x: x.label.name,
-                            ),
-                            key=lambda x: x.label.name,
-                        )
-                    ),
-                ),
-                key=lambda x: x[0].parent_index,
-            ):
-                index = coll_tree_set[0].parent_index
-                label = NodeLabel(NodeType.COLL, coll_tree_set[0].label.name)
-
-                # Prepare a new collection of nodes (merging if some nodes are already collections)
-                children: list[Tree] = []
-                for coll_tree in coll_tree_set:
-                    if has_type(coll_tree, NodeType.COLL):
-                        # Merge collection elements
-                        children.extend(child.detach() for child in coll_tree[:])
-                        coll_tree.detach()
-
-                    else:
-                        children.append(coll_tree.detach())
-
-                # Log the creation of a new collection in MLFlow, if active
-                self._log_to_mlflow(
-                    {
-                        'name': label.name,
-                        'size': len(children),
-                    }
-                )
+            if self._merge_equivalent_siblings_into_collection(subtree):
                 simplified = True
 
-                # If the entire subtree is a single collection, update its label and structure directly
-                if len(subtree) == 0:
-                    subtree.label = label
-                    subtree[:] = children
-
-                else:
-                    # Insert the new collection node at the appropriate index
-                    coll_tree = Tree(label, children=children)
-                    subtree.insert(index, coll_tree)
-
         return simplified
+
+    def _merge_equivalent_siblings_into_collection(self, subtree: Tree) -> bool:
+        """Find duplicate labels and merge them into real COLL nodes. Returns True if modified."""
+        modified = False
+
+        equiv_groups: defaultdict[str, list[_TypedSubTree]] = defaultdict(list)
+        for child in subtree:
+            if has_type(child, {NodeType.GROUP, NodeType.REL, NodeType.COLL}):
+                equiv_groups[child.label.name].append(child)
+
+        # Only groups with duplicates
+        duplicate_groups = (
+            sorted(trees, key=lambda t: t.parent_index) for trees in equiv_groups.values() if len(trees) > 1
+        )
+
+        for coll_set in duplicate_groups:
+            index = coll_set[0].parent_index
+            label = NodeLabel(NodeType.COLL, coll_set[0].label.name)
+
+            # Prepare a new collection of nodes (merging if some nodes are already collections)
+            children: list[Tree] = []
+            for node in coll_set:
+                if has_type(node, NodeType.COLL):
+                    children.extend(child.detach() for child in node[:])
+                    node.detach()
+                else:
+                    children.append(node.detach())
+
+            self._log_to_mlflow({'name': label.name, 'size': len(children)})
+            modified = True
+
+            if len(subtree) == 0:
+                # If the entire subtree is a single collection, reuse it
+                subtree.label = label
+                subtree[:] = children
+            else:
+                # Insert the new collection node at the appropriate index
+                coll_tree = Tree(label, children=children)
+                subtree.insert(index, coll_tree)
+
+        return modified

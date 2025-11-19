@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import mlflow
 from mlflow.entities import SpanEvent
 
 from architxt.similarity import METRIC_FUNC, TREE_CLUSTER, get_equiv_of
-from architxt.tree import Tree
+
+if TYPE_CHECKING:
+    from architxt.tree import Tree
 
 
 class Operation(ABC):

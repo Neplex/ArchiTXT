@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 from collections import defaultdict
 from collections.abc import Callable
@@ -187,7 +189,7 @@ def export_tree(
 
 
 def export_relation(
-    tree: '_TypedTree',
+    tree: _TypedTree,
     data: dict[str, dict[TreeOID, dict[str, str]]],
     schema: Schema,
     pk_factory: PKColumnFactory,
@@ -235,7 +237,7 @@ def export_relation(
 
 
 def export_group(
-    group: '_TypedTree',
+    group: _TypedTree,
     data: dict[str, dict[TreeOID, dict[str, str]]],
     pk_factory: PKColumnFactory,
 ) -> None:

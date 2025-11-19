@@ -253,11 +253,14 @@ def _simplify_names(forest: Forest) -> None:
 
     :param forest: The forest to simplify names in
     """
-    simplified_to_labels = defaultdict(list)  # simplified_name -> [original_labels]
+    simplified_to_labels: defaultdict[str, list[str]] = defaultdict(list)  # simplified_name -> [original_labels]
 
     for tree in forest:
-        for subtree in tree.subtrees(lambda x: has_type(x, NodeType.GROUP)):
-            simplified_name = _get_base_name(subtree)
+        for subtree in tree.subtrees():
+            if not has_type(subtree, NodeType.GROUP):
+                continue
+
+            simplified_name = _get_base_name(subtree.label.name)
             label_list = simplified_to_labels[simplified_name]
 
             if subtree.label.name not in label_list:
@@ -269,12 +272,12 @@ def _simplify_names(forest: Forest) -> None:
             subtree.label = NodeLabel(NodeType.GROUP, simplified_name)
 
     for tree in forest:
-        for subtree in tree.subtrees(lambda x: has_type(x, NodeType.REL)):
-            if (groups := subtree.groups()) and len(groups) == 2:
+        for subtree in tree.subtrees():
+            if has_type(subtree, NodeType.REL) and (groups := subtree.groups()) and len(groups) == 2:
                 subtree.label = NodeLabel(NodeType.REL, '<->'.join(sorted(groups)))
 
 
-def _get_base_name(tree: Tree) -> str:
+def _get_base_name(name: str) -> str:
     """
     Get the simplified name for a group subtree.
 
@@ -282,7 +285,7 @@ def _get_base_name(tree: Tree) -> str:
     - The base name (extracted from label like "Territories_1_5_2" -> "Territories")
     - Generic "UndefinedGroup" for group without a base name
     """
-    base_name = re.sub(r'(_\d+)+$', '', tree.label.name)
+    base_name = re.sub(r'(_\d+)+$', '', name)
 
     if re.match(r'^\d*$', base_name):
         base_name = 'UndefinedGroup'
@@ -433,7 +436,7 @@ def _apply_operations_worker(
     edit_ops: Sequence[tuple[str, Operation]],
     forest: TreeBucket,
     queue: Queue[TreeOID | None],
-    shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
+    shared_equiv_subtrees: ValueProxy[TREE_CLUSTER],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
@@ -448,7 +451,7 @@ def _apply_operations_worker(
     edit_ops: Sequence[tuple[str, Operation]],
     forest: Forest,
     queue: None,
-    shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
+    shared_equiv_subtrees: ValueProxy[TREE_CLUSTER],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
@@ -462,7 +465,7 @@ def _apply_operations_worker(
     edit_ops: Sequence[tuple[str, Operation]],
     forest: TreeBucket | Forest,
     queue: Queue[TreeOID | None] | None,
-    shared_equiv_subtrees: ValueProxy[set[tuple[Tree, ...]]],
+    shared_equiv_subtrees: ValueProxy[TREE_CLUSTER],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,

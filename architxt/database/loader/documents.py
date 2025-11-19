@@ -1,8 +1,8 @@
+from __future__ import annotations
+
 import json
-from collections.abc import Callable, Generator, Iterable, Sequence
-from io import BytesIO
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 import more_itertools
 import pandas as pd
@@ -11,6 +11,10 @@ import xmltodict
 from ruamel import yaml
 
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Sequence
+    from io import BytesIO
 
 __all__ = ['read_document']
 

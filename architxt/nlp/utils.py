@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import warnings
-from collections.abc import Generator, Iterable, Sequence
+from typing import TYPE_CHECKING
 
 from unidecode import unidecode
 
 from architxt.nlp.model import Entity, Relation
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Sequence
 
 __all__ = ['split_entities', 'split_relations', 'split_sentences']
 
