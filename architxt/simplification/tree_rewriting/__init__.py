@@ -20,7 +20,7 @@ from tqdm.auto import tqdm, trange
 from architxt.bucket import TreeBucket
 from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
-from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
+from architxt.tree import Forest, MutableForest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import BATCH_SIZE, ExceptionGroup
 
 from .operations import (
@@ -54,7 +54,7 @@ DEFAULT_OPERATIONS: Sequence[type[Operation]] = (
 
 
 def rewrite(
-    forest: Forest,
+    forest: MutableForest,
     *,
     tau: float = 0.7,
     epoch: int = 100,
@@ -160,7 +160,7 @@ def rewrite(
 
 def _rewrite_step(
     iteration: int,
-    forest: Forest,
+    forest: MutableForest,
     *,
     tau: float,
     min_support: int,
@@ -210,7 +210,7 @@ def _rewrite_step(
 
 
 def _post_process(
-    forest: Forest,
+    forest: MutableForest,
     *,
     tau: float,
     metric: METRIC_FUNC,
@@ -292,7 +292,7 @@ def _get_base_name(tree: Tree) -> str:
 
 def apply_operations(
     edit_ops: Sequence[Operation | tuple[str, Operation]],
-    forest: Forest,
+    forest: MutableForest,
     *,
     equiv_subtrees: TREE_CLUSTER,
     early_exit: bool = True,
@@ -356,18 +356,14 @@ def apply_operations(
                 for idx, batch in enumerate(more_itertools.distribute(workers_count, forest))
             ]
 
-        new_forest = []
         for future in as_completed(futures):
             request_id, trees = future.result()
 
             if trees:
-                new_forest.extend(trees)
+                forest |= trees
 
             if worker_trace := mlflow.get_trace(request_id):
                 mlflow.add_trace(worker_trace)
-
-        if new_forest:
-            forest[:] = new_forest
 
         op_id = simplification_operation.get()
 

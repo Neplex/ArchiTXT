@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, Generator, Iterable, MutableSet
+from collections.abc import AsyncIterable, Generator, Iterable
 from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import overload
@@ -7,13 +7,13 @@ from typing import overload
 import anyio.to_thread
 from aiostream import Stream, stream
 
-from architxt.tree import Forest, Tree, TreeOID
+from architxt.tree import MutableForest, Tree, TreeOID
 from architxt.utils import BATCH_SIZE
 
 __all__ = ['TreeBucket']
 
 
-class TreeBucket(ABC, MutableSet[Tree], Forest):
+class TreeBucket(ABC, MutableForest):
     """
     A scalable, persistent, set-like container for :py:class:`~architxt.tree.Tree`.
 
