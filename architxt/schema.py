@@ -353,17 +353,19 @@ class Schema(CFG):
         for tree in forest:
             tree = tree.copy()
 
-            for subtree in reversed(list(tree.subtrees(lambda t: t.label not in valid_labels))):
-                if not (parent := subtree.parent):
-                    subtree.label = 'ROOT'
-                    direct_leafs = [child for child in subtree if isinstance(child, str)]
-                    for leaf in direct_leafs:
-                        subtree.remove(leaf)
-                    continue
+            # Remove invalid subtrees by promoting their children
+            for subtree in tree.subtrees(lambda t: t.label not in valid_labels, include_self=False, reverse=True):
+                for child in reversed(subtree):
+                    if isinstance(child, Tree):
+                        subtree.parent.insert(subtree.parent_index, child.detach())
+                subtree.detach()
 
-                children = [child.copy() for child in subtree if isinstance(child, Tree)]
-                parent.remove(subtree, recursive=False)
-                parent.extend(children)
+            # Remove direct leafs from root if it has no type
+            if tree.label not in valid_labels:
+                tree.label = 'ROOT'
+                for child in reversed(tree):
+                    if isinstance(child, str):
+                        tree.remove(child)
 
             if tree:
                 yield tree

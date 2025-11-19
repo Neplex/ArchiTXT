@@ -371,6 +371,7 @@ class Tree(PersistentList['_SubTree | str']):
         self: Self,
         filter_fn: Callable[['Tree'], bool] | None = None,
         include_self: Literal[True] = True,
+        reverse: bool = False,
     ) -> Iterator[Self]: ...
 
     @overload
@@ -378,18 +379,21 @@ class Tree(PersistentList['_SubTree | str']):
         self: "Tree",
         filter_fn: Callable[['Tree'], bool] | None = None,
         include_self: Literal[False] = False,
+        reverse: bool = False,
     ) -> Iterator["_SubTree"]: ...
 
     def subtrees(
         self,
         filter_fn: Callable[["Tree"], bool] | None = None,
         include_self: bool = True,
+        reverse: bool = False,
     ) -> Iterator["Tree"]:
         """
         Get all the subtrees of this tree, optionally restricted to trees matching the filter function.
 
         :param filter_fn: The function to filter all local trees
         :param include_self: Whether to include this tree in the output.
+        :param reverse: Whether to traverse tree from right to left and bottom-up.
 
         >>> t = Tree.fromstring("(S (NP (D the) (N dog)) (VP (V chased) (NP (D the) (N cat))))")
         >>> for s in t.subtrees(lambda t: t.height == 2):
@@ -399,13 +403,26 @@ class Tree(PersistentList['_SubTree | str']):
         (V chased)
         (D the)
         (N cat)
+        >>> for s in t.subtrees(lambda t: t.height == 2, reverse=True):
+        ...     print(s)
+        (N cat)
+        (D the)
+        (V chased)
+        (N dog)
+        (D the)
         """
+        if reverse:
+            for child in reversed(self):
+                if isinstance(child, Tree):
+                    yield from child.subtrees(filter_fn, include_self=True, reverse=reverse)
+
         if include_self and (not filter_fn or filter_fn(self)):
             yield self
 
-        for child in self:
-            if isinstance(child, Tree):
-                yield from child.subtrees(filter_fn)
+        if not reverse:
+            for child in self:
+                if isinstance(child, Tree):
+                    yield from child.subtrees(filter_fn, include_self=True, reverse=reverse)
 
     def productions(self) -> list[Production]:
         """
