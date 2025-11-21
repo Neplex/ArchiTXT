@@ -1,24 +1,28 @@
+from __future__ import annotations
+
 import abc
 import uuid
 import warnings
-from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
-from types import TracebackType
 from typing import TYPE_CHECKING
 
-from aiostream import pipe, stream
+from aiostream import Stream, pipe, stream
 from nltk.tokenize.util import align_tokens
+from typing_extensions import Self
 
 from architxt.nlp.model import AnnotatedSentence, Entity, Relation, TreeEntity, TreeRel
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, AsyncIterator, Collection, Iterable, Iterator, Sequence
+    from types import TracebackType
+
     from architxt.tree import _SubTree
 
 __all__ = ['Parser']
 
 
 class Parser(abc.ABC):
-    def __enter__(self) -> 'Parser':
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(
@@ -59,33 +63,26 @@ class Parser(abc.ABC):
 
         """
 
-        def parse(
-            batch_sentences: list[AnnotatedSentence], *_: list[AnnotatedSentence]
-        ) -> AsyncIterable[tuple[AnnotatedSentence, Tree]]:
+        def parse(batch_sentences: Sequence[AnnotatedSentence]) -> AsyncIterable[tuple[AnnotatedSentence, Tree]]:
             texts = (sentence.txt for sentence in batch_sentences)
             trees = self.raw_parse(texts, language=language, batch_size=len(batch_sentences))
-            return stream.iterate(zip(batch_sentences, trees))
+            return stream.iterate(zip(batch_sentences, trees, strict=True))
 
-        async def process(
-            sent_tree: tuple[AnnotatedSentence, Tree], *_: tuple[AnnotatedSentence, Tree] | None
-        ) -> tuple[AnnotatedSentence, Tree] | None:
+        async def process(sent_tree: tuple[AnnotatedSentence, Tree]) -> tuple[AnnotatedSentence, Tree | None]:
             sentence, tree = sent_tree
-            if enriched_tree := await process_tree(sentence, tree):
-                return sentence, enriched_tree
+            return sentence, await process_tree(sentence, tree)
 
-            return None
-
-        tree_stream = (
+        tree_stream: Stream[tuple[AnnotatedSentence, Tree]] = (
             stream.iterate(sentences)
             | pipe.chunks(batch_size)
             | pipe.flatmap(parse)
             | pipe.amap(process, ordered=False, task_limit=batch_size)
-            | pipe.filter(lambda x: x is not None)
+            | pipe.filter(lambda x: x[1] is not None)
         )
 
         async with tree_stream.stream() as streamer:
-            async for sentence, tree in streamer:
-                yield sentence, tree
+            async for result in streamer:
+                yield result
 
     async def parse(
         self,
@@ -179,7 +176,7 @@ async def process_tree(
     return tree
 
 
-def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: list[Relation]) -> None:
+def enrich_tree(tree: Tree, sentence: str, entities: Collection[Entity], relations: Collection[Relation]) -> None:
     """
     Enriches a syntactic tree (tree) by inserting entities and relationships, and removing unused subtrees.
 
@@ -214,7 +211,7 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
 
     # Insert entities into the tree by length (descending) to handle larger entities first
     computed_spans: set[tuple[int, ...]] = set()
-    entity_trees: list[Tree] = []
+    entity_trees: list[_SubTree] = []
     for entity in sorted(entities, key=lambda entity: len(entity_tokens[entity.id]), reverse=True):
         entity_span = entity_tokens[entity.id]
 
@@ -231,9 +228,6 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
         entity_trees.append(entity_tree)
         computed_spans.add(entity_span)
 
-        if any(et.parent is None for et in entity_trees):
-            raise ValueError()
-
     # Unnest any nested entities in reverse order (to avoid modifying parent indices during the process)
     for entity_tree in sorted(entity_trees, key=lambda x: x.height):
         unnest_ent(entity_tree.parent, entity_tree.parent_index)
@@ -246,7 +240,7 @@ def enrich_tree(tree: Tree, sentence: str, entities: list[Entity], relations: li
         warnings.warn("Relations are not yet supported and will be skipped.")
 
     # Remove subtrees that have no specific entity or relation (i.e., generic subtrees)
-    for subtree in list(tree.subtrees(lambda x: x.height == 2 and not has_type(x))):
+    for subtree in list(tree.subtrees(lambda x: x.height == 2 and not has_type(x), include_self=False)):
         subtree.parent.remove(subtree)
 
 
@@ -269,6 +263,10 @@ def fix_coord(tree: Tree, pos: int) -> bool:
     """
     subtree = tree[pos]
     coord: _SubTree | None = None
+
+    # Check if the specified position is valid and corresponds to a subtree
+    if not isinstance(subtree, Tree):
+        return False
 
     # Identify the coordination subtree
     for child in subtree:
@@ -409,7 +407,7 @@ def fix_all_coord(tree: Tree) -> None:
                 break
 
 
-def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
+def ins_ent(tree: Tree, tree_ent: TreeEntity) -> _SubTree:
     """
     Insert a tree entity into the appropriate position within a parented tree.
 
@@ -523,6 +521,10 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
         parent_position = child_position[:-1]
         subtree = tree[parent_position]
 
+        if not isinstance(subtree, Tree):
+            msg = "The specified child position does not correspond to a subtree."
+            raise TypeError(msg)
+
         if not has_type(subtree, NodeType.ENT):
             # The entity has no conflict
             children.append(tree[child_position])
@@ -552,9 +554,8 @@ def ins_ent(tree: Tree, tree_ent: TreeEntity) -> Tree:
     entity_tree = tree[anchor_pos][entity_index]
 
     # Remove all empty subtree left in place
-    for subtree in list(tree.subtrees(lambda st: len(st) == 0)):
-        if subtree.parent:
-            subtree.parent.remove(subtree)
+    for subtree in list(tree.subtrees(lambda st: len(st) == 0, include_self=False)):
+        subtree.parent.remove(subtree)
 
     return entity_tree
 
@@ -578,15 +579,17 @@ def unnest_ent(tree: Tree, pos: int) -> None:
     >>> print(t)
     (S (REL (ENT::person Alice Bob Charlie) (nested (ENT::person Bob) (ENT::person Charlie))))
     """
+    subtree = tree[pos]
+
     # Check if the specified position corresponds to an 'ENT' node
-    if not has_type(tree[pos], NodeType.ENT):
+    if not has_type(subtree, NodeType.ENT):
         return
 
     # Create the main entity tree and collect nested entities
-    entity_tree = Tree(tree[pos].label, children=tree[pos].leaves())
+    entity_tree = Tree(subtree.label, children=subtree.leaves())
 
     # Collect nested entities and ensure they are only from the children of the current entity
-    nested_entities = [child.copy() for child in tree[pos] if has_type(child, NodeType.ENT)]
+    nested_entities = [child.copy() for child in subtree if has_type(child, NodeType.ENT)]
     nested_tree = Tree('nested', children=nested_entities)
 
     # Construct a new relationship tree with the entity and its nested entities

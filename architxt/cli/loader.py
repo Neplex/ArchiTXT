@@ -167,7 +167,7 @@ def load_corpus(
         mlflow.start_run(description='corpus_processing')
 
     parser = CoreNLPParser(corenlp_url=corenlp_url)
-    resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else None
+    _resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else None
 
     with ZODBTreeBucket(storage_path=output) as bucket:
         anyio.run(
@@ -176,7 +176,7 @@ def load_corpus(
                 corpus_path,
                 language,
                 parser=parser,
-                resolver=resolver,
+                resolver=_resolver,
                 cache=cache,
                 entities_filter=ENTITIES_FILTER,
                 relations_filter=RELATIONS_FILTER,

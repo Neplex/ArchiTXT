@@ -1,14 +1,20 @@
-from collections.abc import Iterable, Iterator
-from types import TracebackType
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import benepar  # noqa: F401
 import spacy
 from spacy import Language
-from spacy.tokens import Doc
 
 from architxt.tree import Tree
 
 from . import Parser
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+    from types import TracebackType
+
+    from spacy.tokens import Doc
 
 __all__ = ['BeneparParser']
 

@@ -28,7 +28,7 @@ def create_test_trees(count: int) -> list[Tree]:
 async def async_tree_generator(trees: list[Tree]) -> AsyncIterable[Tree]:
     """Generate trees asynchronously."""
     for tree in trees:
-        await anyio.sleep(0)
+        await anyio.lowlevel.checkpoint()
         yield tree
 
 

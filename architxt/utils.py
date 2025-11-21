@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import sys
-from collections.abc import Generator, Iterable, Sequence
 from random import randrange
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import more_itertools
 import psutil
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Sequence
 
 __all__ = ['BATCH_SIZE', 'ExceptionGroup', 'is_memory_low', 'windowed_shuffle']
 

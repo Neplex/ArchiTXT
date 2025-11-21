@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from typing import TYPE_CHECKING
-
-import neo4j
 
 from architxt.schema import Schema
 from architxt.tree import Forest, NodeType, Tree, has_type
 
 if TYPE_CHECKING:
+    import neo4j
+
     from architxt.tree import _TypedTree
 
 __all__ = ['export_cypher']
@@ -68,7 +70,7 @@ def export_tree(
 
 
 def export_relation(
-    tree: '_TypedTree',
+    tree: _TypedTree,
     session: neo4j.Session,
 ) -> None:
     """
@@ -92,7 +94,7 @@ def export_relation(
 
 
 def export_relation_edge_with_data(
-    edge_data: dict['_TypedTree', set['_TypedTree']],
+    edge_data: dict[_TypedTree, set[_TypedTree]],
     session: neo4j.Session,
 ) -> None:
     """
@@ -111,7 +113,7 @@ def export_relation_edge_with_data(
 
 
 def export_group(
-    group: '_TypedTree',
+    group: _TypedTree,
     session: neo4j.Session,
 ) -> None:
     """

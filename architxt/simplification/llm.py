@@ -1,19 +1,19 @@
+from __future__ import annotations
+
 import itertools
 import json
 import re
 import unicodedata
 import warnings
 from collections import Counter
-from collections.abc import AsyncGenerator, Collection, Iterable, Sequence
 from difflib import get_close_matches
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import json_repair
 import mlflow
 import more_itertools
 from aiostream import Stream, pipe, stream
 from json_repair import JSONReturnType
-from langchain_core.language_models import BaseChatModel, BaseLanguageModel
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import NumberedListOutputParser
 from langchain_core.prompts import (
@@ -38,6 +38,12 @@ from architxt.schema import Schema
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import windowed_shuffle
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Collection, Iterable, Sequence
+    from pathlib import Path
+
+    from langchain_core.language_models import BaseChatModel, BaseLanguageModel
 
 __all__ = ['estimate_tokens', 'llm_rewrite']
 
@@ -145,15 +151,12 @@ def _sanitize(tree: Tree, oid: TreeOID) -> Tree:
     children = [tree] if has_type(tree) else [child.detach() for child in tree]
     tree = Tree('ROOT', children, oid=oid)
 
-    # ensure groups are valid
-    for group in tree.subtrees(lambda x: has_type(x, NodeType.GROUP)):
-        if not all(has_type(child, NodeType.ENT) for child in group):
-            group.label = f'UNDEF_{group.oid.hex}'
-
-    # ensure relations are valid
-    for rel in tree.subtrees(lambda x: has_type(x, NodeType.REL)):
-        if len(rel) != 2 or not all(has_type(child, NodeType.GROUP) for child in rel):
-            rel.label = f'UNDEF_{rel.oid.hex}'
+    # ensure groups and relations are valid
+    for st in tree.subtrees(reverse=True):
+        if (has_type(st, NodeType.GROUP) and not all(has_type(c, NodeType.ENT) for c in st)) or (
+            has_type(st, NodeType.REL) and (len(st) != 2 or not all(has_type(c, NodeType.GROUP) for c in st))
+        ):
+            st.label = f'UNDEF_{st.oid.hex}'
 
     return tree
 
@@ -167,9 +170,9 @@ def _fix_vocab(tree: Tree, vocab: Collection[str], vocab_similarity: float = 0.6
     :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.
     :return: An updated tree with fixed vocabulary.
     """
-    for subtree in tree.subtrees(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL})):
+    for subtree in tree.subtrees():
         if (
-            subtree.label
+            has_type(subtree, {NodeType.GROUP, NodeType.REL})
             and (label := _normalize(subtree.label.name))
             and (matches := get_close_matches(label, vocab, n=1, cutoff=vocab_similarity))
         ):
@@ -209,10 +212,12 @@ def _parse_tree_output(
         raw_output = raw_output.strip()
         json_data = json_repair.loads(raw_output, skip_json_loads=True, logging=debug)
 
-        if debug:
+        if isinstance(json_data, tuple):
             json_data, fixes = json_data
             if fixes and (span := mlflow.get_current_active_span()):
-                event = SpanEvent(name='JSON fixes', attributes=fixes)
+                event = SpanEvent(
+                    name='JSON fixes', attributes={'json_fixes': [fix['text'] for fix in fixes if 'text' in fix]}
+                )
                 span.add_event(event)
 
         tree = _parse_tree(json_data)
@@ -437,10 +442,13 @@ def extract_vocab(forest: Forest, min_support: int, min_similarity: float, close
     :param close_match: Number of close matches to consider when merging labels.
     :return: Set of canonical labels.
     """
-    vocab_counter = Counter()
+    vocab_counter: Counter[str] = Counter()
 
     for tree in forest:
-        for subtree in tree.subtrees(lambda x: has_type(x, {NodeType.GROUP, NodeType.REL})):
+        for subtree in tree.subtrees():
+            if not has_type(subtree, {NodeType.GROUP, NodeType.REL}):
+                continue
+
             if not subtree.label or not (label := _normalize(subtree.label.name)):
                 continue
 
@@ -535,12 +543,12 @@ async def llm_rewrite(
 
             vocab = extract_vocab(forest, min_support, vocab_similarity)
 
-            simplification = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
+            shuffled_forest = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
             simplification = llm_simplify(
                 llm,
                 max_tokens,
                 prompt,
-                simplification,
+                shuffled_forest,
                 vocab=vocab,
                 vocab_similarity=vocab_similarity,
                 task_limit=task_limit,

@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from os.path import commonprefix
+from typing import TYPE_CHECKING
 
-from architxt.tree import TreePosition
+if TYPE_CHECKING:
+    from architxt.tree import TreePosition
 
 __all__ = ['AnnotatedSentence', 'Entity', 'Relation', 'TreeEntity', 'TreeRel']
 
@@ -28,7 +32,7 @@ class Entity:
     def __len__(self) -> int:
         return self.end - self.start
 
-    def __lt__(self, other: 'Entity') -> bool:
+    def __lt__(self, other: Entity) -> bool:
         return self.start < other.start
 
 

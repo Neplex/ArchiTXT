@@ -196,10 +196,12 @@ select = [
     "E9",
     "A", # builtins
     "ARG", # Unused arguments
+    "ASYNC", # Async/await checks
     "C4", # Comprehensions
     "C90", # mccabe complexity
     "D", # Documentation check
     "F", # Flake8 rules
+    "FA", # Future annotations
     "N", # pep8 naming
     "I", # isort rules for import ordering
     "ICN", # Import conventions
