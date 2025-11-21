@@ -36,7 +36,6 @@ extensions = [
     'sphinx_toolbox.github',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.autodoc.typehints',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
@@ -47,6 +46,7 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinxcontrib.typer',
     'sphinxcontrib.mermaid',
+    'sphinx_autodoc_typehints',
 ]
 
 templates_path = ['_templates']
@@ -103,6 +103,11 @@ autodoc_default_options = {
 
 autodoc_preserve_defaults = True
 autodoc_inherit_docstrings = True
+autodoc_type_aliases = {
+    "_SubTree": "architxt.tree.Tree",
+    "_TypedTree": "architxt.tree.Tree",
+    "_TypedSubTree": "architxt.tree.Tree",
+}
 
 # -- Options for autosummary extension ---------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
