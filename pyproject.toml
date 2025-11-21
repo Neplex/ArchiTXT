@@ -98,6 +98,7 @@ docs = [
     "sphinx-design",
     "sphinx-sitemap",
     "sphinx-copybutton",
+    "sphinx-autodoc-typehints",
     "sphinxcontrib-typer",
     "sphinxcontrib-mermaid",
     "myst-nb>=1.2.0",
