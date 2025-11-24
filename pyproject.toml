@@ -117,7 +117,7 @@ dev = [
     "testcontainers>=4.10.0,<5.0.0",
     # linters/analysis
     "mypy==1.17.1",
-    "ruff==0.13.0",
+    "ruff==0.14.6",
     "deptry>=0.23.0,<1.0.0",
     "vulture==2.14",
     # typing stubs
