@@ -1,5 +1,7 @@
-from collections.abc import Iterable
+from __future__ import annotations
+
 from contextlib import nullcontext
+from typing import TYPE_CHECKING
 
 import more_itertools
 from tqdm.auto import tqdm
@@ -7,6 +9,9 @@ from tqdm.auto import tqdm
 from architxt.bucket import TreeBucket
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
 from architxt.utils import BATCH_SIZE
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 __all__ = ['simple_rewrite']
 
@@ -52,7 +57,7 @@ def simple_rewrite(forest: Iterable[Tree], *, commit: bool | int = BATCH_SIZE) -
     """
     group_ids: dict[tuple[str, ...], str] = {}
 
-    if commit and isinstance(forest, TreeBucket) and isinstance(commit, int):
+    if commit and isinstance(forest, TreeBucket) and not isinstance(commit, bool):
         for chunk in more_itertools.ichunked(tqdm(forest, desc="Rewriting trees"), commit):
             with forest.transaction():
                 for tree in chunk:

@@ -1,9 +1,15 @@
-from collections.abc import Generator
+from __future__ import annotations
 
-from neo4j import Record, Session
+from typing import TYPE_CHECKING
+
 from neo4j.graph import Node, Relationship
 
 from architxt.tree import NodeLabel, NodeType, Tree
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from neo4j import Record, Session
 
 __all__ = ['read_cypher']
 

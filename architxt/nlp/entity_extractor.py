@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, AsyncIterator, Iterable
 from typing import TYPE_CHECKING
 
 from aiostream import pipe, stream
@@ -7,6 +8,8 @@ from aiostream import pipe, stream
 from architxt.nlp.model import AnnotatedSentence, Entity
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, AsyncIterator, Iterable
+
     from flair.data import Sentence
     from spacy.tokens import Doc
 
@@ -54,7 +57,7 @@ class SpacyEntityExtractor(EntityExtractor):
         self.nlp = spacy.load(model_name, disable=SPACY_DISABLED_PIPELINES)
 
     @staticmethod
-    def _doc_to_annotated(doc: 'Doc') -> AnnotatedSentence:
+    def _doc_to_annotated(doc: Doc) -> AnnotatedSentence:
         entities = [
             Entity(
                 name=ent.label_,
@@ -96,7 +99,7 @@ class FlairEntityExtractor(EntityExtractor):
         self.tagger = SequenceTagger.load(model_name)
 
     @staticmethod
-    def _sentence_to_annotated(sentence: 'Sentence') -> AnnotatedSentence:
+    def _sentence_to_annotated(sentence: Sentence) -> AnnotatedSentence:
         entities = [
             Entity(
                 name=span.tag,

@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import uuid
 import warnings
-from collections.abc import Generator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Connection, ForeignKey, MetaData, Row, Table, exists, func, select
 from tqdm.auto import tqdm
 
 from architxt.tree import NodeLabel, NodeType, Tree
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 __all__ = ['read_sql']
 

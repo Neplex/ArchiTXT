@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import re
 import uuid
@@ -37,6 +39,7 @@ __all__ = [
     'TreeOID',
     'TreePosition',
     'has_type',
+    'is_sub_tree',
 ]
 
 if TYPE_CHECKING:
@@ -61,7 +64,7 @@ class NodeLabel(str):
 
     __slots__ = ('name', 'type')
 
-    def __new__(cls, label_type: NodeType, label: str = '') -> 'NodeLabel':
+    def __new__(cls, label_type: NodeType, label: str = '') -> Self:
         string_value = f'{label_type.value}::{label}' if label else label_type.value
         return super().__new__(cls, string_value)
 
@@ -69,11 +72,11 @@ class NodeLabel(str):
         self.name = label
         self.type = label_type
 
-    def __reduce__(self) -> tuple[Callable[..., 'NodeLabel'], tuple[Any, ...]]:
+    def __reduce__(self) -> tuple[Callable[..., Self], tuple[Any, ...]]:
         return NodeLabel, (self.type, self.name)
 
     @classmethod
-    def fromstring(cls, label: 'NodeLabel | str') -> 'NodeLabel | str':
+    def fromstring(cls, label: Self | str) -> Self | str:
         if isinstance(label, NodeLabel):
             return label
 
@@ -95,7 +98,7 @@ class Tree(PersistentList['_SubTree | str']):
     _metadata: MutableMapping[str, Any]
     _oid: TreeOID
 
-    _v_parent: weakref.ReferenceType['Tree'] | None
+    _v_parent: weakref.ReferenceType[Tree] | None
     _v_cache: MutableMapping[Hashable, Any]
 
     __slots__ = ('_label', '_metadata', '_oid', '_v_cache', '_v_parent')
@@ -103,7 +106,7 @@ class Tree(PersistentList['_SubTree | str']):
     def __init__(
         self,
         label: NodeLabel | str,
-        children: Iterable['Tree | str'] | None = None,
+        children: Iterable[Tree | str] | None = None,
         metadata: MutableMapping[str, Any] | None = None,
         oid: TreeOID | None = None,
     ) -> None:
@@ -120,7 +123,7 @@ class Tree(PersistentList['_SubTree | str']):
             if isinstance(child, Tree):
                 child._v_parent = weakref.ref(self)
 
-    def _check_children(self, children: 'Iterable[Tree | str]') -> None:
+    def _check_children(self, children: Iterable[Tree | str]) -> None:
         errors = []
 
         for index, child in enumerate(children):
@@ -175,11 +178,11 @@ class Tree(PersistentList['_SubTree | str']):
             if isinstance(child, Tree):
                 child._v_parent = weakref.ref(self)
 
-    def __copy__(self) -> 'Tree':
+    def __copy__(self) -> Tree:
         """Support for the copy.copy() interface."""
         return self.copy()
 
-    def __deepcopy__(self, _memo: dict[int, Any]) -> 'Tree':
+    def __deepcopy__(self, _memo: dict[int, Any]) -> Tree:
         """Support for the copy.deepcopy() interface."""
         return self.copy()
 
@@ -198,7 +201,7 @@ class Tree(PersistentList['_SubTree | str']):
         return self._metadata
 
     @property
-    def parent(self) -> 'Tree | None':
+    def parent(self) -> Tree | None:
         """
         The parent of this tree, or None if it has no parent.
 
@@ -246,12 +249,12 @@ class Tree(PersistentList['_SubTree | str']):
 
     @label.setter
     def label(self, label: NodeLabel | str) -> None:
-        self._label = label
+        self._label = NodeLabel.fromstring(label)
         self._invalidate_cache()
 
     @property
     @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='root'))
-    def root(self) -> 'Tree':
+    def root(self) -> Tree:
         """
         The root of this tree.
 
@@ -369,25 +372,25 @@ class Tree(PersistentList['_SubTree | str']):
     @overload
     def subtrees(
         self: Self,
-        filter_fn: Callable[['Tree'], bool] | None = None,
+        filter_fn: Callable[[Tree], bool] | None = None,
         include_self: Literal[True] = True,
         reverse: bool = False,
     ) -> Iterator[Self]: ...
 
     @overload
     def subtrees(
-        self: "Tree",
-        filter_fn: Callable[['Tree'], bool] | None = None,
+        self: Tree,
+        filter_fn: Callable[[Tree], bool] | None = None,
         include_self: Literal[False] = False,
         reverse: bool = False,
-    ) -> Iterator["_SubTree"]: ...
+    ) -> Iterator[_SubTree]: ...
 
     def subtrees(
         self,
-        filter_fn: Callable[["Tree"], bool] | None = None,
+        filter_fn: Callable[[Tree], bool] | None = None,
         include_self: bool = True,
         reverse: bool = False,
-    ) -> Iterator["Tree"]:
+    ) -> Iterator[Tree]:
         """
         Get all the subtrees of this tree, optionally restricted to trees matching the filter function.
 
@@ -556,7 +559,7 @@ class Tree(PersistentList['_SubTree | str']):
         return pd.concat(dataframes, ignore_index=True).drop_duplicates()
 
     @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entities'))
-    def entities(self) -> tuple['_TypedTree', ...]:
+    def entities(self) -> tuple[_TypedTree, ...]:
         """
         Get a tuple of subtrees that are entities.
 
@@ -641,7 +644,7 @@ class Tree(PersistentList['_SubTree | str']):
         """
         return any(not has_type(subtree) for subtree in self)
 
-    def merge(self, tree: 'Tree') -> 'Tree':
+    def merge(self, tree: Tree) -> Tree:
         """
         Merge two trees into one.
 
@@ -717,15 +720,15 @@ class Tree(PersistentList['_SubTree | str']):
                     break
 
     @overload
-    def __getitem__(self, pos: tuple[()]) -> 'Self': ...
+    def __getitem__(self, pos: tuple[()]) -> Self: ...
 
     @overload
-    def __getitem__(self, pos: TreePosition | int) -> '_SubTree | str': ...
+    def __getitem__(self, pos: TreePosition | int) -> _SubTree | str: ...
 
     @overload
-    def __getitem__(self, pos: slice) -> 'list[_SubTree | str]': ...
+    def __getitem__(self, pos: slice) -> list[_SubTree | str]: ...
 
-    def __getitem__(self, pos: TreePosition | int | slice) -> 'Tree | str | list[_SubTree | str]':
+    def __getitem__(self, pos: TreePosition | int | slice) -> Tree | str | list[_SubTree | str]:
         """
         Retrieve a child or subtree using an index, a slice, or a tree position.
 
@@ -767,12 +770,12 @@ class Tree(PersistentList['_SubTree | str']):
         return node
 
     @overload
-    def __setitem__(self, pos: TreePosition | int, subtree: 'Tree | str') -> None: ...
+    def __setitem__(self, pos: TreePosition | int, subtree: Tree | str) -> None: ...
 
     @overload
-    def __setitem__(self, pos: slice, subtree: 'Iterable[Tree | str]') -> None: ...
+    def __setitem__(self, pos: slice, subtree: Iterable[Tree | str]) -> None: ...
 
-    def __setitem__(self, pos: TreePosition | int | slice, subtree: 'Tree | str | Iterable[Tree | str]') -> None:  # noqa: C901
+    def __setitem__(self, pos: TreePosition | int | slice, subtree: Tree | str | Iterable[Tree | str]) -> None:  # noqa: C901
         # ptree[start:stop] = subtree
         if isinstance(pos, slice):
             start, stop, step = slice_bounds(self, pos, allow_step=True)
@@ -884,7 +887,7 @@ class Tree(PersistentList['_SubTree | str']):
         super().clear()
         self._invalidate_cache()
 
-    def append(self, child: 'Tree | str') -> None:
+    def append(self, child: Tree | str) -> None:
         if isinstance(child, Tree):
             self._check_children([child])
             child._v_parent = weakref.ref(self)
@@ -892,7 +895,11 @@ class Tree(PersistentList['_SubTree | str']):
         super().append(child)
         self._invalidate_cache()
 
-    def extend(self, children: 'Iterable[Tree | str]') -> None:
+    def extend(self, children: Iterable[Tree | str]) -> None:
+        # Convert to list only if it's a one-shot iterable (like a generator)
+        if not isinstance(children, Collection):
+            children = list(children)
+
         self._check_children(children)
         for child in children:
             if isinstance(child, Tree):
@@ -901,7 +908,7 @@ class Tree(PersistentList['_SubTree | str']):
         super().extend(children)
         self._invalidate_cache()
 
-    def remove(self, child: '_SubTree | str', *, recursive: bool = True) -> None:
+    def remove(self, child: _SubTree | str, *, recursive: bool = True) -> None:
         super().remove(child)
 
         if isinstance(child, Tree):
@@ -912,7 +919,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         self._invalidate_cache()
 
-    def insert(self, pos: int, child: 'Tree | str') -> None:
+    def insert(self, pos: int, child: Tree | str) -> None:
         # Set the child's parent and update our child list.
         if isinstance(child, Tree):
             self._check_children([child])
@@ -921,7 +928,7 @@ class Tree(PersistentList['_SubTree | str']):
         super().insert(pos, child)
         self._invalidate_cache()
 
-    def pop(self, pos: int = -1, *, recursive: bool = True) -> 'Tree | str':
+    def pop(self, pos: int = -1, *, recursive: bool = True) -> Tree | str:
         """
         Delete an element from the tree at the specified position `pos`.
 
@@ -957,7 +964,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         return child
 
-    def detach(self) -> 'Tree':
+    def detach(self) -> Tree:
         """
         Detach a subtree from its parent.
 
@@ -975,7 +982,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         return self
 
-    def copy(self) -> 'Tree':
+    def copy(self) -> Tree:
         """
         Copy an entire tree.
 
@@ -989,7 +996,7 @@ class Tree(PersistentList['_SubTree | str']):
         )
 
     @classmethod
-    def fromstring(cls, text: str) -> 'Tree':
+    def fromstring(cls, text: str) -> Tree:
         """
         Read a tree from a LISP-style notation.
 
@@ -1075,7 +1082,7 @@ class Tree(PersistentList['_SubTree | str']):
         raise ValueError(msg)
 
     def pretty_print(
-        self, highlight: Sequence['Tree | int'] = (), stream: TextIO | None = None, maxwidth: int = 32
+        self, highlight: Sequence[Tree | int] = (), stream: TextIO | None = None, maxwidth: int = 32
     ) -> None:
         """
         Pretty-print this tree as ASCII or Unicode art.
@@ -1099,7 +1106,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         print(TreePrettyPrinter(nltk_tree, highlight=highlight).text(unicodelines=True, maxwidth=maxwidth), file=stream)
 
-    def to_svg(self, highlight: Sequence['Tree | int'] = ()) -> str:
+    def to_svg(self, highlight: Sequence[Tree | int] = ()) -> str:
         """
         Pretty-print this tree as SVG.
 
@@ -1158,7 +1165,7 @@ class Tree(PersistentList['_SubTree | str']):
         }
 
     @classmethod
-    def from_json(cls, json_data: dict[str, Any]) -> 'Tree':
+    def from_json(cls, json_data: dict[str, Any]) -> Tree:
         """
         Construct a Tree from a JSON-like mapping containing keys 'oid', 'type', 'name', 'metadata', and 'children'.
 
@@ -1203,12 +1210,24 @@ if TYPE_CHECKING:
         parent_index: int
 
     class _TypedTree(Tree):
-        label: NodeLabel
+        @property
+        def label(self) -> NodeLabel: ...
+
+        @label.setter
+        def label(self, value: NodeLabel | str) -> None: ...
 
     class _TypedSubTree(_SubTree, _TypedTree): ...
 
 
-def is_sub_tree(tree: Tree) -> TypeGuard['_SubTree']:
+@overload
+def is_sub_tree(t: _TypedTree) -> TypeGuard[_TypedSubTree]: ...
+
+
+@overload
+def is_sub_tree(t: Tree) -> TypeGuard[_SubTree]: ...
+
+
+def is_sub_tree(tree: Tree) -> bool:
     """
     Determine whether the given Tree instance is a subtree.
 
@@ -1229,13 +1248,11 @@ def is_sub_tree(tree: Tree) -> TypeGuard['_SubTree']:
 
 
 @overload
-def has_type(
-    t: '_SubTree', types: set[NodeType | str] | NodeType | str | None = None
-) -> TypeGuard['_TypedSubTree']: ...
+def has_type(t: _SubTree, types: set[NodeType | str] | NodeType | str | None = None) -> TypeGuard[_TypedSubTree]: ...
 
 
 @overload
-def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> TypeGuard['_TypedTree']: ...
+def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> TypeGuard[_TypedTree]: ...
 
 
 def has_type(t: Any, types: set[NodeType | str] | NodeType | str | None = None) -> bool:

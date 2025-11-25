@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import dataclasses
 import math
 import warnings
 from collections import Counter, defaultdict
-from collections.abc import Generator, Iterable
 from enum import Enum, auto
 from functools import cached_property
 from itertools import combinations
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream
@@ -18,6 +20,9 @@ from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
 from architxt.similarity import jaccard
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
 
 __all__ = ['Group', 'Relation', 'RelationOrientation', 'Schema']
 
@@ -92,7 +97,7 @@ class Schema(CFG):
         groups: set[Group] | None = None,
         relations: set[Relation] | None = None,
         collections: bool = True,
-    ) -> 'Schema':
+    ) -> Schema:
         """
         Create a Schema from a description of groups, relations, and collections.
 
@@ -128,7 +133,7 @@ class Schema(CFG):
         return cls(productions, groups or set(), relations or set())
 
     @classmethod
-    def from_forest(cls, forest: Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True) -> 'Schema':  # noqa: C901
+    def from_forest(cls, forest: Iterable[Tree], *, keep_unlabelled: bool = True, merge_lhs: bool = True) -> Schema:  # noqa: C901
         """
         Create a Schema from a given forest of trees.
 
@@ -377,7 +382,7 @@ class Schema(CFG):
         :param forest: The input forest to extract datasets from.
         :return: A mapping from group names to datasets.
         """
-        datasets = defaultdict(pd.DataFrame)
+        datasets: defaultdict[str, pd.DataFrame] = defaultdict(pd.DataFrame)
         groups_names = {group.name for group in self.groups}
 
         for tree in tqdm(forest, desc='Extract groups datasets', leave=False):

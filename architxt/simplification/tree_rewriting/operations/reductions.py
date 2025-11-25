@@ -1,10 +1,17 @@
-from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from __future__ import annotations
 
-from architxt.similarity import TREE_CLUSTER
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
 from architxt.tree import Tree, has_type
 
 from .operation import Operation
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from architxt.similarity import TREE_CLUSTER
+    from architxt.tree import _SubTree
 
 __all__ = [
     'ReduceBottomOperation',
@@ -20,12 +27,11 @@ class ReduceOperation(Operation, ABC):
     """
 
     @abstractmethod
-    def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]: ...
+    def subtrees_to_reduce(self, tree: Tree) -> Iterable[_SubTree]: ...
 
     def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
         reduced = False
 
-        # Iterate through subtrees in reverse order to ensure bottom-up processing
         for subtree in self.subtrees_to_reduce(tree):
             parent = subtree.parent
             position = subtree.position
@@ -63,20 +69,21 @@ class ReduceBottomOperation(ReduceOperation):
     the tree structure at this level.
     """
 
-    def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]:
-        yield from tree.subtrees(lambda x: x.parent and x.has_entity_child() and not has_type(x))
+    def subtrees_to_reduce(self, tree: Tree) -> Iterable[_SubTree]:
+        return [
+            subtree
+            for subtree in tree.subtrees(include_self=False)
+            if subtree.has_entity_child() and not has_type(subtree)
+        ]
 
 
 class ReduceTopOperation(ReduceOperation):
     """
     Reduces the unlabelled nodes of a tree at the top-level.
 
-    This function identifies subtrees that do not have a specific type but contain children of type `ENT`.
-    It then repositions these subtrees' children directly under their parent nodes, effectively "flattening"
-    the tree structure at this level.
+    It identifies subtrees that do not have a specific type and repositions these subtrees' children
+    directly under their parent nodes, effectively "flattening" the tree structure at this level.
     """
 
-    def subtrees_to_reduce(self, tree: Tree) -> Iterable[Tree]:
-        for subtree in list(tree):
-            if isinstance(subtree, Tree) and not has_type(subtree):
-                yield subtree
+    def subtrees_to_reduce(self, tree: Tree) -> Iterable[_SubTree]:
+        return [subtree for subtree in tree if isinstance(subtree, Tree) and not has_type(subtree)]

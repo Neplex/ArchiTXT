@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import functools
 from collections import Counter
-from collections.abc import Collection, Hashable
 from concurrent.futures import ProcessPoolExecutor
 from itertools import combinations
 from operator import attrgetter
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 from cachetools import cachedmethod
@@ -14,6 +15,9 @@ from tqdm.auto import tqdm
 from .schema import Schema
 from .similarity import DEFAULT_METRIC, METRIC_FUNC, entity_labels, jaccard
 from .tree import Forest, NodeType, Tree, has_type
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Hashable, Iterable
 
 __all__ = ['Metrics', 'confidence', 'dependency_score', 'redundancy_score']
 
@@ -266,7 +270,7 @@ class Metrics:
         redundancy_fn = functools.partial(redundancy_score, tau=tau)
 
         with ProcessPoolExecutor() as executor:
-            results = executor.map(redundancy_fn, self._datasets.values())
+            results: Iterable[float] = executor.map(redundancy_fn, self._datasets.values())
             results = tqdm(results, total=len(self._datasets), leave=False, desc=f'Redundancy ({tau})')
             redundancy = pd.Series(results).median()
 
