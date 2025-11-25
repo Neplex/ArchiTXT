@@ -36,7 +36,7 @@ from architxt.forest import export_forest_to_jsonl
 from architxt.metrics import Metrics
 from architxt.schema import Schema
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
-from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
+from architxt.tree import Forest, MutableForest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import windowed_shuffle
 
 __all__ = ['estimate_tokens', 'llm_rewrite']
@@ -473,8 +473,8 @@ def _get_mlflow_schema(forest: Forest) -> dict:
     }
 
 
-async def llm_rewrite(
-    forest: Forest,
+async def llm_rewrite(  # noqa: C901
+    forest: MutableForest,
     llm: BaseChatModel,
     max_tokens: int,
     tau: float = 0.7,
@@ -535,12 +535,12 @@ async def llm_rewrite(
 
             vocab = extract_vocab(forest, min_support, vocab_similarity)
 
-            simplification = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
+            shuffled_forest = tqdm(windowed_shuffle(forest), leave=False, total=len(forest), desc='simplifying')
             simplification = llm_simplify(
                 llm,
                 max_tokens,
                 prompt,
-                simplification,
+                shuffled_forest,
                 vocab=vocab,
                 vocab_similarity=vocab_similarity,
                 task_limit=task_limit,
@@ -560,7 +560,8 @@ async def llm_rewrite(
             if isinstance(forest, TreeBucket):
                 await forest.async_update(_simplification_wrap())
             else:
-                forest[:] = [tree async for tree in _simplification_wrap()]
+                async for tree in _simplification_wrap():
+                    forest.add(tree)
 
             mlflow_schema = _get_mlflow_schema(forest)
             iteration_span.set_outputs(mlflow_schema)
