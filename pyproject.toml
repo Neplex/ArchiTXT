@@ -113,6 +113,7 @@ dev = [
     "devtools>=0.12.0,<1.0.0",
     "py-spy>=0.4.0,<0.5.0",
     "pre-commit>=4.0.1,<5.0.0",
+    "nbstripout>=0.8.0,<0.9.0",
     "datasets",
     "testcontainers>=4.10.0,<5.0.0",
     # linters/analysis
