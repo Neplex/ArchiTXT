@@ -13,33 +13,24 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - uses: rokibhasansagar/slimhub_actions@v25.42.5
+        with:
+          retain: "vcs,pipx,toolcache_python,container_tools,docker_buildkit"
 
       - id: setup_python
         name: Install Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-
-      - name: Cache Packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: cache-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: cache-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-
+          cache: 'pip'
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v4
 
       - name: Install Dependencies
         run: poetry install --all-extras --with=docs
-
-      - name: Cache Jupyter/MyST notebook execution cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/architxt
-          key: doc-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('docs/**/*.ipynb', '**/poetry.lock') }}
-          restore-keys: doc-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-
 
       - name: Build Documentation
         run: poetry run sphinx-build -M html docs _build -v
