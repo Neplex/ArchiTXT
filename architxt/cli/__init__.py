@@ -88,7 +88,7 @@ def simplify(
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
     with run_ctx, ZODBTreeBucket(storage_path=output) as forest:
-        forest.update(load_forest(files))
+        forest.update(load_forest(files), commit=True)
 
         console.print(
             f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]'
@@ -213,7 +213,7 @@ def simplify_llm(
         return
 
     with run_ctx, ZODBTreeBucket(storage_path=output) as forest:
-        forest.update(load_forest(files))
+        forest.update(load_forest(files), commit=True)
 
         console.print(f'[blue]Rewriting {len(forest)} trees with model={model}[/]')
         result_metrics = anyio.run(
@@ -361,9 +361,12 @@ def instance_generator(
     )
     show_schema(schema)
 
-    with ZODBTreeBucket(storage_path=output) as forest:
-        with console.status("[cyan]Generating synthetic instances..."):
-            forest.update(gen_instance(schema, size=sample, generate_collections=False))
+    with (
+        ZODBTreeBucket(storage_path=output) as forest,
+        console.status("[cyan]Generating synthetic instances..."),
+    ):
+        trees = gen_instance(schema, size=sample, generate_collections=False)
+        forest.update(trees, commit=True)
 
         console.print(f'[green]Generated {len(forest)} synthetic instances.[/]')
 

@@ -5,12 +5,11 @@ from random import randrange
 from typing import TYPE_CHECKING, TypeVar
 
 import more_itertools
-import psutil
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
 
-__all__ = ['BATCH_SIZE', 'ExceptionGroup', 'is_memory_low', 'windowed_shuffle']
+__all__ = ['BATCH_SIZE', 'ExceptionGroup', 'get_commit_batch_size', 'windowed_shuffle']
 
 BATCH_SIZE = 1024
 T = TypeVar('T')
@@ -27,10 +26,27 @@ else:
     from builtins import ExceptionGroup
 
 
-def is_memory_low(threshold_mb: int) -> bool:
-    """Check if available system memory is below the specified threshold in MB."""
-    available_memory = psutil.virtual_memory().available / (1024 * 1024)  # in MB
-    return available_memory < threshold_mb
+
+
+def get_commit_batch_size(commit: bool | int) -> int:
+    """
+    Derive the batch size for commit operations.
+
+    :param commit: Commit mode.
+        - If True or False, returns the default BATCH_SIZE.
+        - If a positive integer, returns that value as the batch size.
+    :return: The batch size to use for chunked operations.
+    :raises ValueError: If commit is a non-positive integer.
+    """
+    if isinstance(commit, bool):
+        batch_size = BATCH_SIZE
+    elif commit > 0:
+        batch_size = commit
+    else:
+        msg = 'Commit should be a boolean or a positive integer'
+        raise ValueError(msg)
+
+    return batch_size
 
 
 def windowed_shuffle(iterable: Iterable[T], window_size: int = 10) -> Generator[T, None, None]:

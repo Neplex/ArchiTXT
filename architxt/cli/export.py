@@ -22,8 +22,15 @@ def export_graph(
 ) -> None:
     """Export the database as a property graph."""
     auth = (username, password) if username and password else None
-    with ZODBTreeBucket() as forest, GraphDatabase.driver(uri, auth=auth) as driver, driver.session() as session:
-        forest.update(load_forest(database))
+
+    # TODO @neplex: avoid instantiating a bucket here
+    # https://github.com/Neplex/ArchiTXT/issues/141
+    with (
+        ZODBTreeBucket() as forest,
+        GraphDatabase.driver(uri, auth=auth) as driver,
+        driver.session() as session,
+    ):
+        forest.update(load_forest(database), commit=True)
         export.export_cypher(forest, session=session)
 
     console.print('[green]Database exported successfully![/]')
@@ -40,8 +47,10 @@ def export_sql(
 
     You need to have the necessary driver installed in your environment.
     """
+    # TODO @neplex: avoid instantiating a bucket here
+    # https://github.com/Neplex/ArchiTXT/issues/141
     with ZODBTreeBucket() as forest, create_engine(uri).connect() as connection:
-        forest.update(load_forest(database))
+        forest.update(load_forest(database), commit=True)
         export.export_sql(forest, connection)
 
     console.print('[green]Database exported successfully![/]')

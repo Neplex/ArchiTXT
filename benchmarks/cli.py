@@ -47,7 +47,8 @@ def simplify(
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
     with run_ctx, ZODBTreeBucket() as forest:
-        forest.update(load_forest(files))
+        forest.update(load_forest(files), commit=True)
+
         oid_list = list(forest.oids())
 
         for size in sizes:
@@ -66,13 +67,9 @@ def simplify(
                     ZODBTreeBucket() as bench_forest,
                 ):
                     console.print("\x1b[1E")
-                    bench_forest.update(forest[oid].copy() for oid in oid_list[:size])
-                    mlflow.log_params(
-                        {
-                            'size': size,
-                            'workers': nb_worker,
-                        }
-                    )
+                    trees = (forest[oid].copy() for oid in oid_list[:size])
+                    bench_forest.update(trees, commit=True)
+                    mlflow.log_params({'size': size, 'workers': nb_worker})
 
                     start = time.perf_counter()
                     try:

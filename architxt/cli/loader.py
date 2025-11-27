@@ -1,3 +1,5 @@
+import functools
+from collections.abc import Iterable
 from pathlib import Path
 
 import anyio
@@ -7,12 +9,14 @@ import typer
 from neo4j import GraphDatabase
 from sqlalchemy import create_engine
 
+from architxt.bucket import TreeBucket
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.database import loader
 from architxt.nlp import raw_load_corpus
 from architxt.nlp.entity_resolver import ScispacyResolver
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
+from architxt.tree import Tree
 
 from .utils import console, show_schema
 
@@ -46,6 +50,22 @@ ENTITIES_MAPPING = {
 app = typer.Typer(no_args_is_help=True)
 
 
+def _ingest(forest: TreeBucket, trees: Iterable[Tree], incremental: bool) -> None:
+    if incremental:
+        forest.update(trees, commit=incremental)
+    else:
+        with forest.transaction():
+            forest.update(trees)
+
+
+async def _async_ingest(forest: TreeBucket, trees: Iterable[Tree], incremental: bool) -> None:
+    if incremental:
+        await forest.async_update(trees, commit=incremental)
+    else:
+        with forest.transaction():
+            await forest.async_update(trees)
+
+
 @app.command(name='document', help="Extract document database into a formatted tree.")
 def load_document(
     file: Path = typer.Argument(..., exists=True, readable=True, help="The document file to read."),
@@ -57,6 +77,7 @@ def load_document(
     sample: int | None = typer.Option(None, help="Number of element to sample from the document.", min=1),
     output: Path | None = typer.Option(None, help="Path to save the result."),
     merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
+    incremental: bool = typer.Option(True, help="Enable incremental loading of the database."),
 ) -> None:
     """Read a parse a document file to a structured tree."""
     if (
@@ -68,9 +89,11 @@ def load_document(
         console.print("[red]Cannot store data due to conflict.[/]")
         raise typer.Abort()
 
-    with ZODBTreeBucket(storage_path=output) as bucket:
-        bucket.update(loader.read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
-        schema = Schema.from_forest(bucket, keep_unlabelled=False)
+    with ZODBTreeBucket(storage_path=output) as forest:
+        trees = loader.read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0)
+        _ingest(forest, trees, incremental)
+
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
 
@@ -82,6 +105,7 @@ def load_sql(
     sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
     output: Path | None = typer.Option(None, help="Path to save the result."),
     merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
+    incremental: bool = typer.Option(True, help="Enable incremental loading of the database."),
 ) -> None:
     """Extract the database schema and relations to a tree format."""
     if (
@@ -97,7 +121,9 @@ def load_sql(
         create_engine(uri).connect() as connection,
         ZODBTreeBucket(storage_path=output) as forest,
     ):
-        forest.update(loader.read_sql(connection, simplify_association=simplify_association, sample=sample or 0))
+        trees = loader.read_sql(connection, simplify_association=simplify_association, sample=sample or 0)
+        _ingest(forest, trees, incremental)
+
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
@@ -111,6 +137,7 @@ def load_graph(
     sample: int | None = typer.Option(None, help="Number of sentences to sample from the corpus.", min=1),
     output: Path | None = typer.Option(None, help="Path to save the result."),
     merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
+    incremental: bool = typer.Option(True, help="Enable incremental loading of the database."),
 ) -> None:
     if (
         output is not None
@@ -128,7 +155,9 @@ def load_graph(
         driver.session() as session,
         ZODBTreeBucket(storage_path=output) as forest,
     ):
-        forest.update(loader.read_cypher(session, sample=sample or 0))
+        trees = loader.read_cypher(session, sample=sample or 0)
+        _ingest(forest, trees, incremental)
+
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
@@ -149,6 +178,7 @@ def load_corpus(
     ),
     output: Path | None = typer.Option(None, help="Path to save the result."),
     merge_existing: bool = typer.Option(False, help="Should we merge data if output file already exist"),
+    incremental: bool = typer.Option(True, help="Enable incremental loading of the database."),
     cache: bool = typer.Option(True, help="Enable caching of the analyzed corpus to prevent re-parsing."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
 ) -> None:
@@ -169,9 +199,10 @@ def load_corpus(
     parser = CoreNLPParser(corenlp_url=corenlp_url)
     _resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else None
 
-    with ZODBTreeBucket(storage_path=output) as bucket:
+    with ZODBTreeBucket(storage_path=output) as forest:
+        update = functools.partial(_async_ingest, forest=forest, incremental=incremental)
         anyio.run(
-            bucket.async_update,
+            update,
             raw_load_corpus(
                 corpus_path,
                 language,
@@ -185,5 +216,5 @@ def load_corpus(
             ),
         )
 
-        schema = Schema.from_forest(bucket, keep_unlabelled=False)
+        schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)

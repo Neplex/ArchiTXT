@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 
 from architxt.bucket import TreeBucket
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
-from architxt.utils import BATCH_SIZE
+from architxt.utils import get_commit_batch_size
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -39,7 +39,7 @@ def _simple_rewrite_tree(tree: Tree, group_ids: dict[tuple[str, ...], str]) -> N
     tree[:] = [group_tree]
 
 
-def simple_rewrite(forest: Iterable[Tree], *, commit: bool | int = BATCH_SIZE) -> None:
+def simple_rewrite(forest: Iterable[Tree], *, commit: bool | int = True) -> None:
     """
     Rewrite a forest into a valid schema, treating each tree as a distinct group.
 
@@ -49,21 +49,17 @@ def simple_rewrite(forest: Iterable[Tree], *, commit: bool | int = BATCH_SIZE) -
     Duplicate entities are removed.
 
     :param forest: A forest to be rewritten in place.
-    :param commit: When working with a `TreeBucket`, changes can be committed automatically .
-        - If False, no commits are made. Use this for small forests where you want to commit manually later.
-        - If True, commits after processing the entire forest in one transaction.
-        - If an integer, commits after processing every N tree.
-        To avoid memory issues with large forests, we recommend using batch commit on large forests.
+    :param commit: Commit automatically if using TreeBucket. If already in a transaction not commit is applied.
+        - If False, no commits are made, it relies on the current transaction.
+        - If True (default), commits in batch.
+        - If an integer, commits every N tree.
+        To avoid memory issues, we recommend using incremental commit with large iterables.
     """
+    batch_size = get_commit_batch_size(commit)
     group_ids: dict[tuple[str, ...], str] = {}
+    trees = tqdm(forest, desc="Rewriting trees")
 
-    if commit and isinstance(forest, TreeBucket) and not isinstance(commit, bool):
-        for chunk in more_itertools.ichunked(tqdm(forest, desc="Rewriting trees"), commit):
-            with forest.transaction():
-                for tree in chunk:
-                    _simple_rewrite_tree(tree, group_ids)
-
-    else:
-        with forest.transaction() if commit and isinstance(forest, TreeBucket) else nullcontext():
-            for tree in tqdm(forest, desc="Rewriting trees"):
+    for chunk in more_itertools.ichunked(trees, batch_size):
+        with forest.transaction() if isinstance(forest, TreeBucket) and commit else nullcontext():
+            for tree in chunk:
                 _simple_rewrite_tree(tree, group_ids)
