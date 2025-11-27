@@ -70,6 +70,8 @@ def load_document(
 
     with ZODBTreeBucket(storage_path=output) as bucket:
         bucket.update(loader.read_document(file, raw_read=raw, root_name=root_name, sample=sample or 0))
+        bucket.commit()
+
         schema = Schema.from_forest(bucket, keep_unlabelled=False)
         show_schema(schema)
 
@@ -98,6 +100,8 @@ def load_sql(
         ZODBTreeBucket(storage_path=output) as forest,
     ):
         forest.update(loader.read_sql(connection, simplify_association=simplify_association, sample=sample or 0))
+        forest.commit()
+
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
@@ -129,6 +133,8 @@ def load_graph(
         ZODBTreeBucket(storage_path=output) as forest,
     ):
         forest.update(loader.read_cypher(session, sample=sample or 0))
+        forest.commit()
+
         schema = Schema.from_forest(forest, keep_unlabelled=False)
         show_schema(schema)
 
@@ -184,6 +190,7 @@ def load_corpus(
                 sample=sample,
             ),
         )
+        bucket.commit()
 
         schema = Schema.from_forest(bucket, keep_unlabelled=False)
         show_schema(schema)

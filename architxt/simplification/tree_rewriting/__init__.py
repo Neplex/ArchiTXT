@@ -425,6 +425,9 @@ def _fill_queue(
                 # As we wait, we check for worker failures to avoid deadlocks.
                 _check_worker_health(futures, barrier, error)
 
+        # Synchronize the bucket to ensure all previous changes are visible to the main process.
+        forest.sync()
+
         # If simplification has occurred in any worker, stop processing further operations.
         if early_exit and simplification_operation.value != -1:
             break

@@ -231,6 +231,8 @@ async def _load_or_cache_corpus(  # noqa: C901
                     if batch:
                         await forest.async_update(batch)
 
+                    forest.commit()
+
     except Exception as e:
         console.print(f'[red]Error while processing corpus:[/] {e}')
         raise

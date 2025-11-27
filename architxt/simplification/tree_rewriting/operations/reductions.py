@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from architxt.tree import Tree, has_type
+from architxt.tree import NodeType, Tree, has_type
 
 from .operation import Operation
 
@@ -64,16 +64,16 @@ class ReduceBottomOperation(ReduceOperation):
     """
     Reduces the unlabelled nodes of a tree at the bottom-level.
 
-    This function identifies subtrees that do not have a specific type but contain children of type `ENT`.
-    It then repositions these subtrees' children directly under their parent nodes, effectively "flattening"
+    This function identifies subtrees that do not have a specific type but contain only children of type `ENT`.
+    It then repositions these subtrees children directly under their parent nodes, effectively "flattening"
     the tree structure at this level.
     """
 
     def subtrees_to_reduce(self, tree: Tree) -> Iterable[_SubTree]:
         return [
             subtree
-            for subtree in tree.subtrees(include_self=False)
-            if subtree.has_entity_child() and not has_type(subtree)
+            for subtree in tree.subtrees(include_self=False, reverse=True)
+            if not has_type(subtree) and all(has_type(child, NodeType.ENT) for child in subtree)
         ]
 
 
@@ -81,7 +81,7 @@ class ReduceTopOperation(ReduceOperation):
     """
     Reduces the unlabelled nodes of a tree at the top-level.
 
-    It identifies subtrees that do not have a specific type and repositions these subtrees' children
+    It identifies subtrees that do not have a specific type and repositions these subtrees children
     directly under their parent nodes, effectively "flattening" the tree structure at this level.
     """
 
