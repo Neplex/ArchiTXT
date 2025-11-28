@@ -566,7 +566,8 @@ async def llm_rewrite(
                     yield tree
 
             if isinstance(forest, TreeBucket):
-                await forest.async_update(_simplification_wrap())
+                with forest.transaction():
+                    await forest.async_update(_simplification_wrap())
             else:
                 forest[:] = [tree async for tree in _simplification_wrap()]
 

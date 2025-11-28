@@ -46,11 +46,11 @@ class ZODBTreeBucket(TreeBucket):
     >>> len(bucket)
     1
     >>> tree.label = 'ROOT'
-    >>> transaction.commit()  # Persist changes made to the tree
+    >>> bucket.commit()  # Persist changes made to the tree (without committing, changes are only in memory)
     >>> tree.label
     'ROOT'
     >>> tree.label = 'S'
-    >>> transaction.abort()  # Cancel changes made to the tree
+    >>> bucket.abort()  # Cancel changes made to the tree
     >>> tree.label
     'ROOT'
     >>> bucket.discard(tree)
@@ -78,7 +78,14 @@ class ZODBTreeBucket(TreeBucket):
         :param bucket_name: Name of the root key under which the internal OOBTree is stored.
         :param read_only: Whether to open the database in read-only mode.
         """
+        self._bucket_name = bucket_name
+        self._read_only = read_only
+
         if storage_path is None:
+            if self._read_only:
+                msg = "Cannot open a read-only bucket with no storage path specified."
+                raise ValueError(msg)
+
             self._temp_dir = tempfile.TemporaryDirectory(prefix='architxt')
             self._storage_path = Path(self._temp_dir.name)
 
@@ -86,8 +93,6 @@ class ZODBTreeBucket(TreeBucket):
             self._temp_dir = None
             self._storage_path = storage_path
 
-        self._bucket_name = bucket_name
-        self._read_only = read_only
         self._db = ZODB.config.databaseFromString(f"""
             %import relstorage
 
@@ -108,12 +113,17 @@ class ZODBTreeBucket(TreeBucket):
                 </relstorage>
             </zodb>
         """)
-        self._connection = self._db.open()
+        self._transaction_manager = transaction.TransactionManager()
+        self._connection = self._db.open(transaction_manager=self._transaction_manager)
         root = self._connection.root()
 
         if self._bucket_name not in root:
+            if self._read_only:
+                msg = f"Bucket '{self._bucket_name}' does not exist."
+                raise KeyError(msg)
+
             root[self._bucket_name] = OOBTree()
-            transaction.commit()
+            self.commit()
 
         self._data = root[self._bucket_name]
 
@@ -125,12 +135,11 @@ class ZODBTreeBucket(TreeBucket):
         Close the database connection and release associated resources.
 
         This will:
-
         - Abort any uncommitted transaction.
         - Close the active database connection.
         - Clean up temporary storage if one was created.
         """
-        self._connection.transaction_manager.abort()
+        self.abort()
         self._connection.close()
         self._db.close()
 
@@ -138,10 +147,16 @@ class ZODBTreeBucket(TreeBucket):
             self._temp_dir.cleanup()
 
     def transaction(self) -> transaction.TransactionManager:
-        return self._connection.transaction_manager
+        return self._transaction_manager
 
     def commit(self) -> None:
-        self._connection.transaction_manager.commit()
+        self._transaction_manager.commit()
+
+    def abort(self) -> None:
+        self._transaction_manager.abort()
+
+    def sync(self) -> None:
+        self._connection.sync()
 
     def update(self, trees: Iterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000) -> None:
         """
@@ -151,17 +166,13 @@ class ZODBTreeBucket(TreeBucket):
         When available system memory falls below the threshold,
         the connection cache is minimized and garbage collection is triggered.
 
-        .. warning::
-            Only the last chunk is rolled back on error.
-            Prior chunks remain committed, potentially leaving the database in a partially updated state.
-
         :param trees: Trees to add to the bucket.
         :param batch_size: The number of trees to be added at once.
         :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
         """
         for chunk in more_itertools.chunked(trees, batch_size):
-            with self.transaction():
-                self._data.update({tree.oid.bytes: tree for tree in chunk})
+            self._data.update({tree.oid.bytes: tree for tree in chunk})
+            self._transaction_manager.savepoint()
 
             if is_memory_low(_memory_threshold_mb):
                 self._connection.cacheMinimize()
@@ -184,26 +195,30 @@ class ZODBTreeBucket(TreeBucket):
         :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
         """
         chunk_stream: Stream[list[Tree]] = stream.chunks(stream.iterate(trees), batch_size)
-        chunk: list[Tree]
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
-                self.update(chunk, batch_size, _memory_threshold_mb)
+                self._data.update({tree.oid.bytes: tree for tree in chunk})
+                self._transaction_manager.savepoint()
+
+                if is_memory_low(_memory_threshold_mb):
+                    self._connection.cacheMinimize()
+                    gc.collect()
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""
-        with self.transaction():
-            self._data[tree.oid.bytes] = tree
+        self._data[tree.oid.bytes] = tree
+        self._transaction_manager.savepoint()
 
     def discard(self, tree: Tree) -> None:
         """Remove a :py:class:`~architxt.tree.Tree` from the bucket if it exists."""
-        with self.transaction():
-            self._data.pop(tree.oid.bytes)
+        self._data.pop(tree.oid.bytes, None)
+        self._transaction_manager.savepoint()
 
     def clear(self) -> None:
         """Remove all :py:class:`~architxt.tree.Tree` objects from the bucket."""
-        with self.transaction():
-            self._data.clear()
+        self._data.clear()
+        self._transaction_manager.savepoint()
 
     def oids(self) -> Generator[TreeOID, None, None]:
         for key in self._data:

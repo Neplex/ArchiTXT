@@ -33,8 +33,9 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
 
     **Available Implementations**
 
-    .. autoclasstree:: architxt.bucket.TreeBucket
-        :full:
+    .. inheritance-diagram:: architxt.bucket.TreeBucket
+        :include-subclasses:
+        :parts: 1
 
     """
 
@@ -58,7 +59,6 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
         :param batch_size: The number of trees to be added at once.
         """
         chunk_stream: Stream[list[Tree]] = stream.chunks(stream.iterate(trees), batch_size)
-        chunk: list[Tree]
 
         async with chunk_stream.stream() as streamer:
             async for chunk in streamer:
@@ -75,11 +75,20 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
 
         Upon exiting the context, the transaction is automatically committed.
         If an exception occurs within the context, the transaction is rolled back.
+
+        Non-committed changes made before entering the context are discarded.
         """
 
     @abstractmethod
     def commit(self) -> None:
         """Persist any in-memory changes to :py:class:`~architxt.tree.Tree` in the bucket."""
+
+    @abstractmethod
+    def abort(self) -> None:
+        """Discard any in-memory changes to :py:class:`~architxt.tree.Tree` in the bucket."""
+
+    def sync(self) -> None:
+        """Synchronize the in-memory state of the bucket with the underlying storage."""
 
     @abstractmethod
     def oids(self) -> Generator[TreeOID, None, None]:
