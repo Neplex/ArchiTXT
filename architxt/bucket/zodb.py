@@ -11,8 +11,10 @@ import ZODB.config
 from BTrees.OOBTree import OOBTree
 from transaction.interfaces import AlreadyInTransaction, NoTransaction
 from ZODB.Connection import resetCaches
+from zodburi import resolve_uri
 
 from architxt.tree import Tree, TreeOID
+from architxt.utils import update_url_queries
 
 from . import TreeBucket
 
@@ -90,18 +92,30 @@ class ZODBTreeBucket(TreeBucket):
     def __init__(
         self,
         storage_path: Path | None = None,
+        uri: str | None = None,
         bucket_name: str = 'architxt',
         read_only: bool = False,
     ) -> None:
         """
         Initialize the bucket and connect to the underlying ZODB storage.
 
-        :param storage_path: Path to the storage directory.
-            If None, a temporary location is used to store the database.
+        Either a `uri` or a `storage_path` may be provided. If both are given, the `uri` takes precedence.
+        If neither is provided, a temporary local database is created.
+
+        Local databases (temporary or using `storage_path`) use a SQLite backend to support
+        multiprocess concurrency. File-based backends are technically possible but not recommended,
+        as they can break parallel execution.
+
+        For large datasets or in a multi host setup, prefer a relational backend via a ZODB URI.
+        For example, to use PostgreSQL, specify a URI such as: ``postgresql://user:password@localhost/dbname``.
+
+        :param storage_path: Path to the storage directory for local storage.
+        :param uri: ZODB URI string defining the storage backend.
         :param bucket_name: Name of the root key under which the internal OOBTree is stored.
         :param read_only: Whether to open the database in read-only mode.
         """
         self._storage_path = storage_path
+        self._uri = uri
         self._bucket_name = bucket_name
         self._read_only = read_only
 
@@ -122,8 +136,18 @@ class ZODBTreeBucket(TreeBucket):
         """
         Create and configure the ZODB database.
 
+        URI-based storage takes precedence over local storage path.
+        For local storage, if no path is provided, a temporary directory is created.
+        We use RelStorage with SQLite as the backend for local storage to allow multi-process access.
+
         :return: A configured ZODB database instance.
         """
+        if self._uri:
+            uri = update_url_queries(self._uri, read_only='true') if self._read_only else self._uri
+            storage_factory, db_options = resolve_uri(uri)
+            storage = storage_factory()
+            return ZODB.DB(storage, **db_options)
+
         if self._storage_path is None:
             if self._read_only:
                 msg = "Cannot open a read-only bucket with no storage path specified."
@@ -163,8 +187,8 @@ class ZODBTreeBucket(TreeBucket):
     def _data(self) -> OOBTree:
         return self._connection.root()[self._bucket_name]
 
-    def __reduce__(self) -> tuple[type, tuple[Path, str, bool]]:
-        return self.__class__, (self._storage_path, self._bucket_name, self._read_only)
+    def __reduce__(self) -> tuple[type, tuple[Path | None, str | None, str, bool]]:
+        return self.__class__, (self._storage_path, self._uri, self._bucket_name, self._read_only)
 
     def _savepoint(self) -> None:
         self._connection.savepoint()

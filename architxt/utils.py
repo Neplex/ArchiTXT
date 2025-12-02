@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import sys
 from random import randrange
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import more_itertools
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
 
-__all__ = ['BATCH_SIZE', 'ExceptionGroup', 'get_commit_batch_size', 'windowed_shuffle']
+__all__ = ['BATCH_SIZE', 'ExceptionGroup', 'get_commit_batch_size', 'update_url_queries', 'windowed_shuffle']
 
 BATCH_SIZE = 1024
 T = TypeVar('T')
@@ -26,6 +27,21 @@ else:
     from builtins import ExceptionGroup
 
 
+def update_url_queries(url: str, **p: Any) -> str:
+    """
+    Update query parameters in a URL.
+
+    Merges existing query parameters with provided keyword arguments.
+    If a parameter already exists, it will be overwritten.
+
+    :param url: The URL to update.
+    :param p: Query parameters to add or update.
+    :return: The URL with updated query parameters.
+    """
+    u = urlparse(url)
+    q = dict(parse_qsl(u.query))
+    q.update(p)
+    return urlunparse(u._replace(query=urlencode(q)))
 
 
 def get_commit_batch_size(commit: bool | int) -> int:
