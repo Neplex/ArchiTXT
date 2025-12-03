@@ -1,9 +1,10 @@
 """Unit tests for architxt.bucket.zodb.ZODBTreeBucket class."""
 
 import contextlib
+import multiprocessing
 import uuid
 from collections.abc import AsyncIterable, Iterable
-from multiprocessing import Process
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
 import anyio
@@ -371,25 +372,141 @@ def test_empty_bucket_operations() -> None:
         assert fake_tree not in bucket
 
 
-def _worker(bucket: ZODBTreeBucket, oid: TreeOID) -> None:
-    with bucket, bucket.transaction():
-        bucket.add(Tree('test2', []))
-        bucket[oid].label = 'modified'
+def _worker(bucket: ZODBTreeBucket, label: str, oid: TreeOID) -> None:
+    with bucket.transaction():
+        tree = Tree(label, [])
+        bucket.add(tree)
+
+        tree = bucket[oid]
+        tree.label = tree.label.replace('main', 'modified')
 
 
-def test_worker_sync() -> None:
+@pytest.mark.parametrize("method", multiprocessing.get_all_start_methods())
+def test_worker_sync(method: str) -> None:
     """Test that changes made in a worker process are visible after sync."""
-    tree = Tree('test', [])
+    ctx = multiprocessing.get_context(method)
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
 
     with ZODBTreeBucket() as bucket:
         with bucket.transaction():
-            bucket.add(tree)
+            bucket.add(tree_1)
+            bucket.add(tree_2)
 
-        worker = Process(target=_worker, args=(bucket, tree.oid))
-        worker.start()
-        worker.join()
+        worker_1 = ctx.Process(target=_worker, args=(bucket, 'worker-1', tree_1.oid))
+        worker_2 = ctx.Process(target=_worker, args=(bucket, 'worker-2', tree_2.oid))
+        worker_1.start()
+        worker_2.start()
+        worker_1.join()
+        worker_2.join()
 
+        # ensure the workers exited cleanly
+        assert worker_1.exitcode == 0
+        assert worker_2.exitcode == 0
+
+        # refresh connection of the DB and assert changes are visible
         bucket.sync()
 
+        assert len(bucket) == 4, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'modified-1', "Tree label should be modified by worker"
+        assert bucket[tree_2.oid].label == 'modified-2', "Tree label should be modified by worker"
+
+        labels = [t.label for t in bucket]
+        assert 'modified-1' in labels
+        assert 'modified-2' in labels
+        assert 'worker-1' in labels
+        assert 'worker-2' in labels
+
+
+@pytest.mark.parametrize("method", multiprocessing.get_all_start_methods())
+def test_worker_pool_sync(method: str) -> None:
+    """Test that changes made in a worker process are visible after sync."""
+    ctx = multiprocessing.get_context(method)
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        with ProcessPoolExecutor(max_workers=2, mp_context=ctx) as pool:
+            worker_1 = pool.submit(_worker, bucket, 'worker-1', tree_1.oid)
+            worker_2 = pool.submit(_worker, bucket, 'worker-2', tree_2.oid)
+
+        # ensure the workers exited cleanly
+        worker_1.result()
+        worker_2.result()
+
+        # refresh connection of the DB and assert changes are visible
+        bucket.sync()
+
+        assert len(bucket) == 4, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'modified-1', "Tree label should be modified by worker"
+        assert bucket[tree_2.oid].label == 'modified-2', "Tree label should be modified by worker"
+
+        labels = [t.label for t in bucket]
+        assert 'modified-1' in labels
+        assert 'modified-2' in labels
+        assert 'worker-1' in labels
+        assert 'worker-2' in labels
+
+
+def test_threaded_worker_pool_sync() -> None:
+    """Test that changes made in a worker thread are visible."""
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            worker_1 = pool.submit(_worker, bucket, 'worker-1', tree_1.oid)
+            worker_2 = pool.submit(_worker, bucket, 'worker-2', tree_2.oid)
+
+        # ensure the workers exited cleanly
+        worker_1.result()
+        worker_2.result()
+
+        assert len(bucket) == 4, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'modified-1', "Tree label should be modified by worker"
+        assert bucket[tree_2.oid].label == 'modified-2', "Tree label should be modified by worker"
+
+        labels = [t.label for t in bucket]
+        assert 'modified-1' in labels
+        assert 'modified-2' in labels
+        assert 'worker-1' in labels
+        assert 'worker-2' in labels
+
+
+def test_threaded_worker_pool_abort() -> None:
+    """Test that changes made in a worker thread are visible."""
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        with contextlib.suppress(ValueError), bucket.transaction():
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                worker_1 = pool.submit(_worker, bucket, 'worker-1', tree_1.oid)
+                worker_2 = pool.submit(_worker, bucket, 'worker-2', tree_2.oid)
+            raise ValueError  # <= Abort
+
+        # ensure the workers exited cleanly
+        worker_1.result()
+        worker_2.result()
+
         assert len(bucket) == 2, "Bucket should contain two trees"
-        assert bucket[tree.oid].label == 'modified', "Tree label should be modified by worker"
+        assert bucket[tree_1.oid].label == 'main-1', "Tree label should not be modified after rollback"
+        assert bucket[tree_2.oid].label == 'main-2', "Tree label should not be modified after rollback"
+
+        labels = [t.label for t in bucket]
+        assert 'main-1' in labels
+        assert 'main-2' in labels
+        assert 'worker-1' not in labels
+        assert 'worker-2' not in labels

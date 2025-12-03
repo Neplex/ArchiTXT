@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import contextlib
+import os
+import shutil
 import tempfile
 import uuid
+import weakref
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
@@ -87,7 +90,7 @@ class ZODBTreeBucket(TreeBucket):
 
     _db: ZODB.DB
     _connection: Connection
-    _temp_dir: tempfile.TemporaryDirectory | None = None
+    _cleanup: bool = False
 
     def __init__(
         self,
@@ -132,6 +135,12 @@ class ZODBTreeBucket(TreeBucket):
             with self.transaction():
                 root[self._bucket_name] = OOBTree()
 
+        # Add support for fork on supported systems
+        # When the process is fork, the child process should recreate the connection
+        if hasattr(os, "register_at_fork"):
+            weak_self = weakref.ref(self)
+            os.register_at_fork(after_in_child=lambda: (bucket := weak_self()) and bucket._after_fork())
+
     def _get_db(self) -> ZODB.DB:
         """
         Create and configure the ZODB database.
@@ -153,8 +162,8 @@ class ZODBTreeBucket(TreeBucket):
                 msg = "Cannot open a read-only bucket with no storage path specified."
                 raise ValueError(msg)
 
-            self._temp_dir = tempfile.TemporaryDirectory(prefix='architxt')
-            self._storage_path = Path(self._temp_dir.name)
+            self._storage_path = Path(tempfile.mkdtemp(prefix='architxt'))
+            self._cleanup = True
 
         return ZODB.config.databaseFromString(f"""
             %import relstorage
@@ -193,6 +202,12 @@ class ZODBTreeBucket(TreeBucket):
     def _savepoint(self) -> None:
         self._connection.savepoint()
 
+    def _after_fork(self) -> None:
+        # We disable database cleanup as it is the responsibility of the parent
+        self._cleanup = False
+        # We also recreate the connection as it inherit the one from the parent process
+        self.sync()
+
     def close(self) -> None:
         """
         Close the database connection and release associated resources.
@@ -208,8 +223,8 @@ class ZODBTreeBucket(TreeBucket):
         self._connection.close()
         self._db.close()
 
-        if self._temp_dir is not None:  # If a temporary directory was used, clean it up
-            self._temp_dir.cleanup()
+        if self._cleanup:  # If a temporary directory was used, clean it up
+            shutil.rmtree(self._storage_path)
 
     @contextlib.contextmanager
     def transaction(self) -> Generator[None, None, None]:
@@ -230,6 +245,7 @@ class ZODBTreeBucket(TreeBucket):
         resetCaches()
         # We need to refresh the connection to apply cache reset
         self._connection.close()
+        self._db.pool.clear()  # <= By default, connection are reused, this ensure we create a fresh connection
         self._connection = self._get_connection()
 
     def _update(self, trees: Iterable[Tree], commit: bool) -> None:

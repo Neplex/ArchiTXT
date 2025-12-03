@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import functools
-import multiprocessing
 import re
-import sys
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import ExitStack, nullcontext
@@ -110,11 +108,9 @@ def rewrite(
         )
         metrics.log_to_mlflow(0, debug=debug)
 
-    mp_ctx = multiprocessing.get_context('spawn' if sys.platform == 'win32' else 'forkserver')
-
     with (
         mlflow.start_span('rewriting') if mlflow.active_run() else nullcontext(),
-        ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as executor,
+        ProcessPoolExecutor(max_workers=max_workers) as executor,
     ):
         for iteration in trange(1, epoch, desc='rewrite trees'):
             with (

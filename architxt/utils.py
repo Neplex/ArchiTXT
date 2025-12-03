@@ -34,6 +34,12 @@ def update_url_queries(url: str, **p: Any) -> str:
     Merges existing query parameters with provided keyword arguments.
     If a parameter already exists, it will be overwritten.
 
+    >>> update_url_queries('https://example.com?foo=1', bar='2')
+    'https://example.com?foo=1&bar=2'
+
+    >>> update_url_queries('https://example.com?foo=1', foo='overwritten')
+    'https://example.com?foo=overwritten'
+
     :param url: The URL to update.
     :param p: Query parameters to add or update.
     :return: The URL with updated query parameters.
