@@ -117,7 +117,7 @@ dev = [
     "datasets",
     "testcontainers>=4.10.0,<5.0.0",
     # linters/analysis
-    "mypy==1.18.2",
+    "mypy==1.19.0",
     "ruff==0.14.7",
     "deptry>=0.23.0,<1.0.0",
     "vulture==2.14",
