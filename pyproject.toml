@@ -10,7 +10,8 @@ maintainers = [
     { name = "Nicolas Hiot", email = "nicolas.hiot@univ-orleans.fr" }
 ]
 readme = "README.md"
-license-files = ["LICEN[CS]E*", "AUTHORS.md", "CONTRIBUTORS.md"]
+license = "GPL-3.0-only"
+license-files = ["LICEN[CS]E*"]
 keywords = [
     "python",
     "nlp",
@@ -86,6 +87,9 @@ llm = [ 'langchain>=0.3,<0.4', 'langchain-core', 'langchain-huggingface', 'json-
 
 [project.urls]
 documentation = "https://neplex.github.io/ArchiTXT"
+repository = "https://github.com/neplex/ArchiTXT"
+issue = "https://github.com/neplex/ArchiTXT/issues"
+funding = "https://github.com/Neplex/ArchiTXT?tab=readme-ov-file#sponsors"
 
 [project.scripts]
 architxt = "architxt.cli:app"

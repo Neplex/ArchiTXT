@@ -23,6 +23,10 @@ ArchiTXT Documentation
     :alt: Software Heritage - ArchiTXT Source Code Archive
     :target: https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/Neplex/ArchiTXT
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.15688157.svg
+    :alt: Zenodo - DOI
+    :target: https://doi.org/10.5281/zenodo.15688157
+
 .. toctree::
     :hidden:
     :caption: Documentation

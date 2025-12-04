@@ -1,1 +1,0 @@
-- Baptiste Haudebourg <baptiste.haudebourg@etu.univ-orleans.fr>

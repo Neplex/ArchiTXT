@@ -6,6 +6,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/architxt)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/neplex/architxt/python-build.yml)](https://github.com/Neplex/ArchiTXT/actions)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/Neplex/ArchiTXT/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/Neplex/ArchiTXT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15688157.svg)](https://doi.org/10.5281/zenodo.15688157)
 
 **ArchiTXT** is a robust tool designed to convert unstructured textual data into structured formats that are ready for
 database storage. It automates the generation of database schemas and creates corresponding data instances, simplifying
@@ -87,4 +88,14 @@ docker compose up -d corenlp
 
 This work has received support under the JUNON Program, with financial support from Région Centre-Val de Loire (France).
 
-<img src="https://www.junon-cvl.fr/sites/websites/www.junon-cvl.fr/files/logos/2025-07/logo-junon-new.svg" width="200">
+<a href="https://www.junon-cvl.fr">
+  <img src="https://www.junon-cvl.fr/sites/websites/www.junon-cvl.fr/files/logos/2025-07/logo-junon-new.svg" width="200" alt="JUNON Program logo">
+</a>
+
+<a href="https://www.univ-orleans.fr">
+  <img src="https://ent.univ-orleans.fr/pages-locales-uo/images/logo_univ.svg" width="200" alt="UO logo">
+</a>
+
+<a href="https://www.univ-orleans.fr/lifo/">
+  <img src="https://www.univ-orleans.fr/lifo/themes/custom/bs5_lifo_theme/logo.svg" width="200" alt="LIFO logo">
+</a>

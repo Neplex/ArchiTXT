@@ -2,29 +2,37 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: ArchiTXT
 message: >-
   If you use this software, please cite it using the
-  metadata from this file.
+  metadata from the CITATION.cff file.
+
+title: ArchiTXT
 type: software
+repository-code: https://github.com/Neplex/ArchiTXT
+license: GPL-3.0-only
+
 authors:
   - given-names: Jacques
     family-names: Chabin
-    orcid: 'https://orcid.org/0000-0003-1460-9979'
+    orcid: https://orcid.org/0000-0003-1460-9979
     email: jacques.chabin@univ-orleans.fr
-    affiliation: 'Université d''Orléans, INSA CVL, LIFO, UR 4022, Orléans, France'
+    affiliation: Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France
+
   - given-names: Mirian
     family-names: Halfeld-Ferrari
     email: mirian@univ-orleans.fr
-    affiliation: 'Université d''Orléans, INSA CVL, LIFO, UR 4022, Orléans, France'
-    orcid: 'https://orcid.org/0000-0003-2601-3224'
+    affiliation: Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France
+    orcid: https://orcid.org/0000-0003-2601-3224
+
   - given-names: Nicolas
     family-names: Hiot
     email: nicolas.hiot@univ-orleans.fr
-    affiliation: 'Université d''Orléans, INSA CVL, LIFO, UR 4022, Orléans, France'
-    orcid: 'https://orcid.org/0000-0003-4318-4906'
-repository-code: 'https://github.com/Neplex/ArchiTXT'
-license: CC-BY-NC-4.0
+    affiliation: Université d'Orléans, INSA CVL, LIFO, UR 4022, Orléans, France
+    orcid: https://orcid.org/0000-0003-4318-4906
+
 identifiers:
   - type: swh
-    value: 'swh:1:dir:8f5b7716e68a8b4261e93ac40be26ce0d9593f40'
+    value: swh:1:dir:8f5b7716e68a8b4261e93ac40be26ce0d9593f40
+
+  - type: doi
+    value: 10.5281/zenodo.15688157

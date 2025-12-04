@@ -26,11 +26,11 @@ jobs:
         run: |
           VERSION=$(poetry version -s)
           CLEAN_VERSION=$(echo "$VERSION" | sed -E 's/(\.post.*|\.dev.*)//g')
-          poetry version $CLEAN_VERSION
+          echo "CLEAN_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
 
       - name: Generate codemeta.json using codemeta-harvester
         run: |
-          docker run -v $(pwd):/data -e GITHUB_TOKEN=$GITHUB_TOKEN proycon/codemeta-harvester --regen
+          docker run --user "$(id -u):$(id -g)" -v $(pwd):/data -e GITHUB_TOKEN=$GITHUB_TOKEN -e CLEAN_VERSION=$CLEAN_VERSION proycon/codemeta-harvester --regen --opts "--version $CLEAN_VERSION"
 
       - name: Commit & Push changes
         uses: actions-js/push@v1.5
