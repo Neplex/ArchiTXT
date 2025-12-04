@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import ctypes
 import functools
-import multiprocessing
 import re
-import sys
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 from multiprocessing import Manager, cpu_count
 from queue import Full
 from typing import TYPE_CHECKING, overload
@@ -21,7 +19,7 @@ from architxt.bucket import TreeBucket
 from architxt.metrics import Metrics
 from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
-from architxt.utils import BATCH_SIZE, ExceptionGroup
+from architxt.utils import ExceptionGroup, get_commit_batch_size
 
 from .operations import (
     FindCollectionsOperation,
@@ -63,7 +61,7 @@ def rewrite(
     edit_ops: Sequence[type[Operation]] = DEFAULT_OPERATIONS,
     debug: bool = False,
     max_workers: int | None = None,
-    commit: bool | int = BATCH_SIZE,
+    commit: bool | int = True,
     simplify_names: bool = True,
 ) -> Metrics:
     """
@@ -77,11 +75,13 @@ def rewrite(
     :param edit_ops: The list of operations to perform on the forest.
     :param debug: Whether to enable debug logging.
     :param max_workers: Number of parallel worker processes to use.
-    :param commit: When working with a `TreeBucket`, changes can be committed automatically .
-        - If False, no commits are made. Use this for small forests where you want to commit manually later.
-        - If True, commits after processing the entire forest in one transaction.
-        - If an integer, commits after processing every N tree.
-        To avoid memory issues with large forests, we recommend using batch commit on large forests.
+    :param commit: Commit automatically. If already in a transaction, no commit is applied.
+        - If False, no commits are made, it relies on the current transaction.
+        - If True (default), commits in batch.
+        - If an integer, commits every N tree.
+        To avoid memory issues, we recommend using incremental commit with large iterables.
+        When using TreeBucket, workers always commit in internal transactions (to avoid serialisation).
+        The commit parameter only controls the batch size for these commits.
     :param simplify_names: Should the groups/relations names be simplified after the rewrite?
 
     :return: The rewritten forest.
@@ -91,7 +91,7 @@ def rewrite(
     if not len(forest):
         return metrics
 
-    batch_size = commit if isinstance(commit, int) and commit > 0 else BATCH_SIZE
+    batch_size = get_commit_batch_size(commit)
     min_support = min_support or max((len(forest) // 10), 2)
     max_workers = min(len(forest) // batch_size, max_workers or (cpu_count() - 2)) or 1
 
@@ -108,11 +108,9 @@ def rewrite(
         )
         metrics.log_to_mlflow(0, debug=debug)
 
-    mp_ctx = multiprocessing.get_context('spawn' if sys.platform == 'win32' else 'forkserver')
-
     with (
         mlflow.start_span('rewriting') if mlflow.active_run() else nullcontext(),
-        ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as executor,
+        ProcessPoolExecutor(max_workers=max_workers) as executor,
     ):
         for iteration in trange(1, epoch, desc='rewrite trees'):
             with (
@@ -148,7 +146,8 @@ def rewrite(
         _post_process(forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size)
 
         if simplify_names:
-            _simplify_names(forest)
+            with forest.transaction() if isinstance(forest, TreeBucket) else nullcontext():
+                _simplify_names(forest)
 
         metrics.update()
 
@@ -185,14 +184,20 @@ def _rewrite_step(
 
     :return: A flag indicating if any simplifications occurred.
     """
-    with mlflow.start_span('reduce_all') if mlflow.active_run() else nullcontext():
+    with (
+        mlflow.start_span('reduce_all') if mlflow.active_run() else nullcontext(),
+        forest.transaction() if isinstance(forest, TreeBucket) else nullcontext(),
+    ):
         for tree in forest:
             tree.reduce_all({NodeType.ENT})
 
     with mlflow.start_span('equiv_cluster') if mlflow.active_run() else nullcontext():
         equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric, _step=iteration if debug else None)
 
-    with mlflow.start_span('find_groups') if mlflow.active_run() else nullcontext():
+    with (
+        mlflow.start_span('find_groups') if mlflow.active_run() else nullcontext(),
+        forest.transaction() if isinstance(forest, TreeBucket) else nullcontext(),
+    ):
         find_groups(equiv_subtrees, min_support)
 
     op_id = apply_operations(
@@ -429,6 +434,10 @@ def _fill_queue(
         if early_exit and simplification_operation.value != -1:
             break
 
+    # Synchronize the bucket to ensure all changes are visible to the main process and avoid caching issue.
+    # NOTE: It may not be required, but it is fool-proof
+    forest.sync()
+
 
 @overload
 def _apply_operations_worker(
@@ -525,18 +534,21 @@ def _apply_operations_worker(
                 elif isinstance(forest, TreeBucket):
                     # Bucket-based mode: apply operation for each tree in the queue and commit in batches
                     simplified = False
-                    count = 0
+                    modifications_in_transaction = 0
 
-                    while (oid := queue.get()) is not None:
-                        simplified |= op_fn(forest[oid])
-                        count += 1
+                    with ExitStack() as transaction_stack:
+                        transaction_stack.enter_context(forest.transaction())
 
-                        if count >= batch_size:
-                            forest.commit()
-                            count = 0
+                        while (oid := queue.get()) is not None:
+                            modified = op_fn(forest[oid])
+                            modifications_in_transaction += modified
+                            simplified |= modified
 
-                    if count > 0:
-                        forest.commit()
+                            # Commit in batches to bound memory usage and enable cache clearing
+                            if modifications_in_transaction >= batch_size:
+                                transaction_stack.close()  # Commit current transaction
+                                transaction_stack.enter_context(forest.transaction())  # Begin new transaction
+                                modifications_in_transaction = 0
 
                 else:
                     msg = 'Using an in-memory collection may result in excessive serialization when used with a queue.'
@@ -546,6 +558,11 @@ def _apply_operations_worker(
                 simplification_operation.set(op_id)
 
             barrier.wait()  # Wait for all workers to finish this operation
+
+            if isinstance(forest, TreeBucket):
+                # Sync forest to avoid any cache issue between operations
+                # NOTE: It may not be required, but it is fool-proof
+                forest.sync()
 
             # If simplification has occurred in any worker, stop processing further operations.
             if early_exit and simplification_operation.value != -1:

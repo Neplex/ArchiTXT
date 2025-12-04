@@ -494,6 +494,7 @@ async def llm_rewrite(
     task_limit: int = 1,
     metric: METRIC_FUNC = DEFAULT_METRIC,
     prompt: ChatPromptTemplate = DEFAULT_PROMPT,
+    commit: bool | int = True,
 ) -> Metrics:
     """
     Rewrite a forest into a valid schema using a LLM agent.
@@ -510,6 +511,11 @@ async def llm_rewrite(
     :param task_limit: Maximum number of concurrent requests to make.
     :param metric: The metric function used to compute similarity between subtrees.
     :param prompt: The prompt template to use for the LLM during the simplification.
+    :param commit: Commit automatically if using TreeBucket. If already in a transaction, no commit is applied.
+        - If False, no commits are made, it relies on the current transaction.
+        - If True (default), commits in batch.
+        - If an integer, commits every N tree.
+        To avoid memory issues, we recommend using incremental commit with large iterables.
 
     :return: A `Metrics` object encapsulating the results and metrics calculated for the LLM rewrite process.
     """
@@ -566,7 +572,7 @@ async def llm_rewrite(
                     yield tree
 
             if isinstance(forest, TreeBucket):
-                await forest.async_update(_simplification_wrap())
+                await forest.async_update(_simplification_wrap(), commit=commit)
             else:
                 forest[:] = [tree async for tree in _simplification_wrap()]
 

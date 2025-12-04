@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import tarfile
 import zipfile
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 from itertools import islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -215,21 +215,20 @@ async def _load_or_cache_corpus(  # noqa: C901
                     count += 1
 
             else:
-                with ZODBTreeBucket(storage_path=corpus_cache_path) as forest:
+                with ZODBTreeBucket(storage_path=corpus_cache_path) as forest, ExitStack() as transaction_stack:
+                    transaction_stack.enter_context(forest.transaction())
                     count = 0
-                    batch = []
+
                     async for _, tree in parser.parse_batch(sentences, language=language):
-                        if not sample or count < sample:
+                        forest.add(tree)
+                        count += 1
+
+                        if count % BATCH_SIZE == 0:  # Commit the current transaction and create a new one
+                            transaction_stack.close()
+                            transaction_stack.enter_context(forest.transaction())
+
+                        if not sample or count <= sample:
                             await send_stream.send(tree.copy())
-                            count += 1
-
-                        batch.append(tree)
-                        if len(batch) >= BATCH_SIZE:
-                            await forest.async_update(batch)
-                            batch.clear()
-
-                    if batch:
-                        await forest.async_update(batch)
 
     except Exception as e:
         console.print(f'[red]Error while processing corpus:[/] {e}')

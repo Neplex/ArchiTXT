@@ -1,15 +1,18 @@
 """Unit tests for architxt.bucket.zodb.ZODBTreeBucket class."""
 
 import contextlib
+import multiprocessing
 import uuid
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Iterable
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
 import anyio
 import pytest
 from architxt.bucket.zodb import ZODBTreeBucket
-from architxt.tree import NodeLabel, NodeType, Tree
-from hypothesis import given
+from architxt.tree import NodeLabel, NodeType, Tree, TreeOID
+from architxt.utils import BATCH_SIZE
+from hypothesis import given, settings
 
 from tests.test_strategies import tree_st
 
@@ -36,11 +39,11 @@ def test_open_existing_bucket(tmp_path: Path) -> None:
     """Test opening an existing bucket."""
     tree = Tree('test', [])
 
-    with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
+    with ZODBTreeBucket(storage_path=tmp_path) as bucket1, bucket1.transaction():
         bucket1.add(tree)
 
     with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
-        assert len(bucket2) == 1
+        assert len(bucket2) == 1, "Bucket should contain the tree when reopened."
         assert tree in bucket2
 
 
@@ -49,7 +52,9 @@ def test_close_cleans_up_temp_dir() -> None:
     tree = Tree('test', [])
 
     with ZODBTreeBucket() as bucket:
-        bucket.add(tree)
+        with bucket.transaction():
+            bucket.add(tree)
+
         temp_path = bucket._storage_path
         assert temp_path.exists()
 
@@ -61,7 +66,7 @@ def test_close_preserves_explicit_storage(tmp_path: Path) -> None:
     """Test that close() preserves explicit storage paths."""
     tree = Tree('test', [])
 
-    with ZODBTreeBucket(storage_path=tmp_path) as bucket:
+    with ZODBTreeBucket(storage_path=tmp_path) as bucket, bucket.transaction():
         bucket.add(tree)
 
     # Storage path should still exist
@@ -74,7 +79,8 @@ def test_update(count: int) -> None:
     trees = create_test_trees(count)
 
     with ZODBTreeBucket() as bucket:
-        bucket.update(trees)
+        with bucket.transaction():
+            bucket.update(trees)
 
         assert len(bucket) == count
         assert all(tree in bucket for tree in trees), "All trees should be present after the update"
@@ -89,33 +95,54 @@ async def test_async_update(use_async_iterable: bool, count: int) -> None:
     iterable = async_tree_generator(trees) if use_async_iterable else trees
 
     with ZODBTreeBucket() as bucket:
-        await bucket.async_update(iterable)
+        with bucket.transaction():
+            await bucket.async_update(iterable)
 
         assert len(bucket) == count
         assert all(tree in bucket for tree in trees), "All trees should be present after the update"
 
 
 @pytest.mark.anyio
-async def test_async_update_concurrent_safety() -> None:
+async def test_async_update_concurrent() -> None:
     """Concurrent calls to `async_update` should all be applied (no lost updates)."""
     trees = create_test_trees(20)
     trees1 = trees[:10]
     trees2 = trees[10:]
 
     with ZODBTreeBucket() as bucket:
-        async with anyio.create_task_group() as task_group:
-            task_group.start_soon(bucket.async_update, trees1)
-            task_group.start_soon(bucket.async_update, trees2)
+        with bucket.transaction():
+            async with anyio.create_task_group() as task_group:
+                task_group.start_soon(bucket.async_update, trees1)
+                task_group.start_soon(bucket.async_update, trees2)
 
         assert len(bucket) == 20
         assert all(tree in bucket for tree in trees), "All trees should be present after the update"
 
 
+@pytest.mark.anyio
+async def test_async_update_concurrent_abort() -> None:
+    """Concurrent calls to `async_update` should all be aborted on transaction abort."""
+    trees = create_test_trees(20)
+    trees1 = trees[:10]
+    trees2 = trees[10:]
+
+    with ZODBTreeBucket() as bucket:
+        with contextlib.suppress(ValueError), bucket.transaction():
+            async with anyio.create_task_group() as task_group:
+                task_group.start_soon(bucket.async_update, trees1)
+                task_group.start_soon(bucket.async_update, trees2)
+            raise ValueError  # <= Abort
+
+        assert len(bucket) == 0, "Bucket should be empty after aborted transaction."
+
+
+@settings(max_examples=10)
 @given(tree=tree_st(has_parent=False))
 def test_add_single_tree(tree: Tree) -> None:
     """Test adding a single tree."""
     with ZODBTreeBucket() as bucket:
-        bucket.add(tree)
+        with bucket.transaction():
+            bucket.add(tree)
 
         assert len(bucket) == 1
         assert tree in bucket
@@ -126,13 +153,14 @@ def test_discard_tree() -> None:
     """Test removing a tree."""
     tree = Tree('test', [])
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.add(tree)
 
         assert len(bucket) == 1
         assert tree in bucket
 
         bucket.discard(tree)
+
         assert len(bucket) == 0
         assert tree not in bucket
 
@@ -141,7 +169,7 @@ def test_clear_all_trees() -> None:
     """Test clearing all trees."""
     trees = create_test_trees(10)
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.update(trees)
         assert len(bucket) == 10
 
@@ -153,7 +181,7 @@ def test_get_tree_by_oid() -> None:
     """Test retrieving a tree by OID."""
     tree = Tree('test', [])
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.add(tree)
 
         retrieved = bucket[tree.oid]
@@ -166,7 +194,7 @@ def test_get_multiple_trees_by_oids() -> None:
     """Test retrieving multiple trees by OIDs."""
     trees = create_test_trees(5)
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.update(trees)
 
         oids = [t.oid for t in trees[:3]]
@@ -185,7 +213,9 @@ def test_contains_tree() -> None:
     with ZODBTreeBucket() as bucket:
         assert tree not in bucket
 
-        bucket.add(tree)
+        with bucket.transaction():
+            bucket.add(tree)
+
         assert tree in bucket
 
 
@@ -193,7 +223,7 @@ def test_contains_oid() -> None:
     """Test checking if OID exists in bucket."""
     tree = Tree('test', [])
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.add(tree)
 
         assert tree.oid in bucket
@@ -204,7 +234,7 @@ def test_iteration() -> None:
     """Test iterating over trees in bucket."""
     trees = create_test_trees(5)
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.update(trees)
 
         result = list(bucket)
@@ -220,7 +250,7 @@ def test_oids_generator() -> None:
     """Test OIDs generator."""
     trees = create_test_trees(5)
 
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         bucket.update(trees)
 
         oids = list(bucket.oids())
@@ -236,62 +266,78 @@ def test_commit(tmp_path: Path) -> None:
     oid = tree.oid
 
     with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
-        bucket1.add(tree)
+        with bucket1.transaction():
+            bucket1.add(tree)
 
-        tree.label = 'modified'
-        bucket1.commit()
+        with bucket1.transaction():
+            tree.label = 'modified'
+
+        assert bucket1[oid].label == 'modified', "Tree label should be modified."
 
     with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
         assert bucket2[oid].label == 'modified', "Tree label should be persisted after commit."
 
 
-def test_transaction(tmp_path: Path) -> None:
-    """Test using transaction as context manager."""
+def test_transaction_reentrant(tmp_path: Path) -> None:
+    """Test reentrant transaction."""
     tree = Tree('test', [])
     oid = tree.oid
 
     with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
-        bucket1.add(tree)
-
         with bucket1.transaction():
+            bucket1.add(tree)
+
+        with bucket1.transaction(), bucket1.transaction(), bucket1.transaction():
             tree.label = 'modified'
 
+        assert bucket1[oid].label == 'modified', "Tree label should be modified."
+
     with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
-        assert bucket2[oid].label == 'modified', "Tree label should be persisted after transaction."
+        assert bucket2[oid].label == 'modified', "Tree label should be persisted after commit."
 
 
-def test_no_commit(tmp_path: Path) -> None:
-    """Test that changes without commit are not persisted."""
+def test_abort(tmp_path: Path) -> None:
+    """Test explicit abort."""
     tree = Tree('test', [])
     oid = tree.oid
 
     with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
-        bucket1.add(tree)
-        tree.label = 'modified'
-
-    with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
-        assert bucket2[oid].label == 'test', "Tree label should not be persisted without commit nor transaction."
-
-
-def test_transaction_abort_on_exception(tmp_path: Path) -> None:
-    """Test that transaction abort on exception."""
-    tree = Tree('test', [])
-    oid = tree.oid
-
-    with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
-        bucket1.add(tree)
+        with bucket1.transaction():
+            bucket1.add(tree)
 
         with contextlib.suppress(ValueError), bucket1.transaction():
             tree.label = 'modified'
-            raise ValueError
+            raise ValueError  # <= Abort
+
+        assert bucket1[oid].label == 'test', "Tree label should have been rollback."
 
     with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
-        assert bucket2[oid].label == 'test', "Transaction should have abort on exception."
+        assert bucket2[oid].label == 'test', "Tree label should not be persisted after rollback."
+
+
+def test_update_abort_all(tmp_path: Path) -> None:
+    """Test that transaction abort on exception."""
+
+    def gen() -> Iterable[Tree]:
+        for i in range(BATCH_SIZE * 4):
+            yield Tree(f'tree{i}', [])
+            if i == BATCH_SIZE * 2:
+                msg = "abort"
+                raise ValueError(msg)
+
+    with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
+        with pytest.raises(ValueError, match="abort"), bucket1.transaction():
+            bucket1.update(gen())
+
+        assert len(bucket1) == 0, "Bucket should be empty after aborted update."
+
+    with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
+        assert len(bucket2) == 0, "Transaction should have abort on exception."
 
 
 def test_duplicate_trees() -> None:
     """Test adding the same tree twice (should update, not duplicate)."""
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         tree = Tree(NodeLabel(NodeType.ENT, 'test'), [])
 
         bucket.add(tree)
@@ -302,7 +348,7 @@ def test_duplicate_trees() -> None:
 
 def test_trees_with_same_oid() -> None:
     """Test handling trees with the same OID."""
-    with ZODBTreeBucket() as bucket:
+    with ZODBTreeBucket() as bucket, bucket.transaction():
         oid = uuid.uuid4()
         tree1 = Tree('tree1', [], oid=oid)
         tree2 = Tree('tree2', [], oid=oid)
@@ -324,3 +370,143 @@ def test_empty_bucket_operations() -> None:
         # Test contains with non-existent tree
         fake_tree = Tree('fake', [])
         assert fake_tree not in bucket
+
+
+def _worker(bucket: ZODBTreeBucket, label: str, oid: TreeOID) -> None:
+    with bucket.transaction():
+        tree = Tree(label, [])
+        bucket.add(tree)
+
+        tree = bucket[oid]
+        tree.label = tree.label.replace('main', 'modified')
+
+
+@pytest.mark.parametrize("method", multiprocessing.get_all_start_methods())
+def test_worker_sync(method: str) -> None:
+    """Test that changes made in a worker process are visible after sync."""
+    ctx = multiprocessing.get_context(method)
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        worker_1 = ctx.Process(target=_worker, args=(bucket, 'worker-1', tree_1.oid))
+        worker_2 = ctx.Process(target=_worker, args=(bucket, 'worker-2', tree_2.oid))
+        worker_1.start()
+        worker_2.start()
+        worker_1.join()
+        worker_2.join()
+
+        # ensure the workers exited cleanly
+        assert worker_1.exitcode == 0
+        assert worker_2.exitcode == 0
+
+        # refresh connection of the DB and assert changes are visible
+        bucket.sync()
+
+        assert len(bucket) == 4, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'modified-1', "Tree label should be modified by worker"
+        assert bucket[tree_2.oid].label == 'modified-2', "Tree label should be modified by worker"
+
+        labels = [t.label for t in bucket]
+        assert 'modified-1' in labels
+        assert 'modified-2' in labels
+        assert 'worker-1' in labels
+        assert 'worker-2' in labels
+
+
+@pytest.mark.parametrize("method", multiprocessing.get_all_start_methods())
+def test_worker_pool_sync(method: str) -> None:
+    """Test that changes made in a worker process are visible after sync."""
+    ctx = multiprocessing.get_context(method)
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        with ProcessPoolExecutor(max_workers=2, mp_context=ctx) as pool:
+            worker_1 = pool.submit(_worker, bucket, 'worker-1', tree_1.oid)
+            worker_2 = pool.submit(_worker, bucket, 'worker-2', tree_2.oid)
+
+        # ensure the workers exited cleanly
+        worker_1.result()
+        worker_2.result()
+
+        # refresh connection of the DB and assert changes are visible
+        bucket.sync()
+
+        assert len(bucket) == 4, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'modified-1', "Tree label should be modified by worker"
+        assert bucket[tree_2.oid].label == 'modified-2', "Tree label should be modified by worker"
+
+        labels = [t.label for t in bucket]
+        assert 'modified-1' in labels
+        assert 'modified-2' in labels
+        assert 'worker-1' in labels
+        assert 'worker-2' in labels
+
+
+def test_threaded_worker_pool_sync() -> None:
+    """Test that changes made in a worker thread are visible."""
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            worker_1 = pool.submit(_worker, bucket, 'worker-1', tree_1.oid)
+            worker_2 = pool.submit(_worker, bucket, 'worker-2', tree_2.oid)
+
+        # ensure the workers exited cleanly
+        worker_1.result()
+        worker_2.result()
+
+        assert len(bucket) == 4, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'modified-1', "Tree label should be modified by worker"
+        assert bucket[tree_2.oid].label == 'modified-2', "Tree label should be modified by worker"
+
+        labels = [t.label for t in bucket]
+        assert 'modified-1' in labels
+        assert 'modified-2' in labels
+        assert 'worker-1' in labels
+        assert 'worker-2' in labels
+
+
+def test_threaded_worker_pool_abort() -> None:
+    """Test that changes made in a worker thread are visible."""
+    tree_1 = Tree('main-1', [])
+    tree_2 = Tree('main-2', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree_1)
+            bucket.add(tree_2)
+
+        with contextlib.suppress(ValueError), bucket.transaction():
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                worker_1 = pool.submit(_worker, bucket, 'worker-1', tree_1.oid)
+                worker_2 = pool.submit(_worker, bucket, 'worker-2', tree_2.oid)
+            raise ValueError  # <= Abort
+
+        # ensure the workers exited cleanly
+        worker_1.result()
+        worker_2.result()
+
+        assert len(bucket) == 2, "Bucket should contain two trees"
+        assert bucket[tree_1.oid].label == 'main-1', "Tree label should not be modified after rollback"
+        assert bucket[tree_2.oid].label == 'main-2', "Tree label should not be modified after rollback"
+
+        labels = [t.label for t in bucket]
+        assert 'main-1' in labels
+        assert 'main-2' in labels
+        assert 'worker-1' not in labels
+        assert 'worker-2' not in labels

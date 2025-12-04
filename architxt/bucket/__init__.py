@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable, Generator, Iterable, MutableSet
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, overload
 
-import anyio.to_thread
-from aiostream import Stream, stream
+import more_itertools
+from aiostream import stream
 from typing_extensions import Self
 
 from architxt.tree import Forest, Tree, TreeOID
-from architxt.utils import BATCH_SIZE
+from architxt.utils import get_commit_batch_size
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -20,49 +21,65 @@ __all__ = ['TreeBucket']
 
 class TreeBucket(ABC, MutableSet[Tree], Forest):
     """
-    A scalable, persistent, set-like container for :py:class:`~architxt.tree.Tree`.
+    Abstract base class for a scalable, persistent, transactional container of :py:class:`~architxt.tree.Tree` objects.
 
-    The :py:class:`TreeBucket` behaves like a mutable set and provides persistent storage.
-    It is designed to handle large collections of trees efficiently,
-    supporting standard set operations and transactional updates.
+    ``TreeBucket`` behaves like a :py:class:`set` while providing durable storage and explicit transactional
+    semantics. It is designed for large-scale data and supports millions of trees with bounded
+    memory usage through batched commits.
 
     **Transaction Management**
 
-    - Bucket automatically handles transactions when adding or removing :py:class:`~architxt.tree.Tree` from the bucket.
-    - If a :py:class:`~architxt.tree.Tree` is modified after being added to the bucket, you must call :py:meth:`~TreeBucket.commit` to persist those changes.
+    - Adding or removing trees requires an active transaction.
+    - Modifying a tree that is already in a bucket is not possible without a transaction.
+      The modifications are automatically persisted when the transaction is committed.
+    - Exceptions inside a ``with bucket.transaction():`` block automatically roll back the transaction.
 
     **Available Implementations**
 
-    .. autoclasstree:: architxt.bucket.TreeBucket
-        :full:
+    .. inheritance-diagram:: architxt.bucket.TreeBucket
+        :include-subclasses:
+        :parts: 1
 
     """
 
-    @abstractmethod
-    def update(self, trees: Iterable[Tree], batch_size: int = BATCH_SIZE) -> None:
+    def _update(self, trees: Iterable[Tree], commit: bool) -> None:
+        with self.transaction() if commit else nullcontext():
+            for tree in trees:
+                self.add(tree)
+
+    def update(self, trees: Iterable[Tree], *, commit: bool | int = False) -> None:
         """
-        Add multiple :py:class:`~architxt.tree.Tree` to the bucket, managing memory via chunked transactions.
+        Add multiple :py:class:`~architxt.tree.Tree` to the bucket.
 
         :param trees: Trees to add to the bucket.
-        :param batch_size: The number of trees to be added at once.
+        :param commit: Commit automatically. If already in a transaction, no commit is applied.
+            - If False (default), no commits are made, it relies on the current transaction.
+            - If True, commits in batch.
+            - If an integer, commits every N tree.
+            To avoid memory issues, we recommend using incremental commit with large iterables.
         """
+        batch_size = get_commit_batch_size(commit)
 
-    async def async_update(self, trees: Iterable[Tree] | AsyncIterable[Tree], batch_size: int = BATCH_SIZE) -> None:
+        for chunk in more_itertools.ichunked(trees, batch_size):
+            self._update(chunk, bool(commit))
+
+    async def async_update(self, trees: Iterable[Tree] | AsyncIterable[Tree], *, commit: bool | int = False) -> None:
         """
         Asynchronously add multiple :py:class:`~architxt.tree.Tree` to the bucket.
 
         This method mirrors the behavior of :py:meth:`~TreeBucket.update` but supports asynchronous iteration.
-        Internally, it delegates each chunk to a background thread.
 
         :param trees: Trees to add to the bucket.
-        :param batch_size: The number of trees to be added at once.
+        :param commit: Commit automatically. If already in a transaction, no commit is applied.
+            - If False (default), no commits are made, it relies on the current transaction.
+            - If True, commits in batch.
+            - If an integer, commits every N tree.
+            To avoid memory issues, we recommend using incremental commit with large iterables.
         """
-        chunk_stream: Stream[list[Tree]] = stream.chunks(stream.iterate(trees), batch_size)
-        chunk: list[Tree]
+        batch_size = get_commit_batch_size(commit)
 
-        async with chunk_stream.stream() as streamer:
-            async for chunk in streamer:
-                await anyio.to_thread.run_sync(self.update, chunk, batch_size)
+        async for chunk in stream.chunks(stream.iterate(trees), batch_size):
+            self._update(chunk, bool(commit))
 
     @abstractmethod
     def close(self) -> None:
@@ -75,11 +92,19 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
 
         Upon exiting the context, the transaction is automatically committed.
         If an exception occurs within the context, the transaction is rolled back.
+
+        Transactions are reentrant.
         """
 
     @abstractmethod
-    def commit(self) -> None:
-        """Persist any in-memory changes to :py:class:`~architxt.tree.Tree` in the bucket."""
+    def sync(self) -> None:
+        """
+        Synchronize the in-memory state of this bucket with its underlying storage.
+
+        Implementations typically flush, refresh and/or invalidate caches and reload metadata so that subsequent
+        operations reflect external changes. This operation may be expensive, so it should be called sparingly,
+        but it is often required in concurrent environments (e.g., when using threads or subprocesses).
+        """
 
     @abstractmethod
     def oids(self) -> Generator[TreeOID, None, None]:

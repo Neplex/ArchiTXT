@@ -1,26 +1,29 @@
 from __future__ import annotations
 
-import gc
+import contextlib
+import os
+import shutil
 import tempfile
 import uuid
+import weakref
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
-import more_itertools
 import transaction
 import ZODB.config
-from aiostream import stream
 from BTrees.OOBTree import OOBTree
+from transaction.interfaces import AlreadyInTransaction, NoTransaction
+from ZODB.Connection import resetCaches
+from zodburi import resolve_uri
 
 from architxt.tree import Tree, TreeOID
-from architxt.utils import BATCH_SIZE, is_memory_low
+from architxt.utils import update_url_queries
 
 from . import TreeBucket
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Generator, Iterable, Iterator
+    from collections.abc import Generator, Iterable, Iterator
 
-    from aiostream.core import Stream
     from ZODB.Connection import Connection
 
 __all__ = ['ZODBTreeBucket']
@@ -38,57 +41,131 @@ class ZODBTreeBucket(TreeBucket):
         UUIDs are stored as bytes rather than integers, because ZODB only supports integers up to
         64 bits, while UUIDs require 128 bits.
 
-    Without a specified storage path, the container creates a temporary database automatically deleted upon closing.
+    If no storage is specified, the bucket use a temporary database that is automatically deleted upon closing.
+
+    The bucket is serializable so it can be passed to a subprocess. However, when a temporary database is used,
+    the original bucket remains responsible for cleanup. This means the original bucket must stay open for the
+    subprocess to access the database safely.
+
+    >>> from architxt.bucket.zodb import ZODBTreeBucket
+    >>> from architxt.tree import Tree
 
     >>> bucket = ZODBTreeBucket()
     >>> tree = Tree.fromstring('(S (NP Alice) (VP (VB like) (NNS apples)))')
-    >>> bucket.add(tree)
+    >>> tree.label
+    'S'
+
+    >>> with bucket.transaction():
+    ...     bucket.add(tree) # Add the tree to the bucket
     >>> len(bucket)
     1
-    >>> tree.label = 'ROOT'
-    >>> transaction.commit()  # Persist changes made to the tree
+    >>> tree in bucket
+    True
+
+    >>> with bucket.transaction():
+    ...     tree.label = 'ROOT' # Modify the tree within a transaction
     >>> tree.label
     'ROOT'
-    >>> tree.label = 'S'
-    >>> transaction.abort()  # Cancel changes made to the tree
+    >>> bucket[tree.oid].label
+    'ROOT'
+
+    >>> with bucket.transaction():
+    ...     tree.label = 'S'
+    ...     raise ValueError("rollback")  # Transaction are rolled back on exception
+    Traceback (most recent call last):
+        ...
+    ValueError: rollback
+
     >>> tree.label
     'ROOT'
-    >>> bucket.discard(tree)
+    >>> with bucket.transaction():
+    ...     bucket.discard(tree)
     >>> len(bucket)
     0
+    >>> tree in bucket
+    False
+
     >>> bucket.close()
     """
 
     _db: ZODB.DB
     _connection: Connection
-    _data: OOBTree
-    _temp_dir: tempfile.TemporaryDirectory | None
+    _cleanup: bool = False
 
     def __init__(
         self,
         storage_path: Path | None = None,
+        uri: str | None = None,
         bucket_name: str = 'architxt',
         read_only: bool = False,
     ) -> None:
         """
         Initialize the bucket and connect to the underlying ZODB storage.
 
-        :param storage_path: Path to the storage directory.
-            If None, a temporary location is used to store the database.
+        Either a `uri` or a `storage_path` may be provided. If both are given, the `uri` takes precedence.
+        If neither is provided, a temporary local database is created.
+
+        Local databases (temporary or using `storage_path`) use a SQLite backend to support
+        multiprocess concurrency. File-based backends are technically possible but not recommended,
+        as they can break parallel execution.
+
+        For large datasets or in a multi host setup, prefer a relational backend via a ZODB URI.
+        For example, to use PostgreSQL, specify a URI such as: ``postgresql://user:password@localhost/dbname``.
+
+        :param storage_path: Path to the storage directory for local storage.
+        :param uri: ZODB URI string defining the storage backend.
         :param bucket_name: Name of the root key under which the internal OOBTree is stored.
         :param read_only: Whether to open the database in read-only mode.
         """
-        if storage_path is None:
-            self._temp_dir = tempfile.TemporaryDirectory(prefix='architxt')
-            self._storage_path = Path(self._temp_dir.name)
-
-        else:
-            self._temp_dir = None
-            self._storage_path = storage_path
-
+        self._storage_path = storage_path
+        self._uri = uri
         self._bucket_name = bucket_name
         self._read_only = read_only
-        self._db = ZODB.config.databaseFromString(f"""
+
+        self._db = self._get_db()
+        self._connection = self._get_connection()
+
+        # Check bucket exist or create it
+        root = self._connection.root()
+        if self._bucket_name not in root:
+            if self._read_only:
+                msg = f"Bucket '{self._bucket_name}' does not exist."
+                raise KeyError(msg)
+
+            with self.transaction():
+                root[self._bucket_name] = OOBTree()
+
+        # Add support for fork on supported systems
+        # When the process is fork, the child process should recreate the connection
+        if hasattr(os, "register_at_fork"):
+            weak_self = weakref.ref(self)
+            os.register_at_fork(after_in_child=lambda: (bucket := weak_self()) and bucket._after_fork())
+
+    def _get_db(self) -> ZODB.DB:
+        """
+        Create and configure the ZODB database.
+
+        URI-based storage takes precedence over local storage path.
+        For local storage, if no path is provided, a temporary directory is created.
+        We use RelStorage with SQLite as the backend for local storage to allow multi-process access.
+
+        :return: A configured ZODB database instance.
+        """
+        if self._uri:
+            uri = update_url_queries(self._uri, read_only='true') if self._read_only else self._uri
+            storage_factory, db_options = resolve_uri(uri)
+            storage = storage_factory()
+            return ZODB.DB(storage, **db_options)
+
+        if self._storage_path is None:
+            if self._read_only:
+                msg = "Cannot open a read-only bucket with no storage path specified."
+                raise ValueError(msg)
+
+            self._storage_path = Path(tempfile.mkdtemp(prefix='architxt'))
+            self._cleanup = True
+
+        return ZODB.config.databaseFromString(f"""
             %import relstorage
 
             <zodb main>
@@ -99,111 +176,99 @@ class ZODBTreeBucket(TreeBucket):
                     <sqlite3>
                         data-dir {self._storage_path}
                         <pragmas>
-                            synchronous off
+                            synchronous normal
                             foreign_keys off
                             defer_foreign_keys on
                             temp_store memory
+                            journal_mode wal
+                            busy_timeout 10000
                         </pragmas>
                     </sqlite3>
                 </relstorage>
             </zodb>
         """)
-        self._connection = self._db.open()
-        root = self._connection.root()
 
-        if self._bucket_name not in root:
-            root[self._bucket_name] = OOBTree()
-            transaction.commit()
+    def _get_connection(self) -> Connection:
+        transaction_manager = transaction.TransactionManager(explicit=True)
+        return self._db.open(transaction_manager=transaction_manager)
 
-        self._data = root[self._bucket_name]
+    @property
+    def _data(self) -> OOBTree:
+        return self._connection.root()[self._bucket_name]
 
-    def __reduce__(self) -> tuple[type, tuple[Path, str, bool]]:
-        return self.__class__, (self._storage_path, self._bucket_name, self._read_only)
+    def __reduce__(self) -> tuple[type, tuple[Path | None, str | None, str, bool]]:
+        return self.__class__, (self._storage_path, self._uri, self._bucket_name, self._read_only)
+
+    def _savepoint(self) -> None:
+        self._connection.savepoint()
+
+    def _after_fork(self) -> None:
+        # We disable database cleanup as it is the responsibility of the parent
+        self._cleanup = False
+        # We also recreate the connection as it inherit the one from the parent process
+        self.sync()
 
     def close(self) -> None:
         """
         Close the database connection and release associated resources.
 
         This will:
-
         - Abort any uncommitted transaction.
         - Close the active database connection.
         - Clean up temporary storage if one was created.
         """
-        self._connection.transaction_manager.abort()
+        with contextlib.suppress(NoTransaction):
+            self._connection.abort(None)
+
         self._connection.close()
         self._db.close()
 
-        if self._temp_dir is not None:  # If a temporary directory was used, clean it up
-            self._temp_dir.cleanup()
+        if self._cleanup:  # If a temporary directory was used, clean it up
+            shutil.rmtree(self._storage_path)
 
-    def transaction(self) -> transaction.TransactionManager:
-        return self._connection.transaction_manager
+    @contextlib.contextmanager
+    def transaction(self) -> Generator[None, None, None]:
+        try:
+            with self._connection.transaction_manager:
+                yield
 
-    def commit(self) -> None:
-        self._connection.transaction_manager.commit()
+        except AlreadyInTransaction:
+            yield
 
-    def update(self, trees: Iterable[Tree], batch_size: int = BATCH_SIZE, _memory_threshold_mb: int = 3_000) -> None:
+    def sync(self) -> None:
         """
-        Add multiple :py:class:`~architxt.tree.Tree` to the bucket, managing memory via chunked transactions.
+        Synchronize the in-memory state of this bucket with its underlying storage.
 
-        Trees are added in batches to reduce memory footprint.
-        When available system memory falls below the threshold,
-        the connection cache is minimized and garbage collection is triggered.
-
-        .. warning::
-            Only the last chunk is rolled back on error.
-            Prior chunks remain committed, potentially leaving the database in a partially updated state.
-
-        :param trees: Trees to add to the bucket.
-        :param batch_size: The number of trees to be added at once.
-        :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
+        It clears the local cache and refresh the connection.
+        This can be used to avoid connection timeout in long-running process.
         """
-        for chunk in more_itertools.chunked(trees, batch_size):
+        resetCaches()
+        # We need to refresh the connection to apply cache reset
+        self._connection.close()
+        self._db.pool.clear()  # <= By default, connection are reused, this ensure we create a fresh connection
+        self._connection = self._get_connection()
+
+    def _update(self, trees: Iterable[Tree], commit: bool) -> None:
+        if commit:
             with self.transaction():
-                self._data.update({tree.oid.bytes: tree for tree in chunk})
+                self._data.update({tree.oid.bytes: tree for tree in trees})
 
-            if is_memory_low(_memory_threshold_mb):
-                self._connection.cacheMinimize()
-                gc.collect()
-
-    async def async_update(
-        self,
-        trees: Iterable[Tree] | AsyncIterable[Tree],
-        batch_size: int = BATCH_SIZE,
-        _memory_threshold_mb: int = 3_000,
-    ) -> None:
-        """
-        Asynchronously add multiple :py:class:`~architxt.tree.Tree` to the bucket.
-
-        This method mirrors the behavior of :py:meth:`~ZODBTreeBucket.update` but supports asynchronous iteration.
-        Internally, it processes each chunk synchronously within the async context to ensure cache is handled correctly.
-
-        :param trees: Trees to add to the bucket.
-        :param batch_size: The number of trees to be added at once.
-        :param _memory_threshold_mb: Memory threshold (in MB) below which garbage collection is triggered.
-        """
-        chunk_stream: Stream[list[Tree]] = stream.chunks(stream.iterate(trees), batch_size)
-        chunk: list[Tree]
-
-        async with chunk_stream.stream() as streamer:
-            async for chunk in streamer:
-                self.update(chunk, batch_size, _memory_threshold_mb)
+        else:
+            self._data.update({tree.oid.bytes: tree for tree in trees})
+            self._savepoint()
 
     def add(self, tree: Tree) -> None:
         """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""
-        with self.transaction():
-            self._data[tree.oid.bytes] = tree
+        self._data[tree.oid.bytes] = tree
 
     def discard(self, tree: Tree) -> None:
         """Remove a :py:class:`~architxt.tree.Tree` from the bucket if it exists."""
-        with self.transaction():
-            self._data.pop(tree.oid.bytes)
+        self._data.pop(tree.oid.bytes, None)
 
     def clear(self) -> None:
         """Remove all :py:class:`~architxt.tree.Tree` objects from the bucket."""
-        with self.transaction():
-            self._data.clear()
+        self._data.clear()
+        self._savepoint()
 
     def oids(self) -> Generator[TreeOID, None, None]:
         for key in self._data:
@@ -234,4 +299,4 @@ class ZODBTreeBucket(TreeBucket):
         return len(self._data)
 
     def __iter__(self) -> Iterator[Tree]:
-        return self._data.itervalues()
+        return iter(self._data.values())
