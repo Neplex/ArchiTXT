@@ -278,8 +278,11 @@ def _simplify_names(forest: Forest) -> None:
 
     for tree in forest:
         for subtree in tree.subtrees():
-            if has_type(subtree, NodeType.REL) and (groups := subtree.groups()) and len(groups) == 2:
+            if has_type(subtree, NodeType.REL) and (groups := subtree.groups()):
                 subtree.label = NodeLabel(NodeType.REL, '<->'.join(sorted(groups)))
+
+            if has_type(subtree, NodeType.COLL) and (groups := subtree.groups()):
+                subtree.label = NodeLabel(NodeType.COLL, groups.pop())
 
 
 def _get_base_name(name: str) -> str:
