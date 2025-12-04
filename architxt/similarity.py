@@ -79,7 +79,8 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay:
     :param x: The first tree object.
     :param y: The second tree object.
     :param metric: A metric function to compute the similarity between the entity labels of the two trees.
-    :param decay: The decay factor for the weighted mean. The higher the value, the more the weight of context decreases with distance.
+    :param decay: The decay factor for the weighted mean. Must be strictly greater than 0.
+        The higher the value, the more the weight of context decreases with distance.
     :return: A similarity score between 0 and 1, where 1 indicates maximum similarity.
 
     >>> from architxt.tree import Tree
@@ -88,6 +89,10 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay:
     0.5555555555555555
 
     """
+    if decay <= 0:
+        msg = "decay must be a positive number"
+        raise ValueError(msg)
+
     if x.oid == y.oid or x.label == y.label:
         return 1.0
 
@@ -120,7 +125,7 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay:
     return min(max(sim_sum / weight_sum, 0), 1)  # Need to fix float issues
 
 
-def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> bool:
+def sim(x: Tree, y: Tree, tau: float, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay: float = DECAY) -> bool:
     """
     Determine whether the similarity between two tree objects exceeds a given threshold `tau`.
 
@@ -128,6 +133,8 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
     :param y: The second tree object to compare.
     :param tau: The threshold value for similarity.
     :param metric: A callable similarity metric to compute the similarity between the two trees.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :return: `True` if the similarity between `x` and `y` is greater than or equal to `tau`, otherwise `False`.
 
     >>> from architxt.tree import Tree
@@ -136,10 +143,12 @@ def sim(x: Tree, y: Tree, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> b
     True
 
     """
-    return similarity(x, y, metric=metric) >= tau
+    return similarity(x, y, metric=metric, decay=decay) >= tau
 
 
-def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> npt.NDArray[np.uint16]:
+def compute_dist_matrix(
+    subtrees: Collection[Tree], *, metric: METRIC_FUNC, decay: float = DECAY
+) -> npt.NDArray[np.float32]:
     """
     Compute the condensed distance matrix for a collection of subtrees.
 
@@ -150,12 +159,14 @@ def compute_dist_matrix(subtrees: Collection[Tree], *, metric: METRIC_FUNC) -> n
 
     :param subtrees: A list of subtrees for which pairwise distances will be calculated.
     :param metric: A callable similarity metric to compute the similarity between the two trees.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :return: A 1D numpy array containing the condensed distance matrix (only a triangle of the full matrix).
     """
     nb_combinations = math.comb(len(subtrees), 2)
 
     distances = (
-        (1 - similarity(x, y, metric=metric)) if abs(x.height - y.height) < 5 else 1.0
+        (1 - similarity(x, y, metric=metric, decay=decay)) if abs(x.height - y.height) < 5 else 1.0
         for x, y in combinations(subtrees, 2)
     )
 
@@ -177,6 +188,7 @@ def equiv_cluster(
     *,
     tau: float,
     metric: METRIC_FUNC = DEFAULT_METRIC,
+    decay: float = DECAY,
     _all_subtrees: bool = True,
     _step: int | None = None,
 ) -> TREE_CLUSTER:
@@ -191,6 +203,8 @@ def equiv_cluster(
     :param trees: The forest from which to extract and cluster subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :param _all_subtrees: If true, compute the similarity between all subtrees, else only the given trees are compared.
     :param _step: The MLFlow step for logging.
     :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
@@ -209,7 +223,7 @@ def equiv_cluster(
         return {}
 
     # Compute distance matrix for all subtrees
-    dist_matrix = compute_dist_matrix(subtrees, metric=metric)
+    dist_matrix = compute_dist_matrix(subtrees, metric=metric, decay=decay)
 
     # Perform hierarchical clustering based on the distance threshold tau
     linkage_matrix = hierarchy.linkage(dist_matrix, method='single')
@@ -262,7 +276,12 @@ def equiv_cluster(
 
 
 def get_equiv_of(
-    t: Tree, equiv_subtrees: TREE_CLUSTER, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC
+    t: Tree,
+    equiv_subtrees: TREE_CLUSTER,
+    *,
+    tau: float,
+    metric: METRIC_FUNC = DEFAULT_METRIC,
+    decay: float = DECAY,
 ) -> str | None:
     """
     Get the cluster containing the specified tree `t` based on similarity comparisons with the given set of clusters.
@@ -273,11 +292,13 @@ def get_equiv_of(
     :param equiv_subtrees: The set of equivalent subtrees.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :return: The name of the cluster that meets the similarity threshold.
     """
     distance_to_center = {}
     for cluster_name, cluster in equiv_subtrees.items():
-        if t in cluster or (cluster_sim := similarity(t, cluster[0], metric=metric)) >= tau:
+        if t in cluster or (cluster_sim := similarity(t, cluster[0], metric=metric, decay=decay)) >= tau:
             return cluster_name
 
         distance_to_center[cluster_name] = cluster_sim
@@ -289,7 +310,7 @@ def get_equiv_of(
         cluster = equiv_subtrees[cluster_name]
 
         # Early exit: stop checking once we find a matching cluster
-        if t in cluster or any(sim(x, t, tau, metric) for x in cluster):
+        if t in cluster or any(sim(x, t, tau=tau, metric=metric, decay=decay) for x in cluster):
             return cluster_name
 
     # Return an empty tuple if no similar cluster is found
@@ -301,6 +322,7 @@ def entity_labels(
     *,
     tau: float,
     metric: METRIC_FUNC | None = DEFAULT_METRIC,
+    decay: float = DECAY,
 ) -> dict[TreeOID, str]:
     """
     Process the given forest to assign labels to entities based on clustering of their ancestor.
@@ -308,7 +330,9 @@ def entity_labels(
     :param forest: The forest from which to extract and cluster entities.
     :param tau: The similarity threshold for clustering.
     :param metric: The similarity metric function used to compute the similarity between subtrees.
-                    If None, use the parent label as the equivalent class.
+        If None, use the parent label as the equivalent class.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :return: A dictionary mapping entities to their respective cluster name.
     """
     if metric is None:
@@ -319,7 +343,9 @@ def entity_labels(
         for tree in forest
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
     )
-    equiv_subtrees: TREE_CLUSTER = equiv_cluster(entity_parents, tau=tau, metric=metric, _all_subtrees=False)
+    equiv_subtrees: TREE_CLUSTER = equiv_cluster(
+        entity_parents, tau=tau, metric=metric, decay=decay, _all_subtrees=False
+    )
 
     return {
         child.oid: cluster_name

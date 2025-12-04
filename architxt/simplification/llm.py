@@ -35,7 +35,7 @@ from architxt.bucket import TreeBucket
 from architxt.forest import export_forest_to_jsonl
 from architxt.metrics import Metrics
 from architxt.schema import Schema
-from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC
+from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import windowed_shuffle
 
@@ -486,6 +486,7 @@ async def llm_rewrite(
     llm: BaseChatModel,
     max_tokens: int,
     tau: float = 0.7,
+    decay: float = DECAY,
     min_support: int | None = None,
     vocab_similarity: float = 0.6,
     refining_steps: int = 0,
@@ -503,6 +504,8 @@ async def llm_rewrite(
     :param llm: The LLM model to interact with for rewriting and simplification tasks.
     :param max_tokens: The token limit of the prompt.
     :param tau: Threshold for subtree similarity when clustering.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :param min_support: Minimum support for vocab.
     :param vocab_similarity: Similarity threshold in [0, 1] for merging vocabulary labels.
     :param refining_steps: Number of refining steps to perform after the initial rewrite.
@@ -519,7 +522,7 @@ async def llm_rewrite(
 
     :return: A `Metrics` object encapsulating the results and metrics calculated for the LLM rewrite process.
     """
-    metrics = Metrics(forest, tau=tau, metric=metric)
+    metrics = Metrics(forest, tau=tau, decay=decay, metric=metric)
     min_support = min_support or max((len(forest) // 20), 2)
 
     if mlflow.active_run():
@@ -527,6 +530,7 @@ async def llm_rewrite(
             {
                 'nb_sentences': len(forest),
                 'tau': tau,
+                'decay': decay,
                 'min_support': min_support,
                 'vocab_similarity': vocab_similarity,
                 'metric': metric.__name__,

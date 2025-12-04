@@ -7,6 +7,7 @@ import mlflow
 import typer
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.cli.utils import load_forest
+from architxt.similarity import DECAY
 from architxt.simplification.tree_rewriting import rewrite
 from mlflow.data.code_dataset_source import CodeDatasetSource
 from mlflow.data.meta_dataset import MetaDataset
@@ -27,6 +28,7 @@ def simplify(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
     epoch: int = typer.Option(100, help="Number of iteration for tree rewriting.", min=1),
     min_support: int = typer.Option(20, help="Minimum support for tree patterns.", min=1),
     workers: list[int] = typer.Option(
@@ -76,6 +78,7 @@ def simplify(
                         rewrite(
                             bench_forest,
                             tau=tau,
+                            decay=decay,
                             epoch=epoch,
                             min_support=min_support,
                             debug=debug,

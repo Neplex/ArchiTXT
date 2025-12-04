@@ -13,7 +13,7 @@ from cachetools.keys import methodkey
 from tqdm.auto import tqdm
 
 from .schema import Schema
-from .similarity import DEFAULT_METRIC, METRIC_FUNC, entity_labels, jaccard
+from .similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, entity_labels, jaccard
 from .tree import Forest, NodeType, Tree, has_type
 
 if TYPE_CHECKING:
@@ -138,6 +138,8 @@ class Metrics:
 
     :param forest: The forest to analyze
     :param tau: Threshold for subtree similarity when clustering.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :param metric: The metric function used to compute similarity between subtrees.
 
     >>> forest = [tree1, tree2, tree3]  # doctest: +SKIP
@@ -150,11 +152,14 @@ class Metrics:
     ... similarity = metrics.cluster_ami()
     """
 
-    def __init__(self, forest: Forest, *, tau: float, metric: METRIC_FUNC = DEFAULT_METRIC) -> None:
+    def __init__(
+        self, forest: Forest, *, tau: float, decay: float = DECAY, metric: METRIC_FUNC = DEFAULT_METRIC
+    ) -> None:
         self._cache: dict[Hashable, Any] = {}
         self._forest = forest
         self._tau = tau
         self._metric = metric
+        self._decay = decay
 
         self._source_schema = Schema.from_forest(self._forest)
         self._current_schema = self._source_schema
@@ -167,8 +172,8 @@ class Metrics:
         self._source_label_count = Counter(subtree.label for tree in self._forest for subtree in tree.subtrees())
         self._current_label_count = self._source_label_count
 
-        self._source_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric)
-        self._current_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric)
+        self._source_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric, decay=self._decay)
+        self._current_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric, decay=self._decay)
 
     def update(self, forest: Forest | None = None) -> None:
         """
@@ -184,7 +189,7 @@ class Metrics:
         self._datasets = self._current_schema.extract_datasets(forest)
         self._current_entities = {entity.oid.hex for tree in forest for entity in tree.entities()}
         self._current_label_count = Counter(subtree.label for tree in forest for subtree in tree.subtrees())
-        self._current_clustering = entity_labels(forest, tau=self._tau, metric=self._metric)
+        self._current_clustering = entity_labels(forest, tau=self._tau, metric=self._metric, decay=self._decay)
 
     @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='_cluster_labels'))
     def _cluster_labels(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
