@@ -21,6 +21,7 @@ from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
 from architxt.metrics import Metrics
 from architxt.schema import Group, Relation, Schema
+from architxt.similarity import DECAY
 from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
@@ -68,6 +69,7 @@ def simplify(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
     epoch: int = typer.Option(100, help="Number of iteration for tree rewriting.", min=1),
     min_support: int = typer.Option(20, help="Minimum support for tree patterns.", min=1),
     workers: int | None = typer.Option(
@@ -91,10 +93,10 @@ def simplify(
         forest.update(load_forest(files), commit=True)
 
         console.print(
-            f'[blue]Rewriting {len(forest)} trees with tau={tau}, epoch={epoch}, min_support={min_support}[/]'
+            f'[blue]Rewriting {len(forest)} trees with tau={tau}, decay={decay}, epoch={epoch}, min_support={min_support}[/]'
         )
         result_metrics = rewrite(
-            forest, tau=tau, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers
+            forest, tau=tau, decay=decay, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers
         )
 
         # Generate schema
@@ -110,6 +112,7 @@ def simplify_llm(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
     min_support: int = typer.Option(20, help="Minimum support for vocab.", min=1),
     vocab_similarity: float = typer.Option(0.6, help="The vocabulary similarity threshold.", min=0, max=1),
     refining_steps: int = typer.Option(0, help="Number of refining steps."),
@@ -222,6 +225,7 @@ def simplify_llm(
             llm,
             max_tokens,
             tau,
+            decay,
             min_support,
             vocab_similarity,
             refining_steps,
@@ -288,6 +292,7 @@ def compare(
     file2: Path = typer.Argument(..., exists=True, readable=True, help="Path of the first data file to load."),
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
 ) -> None:
     # Metrics
     inspector1 = ForestInspector()
@@ -296,7 +301,7 @@ def compare(
     with ZODBTreeBucket(storage_path=file1, read_only=True) as bucket:
         for _ in inspector1(bucket):
             pass
-        metrics = Metrics(bucket, tau=tau)
+        metrics = Metrics(bucket, tau=tau, decay=decay)
 
     with ZODBTreeBucket(storage_path=file2, read_only=True) as bucket:
         for _ in inspector2(bucket):

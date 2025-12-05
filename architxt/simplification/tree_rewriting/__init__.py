@@ -17,7 +17,7 @@ from tqdm.auto import tqdm, trange
 
 from architxt.bucket import TreeBucket
 from architxt.metrics import Metrics
-from architxt.similarity import DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
+from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import ExceptionGroup, get_commit_batch_size
 
@@ -55,6 +55,7 @@ def rewrite(
     forest: Forest,
     *,
     tau: float = 0.7,
+    decay: float = DECAY,
     epoch: int = 100,
     min_support: int | None = None,
     metric: METRIC_FUNC = DEFAULT_METRIC,
@@ -69,6 +70,8 @@ def rewrite(
 
     :param forest: The forest to perform on.
     :param tau: Threshold for subtree similarity when clustering.
+    :param decay: The similarity decay factor.
+        The higher the value, the more the weight of context decreases with distance.
     :param epoch: Maximum number of rewriting steps.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
@@ -84,9 +87,9 @@ def rewrite(
         The commit parameter only controls the batch size for these commits.
     :param simplify_names: Should the groups/relations names be simplified after the rewrite?
 
-    :return: The rewritten forest.
+    :return: A `Metrics` object encapsulating the results and metrics calculated for the rewrite process.
     """
-    metrics = Metrics(forest, tau=tau, metric=metric)
+    metrics = Metrics(forest, tau=tau, decay=decay, metric=metric)
 
     if not len(forest):
         return metrics
@@ -100,6 +103,7 @@ def rewrite(
             {
                 'nb_sentences': len(forest),
                 'tau': tau,
+                'decay': decay,
                 'epoch': epoch,
                 'min_support': min_support,
                 'metric': metric.__name__,
@@ -127,6 +131,7 @@ def rewrite(
                     iteration,
                     forest,
                     tau=tau,
+                    decay=decay,
                     min_support=min_support,
                     metric=metric,
                     edit_ops=edit_ops,
@@ -143,7 +148,7 @@ def rewrite(
                 if iteration > 0 and not has_simplified:
                     break
 
-        _post_process(forest, tau=tau, metric=metric, executor=executor, batch_size=batch_size)
+        _post_process(forest, tau=tau, decay=decay, metric=metric, executor=executor, batch_size=batch_size)
 
         if simplify_names:
             with forest.transaction() if isinstance(forest, TreeBucket) else nullcontext():
@@ -162,6 +167,7 @@ def _rewrite_step(
     forest: Forest,
     *,
     tau: float,
+    decay: float,
     min_support: int,
     metric: METRIC_FUNC,
     edit_ops: Sequence[type[Operation]],
@@ -175,6 +181,7 @@ def _rewrite_step(
     :param iteration: The current iteration number.
     :param forest: The forest to perform on.
     :param tau: Threshold for subtree similarity when clustering.
+    :param decay: The similarity decay factor.
     :param min_support: Minimum support of groups.
     :param metric: The metric function used to compute similarity between subtrees.
     :param edit_ops: The list of operations to perform on the forest.
@@ -192,7 +199,7 @@ def _rewrite_step(
             tree.reduce_all({NodeType.ENT})
 
     with mlflow.start_span('equiv_cluster') if mlflow.active_run() else nullcontext():
-        equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric, _step=iteration if debug else None)
+        equiv_subtrees = equiv_cluster(forest, tau=tau, decay=decay, metric=metric, _step=iteration if debug else None)
 
     with (
         mlflow.start_span('find_groups') if mlflow.active_run() else nullcontext(),
@@ -201,7 +208,7 @@ def _rewrite_step(
         find_groups(equiv_subtrees, min_support)
 
     op_id = apply_operations(
-        [operation(tau=tau, min_support=min_support, metric=metric) for operation in edit_ops],
+        [operation(tau=tau, decay=decay, min_support=min_support, metric=metric) for operation in edit_ops],
         forest,
         batch_size=batch_size,
         equiv_subtrees=equiv_subtrees,
@@ -218,6 +225,7 @@ def _post_process(
     forest: Forest,
     *,
     tau: float,
+    decay: float,
     metric: METRIC_FUNC,
     executor: ProcessPoolExecutor,
     batch_size: int,
@@ -227,21 +235,22 @@ def _post_process(
 
     :param forest: The forest to perform on.
     :param tau: Threshold for subtree similarity when clustering.
+    :param decay: The similarity decay factor.
     :param metric: The metric function used to compute similarity between subtrees.
     :param executor: A pool executor to parallelize the processing of the forest.
     :param batch_size: The number of trees to process in each batch.
     """
-    equiv_subtrees = equiv_cluster(forest, tau=tau, metric=metric)
+    equiv_subtrees = equiv_cluster(forest, tau=tau, decay=decay, metric=metric)
 
     apply_operations(
         [
             (
                 '[post-process] name_relations',
-                FindRelationsOperation(tau=tau, min_support=0, metric=metric, naming_only=True),
+                FindRelationsOperation(tau=tau, decay=decay, min_support=0, metric=metric, naming_only=True),
             ),
             (
                 '[post-process] name_collections',
-                FindCollectionsOperation(tau=tau, min_support=0, metric=metric, naming_only=True),
+                FindCollectionsOperation(tau=tau, decay=decay, min_support=0, metric=metric, naming_only=True),
             ),
         ],
         forest,

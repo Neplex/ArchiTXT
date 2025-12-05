@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 from mlflow.entities import SpanEvent
 
-from architxt.similarity import METRIC_FUNC, TREE_CLUSTER, get_equiv_of
+from architxt.similarity import DECAY, METRIC_FUNC, TREE_CLUSTER, get_equiv_of
 
 if TYPE_CHECKING:
     from architxt.tree import Tree
@@ -23,12 +23,14 @@ class Operation(ABC):
     methods.
 
     :param tau: Threshold for subtree similarity when clustering.
+    :param decay: The similarity decay factor.
     :param min_support: The minimum support value for a structure to be considered frequent.
     :param metric: The metric function to use for computing the similarity between subtrees.
     """
 
-    def __init__(self, *, tau: float, min_support: int, metric: METRIC_FUNC) -> None:
+    def __init__(self, *, tau: float, min_support: int, decay: float = DECAY, metric: METRIC_FUNC) -> None:
         self.tau = tau
+        self.decay = decay
         self.min_support = min_support
         self.metric = metric
 
@@ -50,7 +52,7 @@ class Operation(ABC):
             span.add_event(event)
 
     def get_equiv_of(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> str | None:
-        return get_equiv_of(tree, equiv_subtrees, tau=self.tau, metric=self.metric)
+        return get_equiv_of(tree, equiv_subtrees, tau=self.tau, decay=self.decay, metric=self.metric)
 
     @abstractmethod
     def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:
