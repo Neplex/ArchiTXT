@@ -14,6 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+    if: github.event_name != 'release'
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
