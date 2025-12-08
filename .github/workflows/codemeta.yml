@@ -38,6 +38,13 @@ jobs:
           github_token: '${{ secrets.GITHUB_TOKEN }}'
           message: ':label: Update project metadata [skip ci]'
 
+      - name: Upload codemeta.json to GitHub Release
+        if: github.event_name == 'release'
+        run: gh release upload "${TAG_NAME}" codemeta.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+
   archive-project:
     name: Archive (Software Heritage)
     runs-on: ubuntu-latest
