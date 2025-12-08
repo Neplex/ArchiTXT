@@ -17,6 +17,10 @@ jobs:
     concurrency:
       group: docker-build
     steps:
+      - uses: rokibhasansagar/slimhub_actions@v25.42.5
+        with:
+          retain: "vcs,container_tools,docker_buildkit"
+
       - name: Login to GHCR
         if: ${{ github.event_name == 'release' }}
         uses: docker/login-action@v3
