@@ -86,7 +86,7 @@
         }
     ],
     "dateCreated": "2023-09-08T17:17:08Z+0200",
-    "dateModified": "2025-12-08T10:08:33Z+0000",
+    "dateModified": "2025-12-10T13:30:53Z+0100",
     "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
     "developmentStatus": "https://www.repostatus.org/#wip",
     "identifier": "ArchiTXT",
