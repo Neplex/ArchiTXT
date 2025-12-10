@@ -18,6 +18,7 @@ from tqdm.auto import tqdm
 from architxt.tree import NodeType, Tree, TreeOID, has_type
 
 MAX_DEPTH = 5
+MAX_HEIGHT_DIFF = 5
 DECAY = 2
 METRIC_FUNC = Callable[[Collection[str], Collection[str]], float]
 TREE_CLUSTER = dict[str, Sequence[Tree]]
@@ -166,7 +167,7 @@ def compute_dist_matrix(
     nb_combinations = math.comb(len(subtrees), 2)
 
     distances = (
-        (1 - similarity(x, y, metric=metric, decay=decay)) if abs(x.height - y.height) < 5 else 1.0
+        (1 - similarity(x, y, metric=metric, decay=decay)) if abs(x.height - y.height) < MAX_HEIGHT_DIFF else 1.0
         for x, y in combinations(subtrees, 2)
     )
 

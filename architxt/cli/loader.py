@@ -1,5 +1,4 @@
-import functools
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 from pathlib import Path
 
 import anyio
@@ -58,7 +57,7 @@ def _ingest(forest: TreeBucket, trees: Iterable[Tree], incremental: bool) -> Non
             forest.update(trees)
 
 
-async def _async_ingest(forest: TreeBucket, trees: Iterable[Tree], incremental: bool) -> None:
+async def _async_ingest(forest: TreeBucket, trees: Iterable[Tree] | AsyncIterable[Tree], incremental: bool) -> None:
     if incremental:
         await forest.async_update(trees, commit=incremental)
     else:
@@ -200,9 +199,9 @@ def load_corpus(
     _resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else None
 
     with ZODBTreeBucket(storage_path=output) as forest:
-        update = functools.partial(_async_ingest, forest=forest, incremental=incremental)
         anyio.run(
-            update,
+            _async_ingest,
+            forest,
             raw_load_corpus(
                 corpus_path,
                 language,
@@ -214,6 +213,7 @@ def load_corpus(
                 entities_mapping=ENTITIES_MAPPING,
                 sample=sample,
             ),
+            incremental,
         )
 
         schema = Schema.from_forest(forest, keep_unlabelled=False)
