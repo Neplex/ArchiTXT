@@ -10,7 +10,6 @@ from .operation import Operation
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from architxt.similarity import TREE_CLUSTER
     from architxt.tree import _SubTree
 
 __all__ = [
@@ -29,7 +28,7 @@ class ReduceOperation(Operation, ABC):
     @abstractmethod
     def subtrees_to_reduce(self, tree: Tree) -> Iterable[_SubTree]: ...
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
+    def apply(self, tree: Tree) -> bool:
         reduced = False
 
         for subtree in self.subtrees_to_reduce(tree):

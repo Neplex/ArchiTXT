@@ -18,7 +18,7 @@ from tqdm.auto import tqdm, trange
 
 from architxt.bucket import TreeBucket
 from architxt.metrics import Metrics
-from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, TREE_CLUSTER, equiv_cluster
+from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, TreeClusterer
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import ExceptionGroup, get_commit_batch_size
 
@@ -84,7 +84,7 @@ def rewrite(
         - If True (default), commits in batch.
         - If an integer, commits every N tree.
         To avoid memory issues, we recommend using incremental commit with large iterables.
-        When using TreeBucket, workers always commit in internal transactions (to avoid serialisation).
+        When using TreeBucket, workers always commit in internal transactions (to avoid serialization).
         The commit parameter only controls the batch size for these commits.
     :param simplify_names: Should the groups/relations names be simplified after the rewrite?
 
@@ -98,6 +98,7 @@ def rewrite(
     batch_size = get_commit_batch_size(commit)
     min_support = min_support or max((len(forest) // 10), 2)
     max_workers = min(len(forest) // batch_size, max_workers or (cpu_count() - 2)) or 1
+    tree_clusterer = TreeClusterer(tau=tau, decay=decay, metric=metric)
 
     if mlflow.active_run():
         mlflow.log_params(
@@ -131,10 +132,8 @@ def rewrite(
                 has_simplified = _rewrite_step(
                     iteration,
                     forest,
-                    tau=tau,
-                    decay=decay,
+                    tree_clusterer=tree_clusterer,
                     min_support=min_support,
-                    metric=metric,
                     edit_ops=edit_ops,
                     debug=debug,
                     executor=executor,
@@ -149,7 +148,7 @@ def rewrite(
                 if iteration > 0 and not has_simplified:
                     break
 
-        _post_process(forest, tau=tau, decay=decay, metric=metric, executor=executor, batch_size=batch_size)
+        _post_process(forest, tree_clusterer=tree_clusterer, executor=executor, batch_size=batch_size)
 
         if simplify_names:
             with forest.transaction() if isinstance(forest, TreeBucket) else nullcontext():
@@ -167,10 +166,8 @@ def _rewrite_step(
     iteration: int,
     forest: Forest,
     *,
-    tau: float,
-    decay: float,
+    tree_clusterer: TreeClusterer,
     min_support: int,
-    metric: METRIC_FUNC,
     edit_ops: Sequence[type[Operation]],
     debug: bool,
     executor: ProcessPoolExecutor,
@@ -181,10 +178,8 @@ def _rewrite_step(
 
     :param iteration: The current iteration number.
     :param forest: The forest to perform on.
-    :param tau: Threshold for subtree similarity when clustering.
-    :param decay: The similarity decay factor.
+    :param tree_clusterer: A tree clusterer.
     :param min_support: Minimum support of groups.
-    :param metric: The metric function used to compute similarity between subtrees.
     :param edit_ops: The list of operations to perform on the forest.
     :param debug: Whether to enable debug logging.
     :param executor: A pool executor to parallelize the processing of the forest.
@@ -200,19 +195,20 @@ def _rewrite_step(
             tree.reduce_all({NodeType.ENT})
 
     with mlflow.start_span('equiv_cluster') if mlflow.active_run() else nullcontext():
-        equiv_subtrees = equiv_cluster(forest, tau=tau, decay=decay, metric=metric, _step=iteration if debug else None)
+        tree_clusterer.fit(forest)
+        if debug and mlflow.active_run():
+            tree_clusterer.mlflow_plot(f'similarity/{iteration}')
 
     with (
         mlflow.start_span('find_groups') if mlflow.active_run() else nullcontext(),
         forest.transaction() if isinstance(forest, TreeBucket) else nullcontext(),
     ):
-        find_groups(equiv_subtrees, min_support)
+        find_groups(tree_clusterer, min_support)
 
     op_id = apply_operations(
-        [operation(tau=tau, decay=decay, min_support=min_support, metric=metric) for operation in edit_ops],
+        [operation(tree_clusterer=tree_clusterer, min_support=min_support) for operation in edit_ops],
         forest,
         batch_size=batch_size,
-        equiv_subtrees=equiv_subtrees,
         executor=executor,
     )
 
@@ -225,9 +221,7 @@ def _rewrite_step(
 def _post_process(
     forest: Forest,
     *,
-    tau: float,
-    decay: float,
-    metric: METRIC_FUNC,
+    tree_clusterer: TreeClusterer,
     executor: ProcessPoolExecutor,
     batch_size: int,
 ) -> None:
@@ -235,27 +229,24 @@ def _post_process(
     Post-process the forest to find and name relations and collections.
 
     :param forest: The forest to perform on.
-    :param tau: Threshold for subtree similarity when clustering.
-    :param decay: The similarity decay factor.
-    :param metric: The metric function used to compute similarity between subtrees.
+    :param tree_clusterer: A tree clusterer.
     :param executor: A pool executor to parallelize the processing of the forest.
     :param batch_size: The number of trees to process in each batch.
     """
-    equiv_subtrees = equiv_cluster(forest, tau=tau, decay=decay, metric=metric)
+    tree_clusterer.fit(forest)
 
     apply_operations(
         [
             (
                 '[post-process] name_relations',
-                FindRelationsOperation(tau=tau, decay=decay, min_support=0, metric=metric, naming_only=True),
+                FindRelationsOperation(tree_clusterer=tree_clusterer, min_support=0, naming_only=True),
             ),
             (
                 '[post-process] name_collections',
-                FindCollectionsOperation(tau=tau, decay=decay, min_support=0, metric=metric, naming_only=True),
+                FindCollectionsOperation(tree_clusterer=tree_clusterer, min_support=0, naming_only=True),
             ),
         ],
         forest,
-        equiv_subtrees=equiv_subtrees,
         early_exit=False,
         executor=executor,
         batch_size=batch_size,
@@ -315,7 +306,6 @@ def apply_operations(
     edit_ops: Sequence[Operation | tuple[str, Operation]],
     forest: Forest,
     *,
-    equiv_subtrees: TREE_CLUSTER,
     early_exit: bool = True,
     executor: ProcessPoolExecutor,
     batch_size: int,
@@ -331,7 +321,6 @@ def apply_operations(
                      Each operation can either be a callable or a tuple `(name, callable)`
                      where `name` is a string identifier for the operation.
     :param forest: The input forest (a collection of trees) on which operations are applied.
-    :param equiv_subtrees: The set of equivalent subtrees.
     :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
                        If `False`, all operations are applied.
     :param executor: A pool executor to parallelize the processing of the forest.
@@ -348,7 +337,6 @@ def apply_operations(
     futures: list[Future]
 
     with Manager() as manager:
-        shared_equiv = manager.Value(ctypes.py_object, equiv_subtrees, lock=False)
         simplification_operation = manager.Value(ctypes.c_int, -1, lock=False)
         barrier = manager.Barrier(workers_count + isinstance(forest, TreeBucket))
         queue: Queue[TreeOID | None] | None = (
@@ -358,7 +346,6 @@ def apply_operations(
         worker_fn = functools.partial(
             _apply_operations_worker,
             edit_ops=edit_ops_names,
-            shared_equiv_subtrees=shared_equiv,
             early_exit=early_exit,
             simplification_operation=simplification_operation,
             barrier=barrier,
@@ -461,7 +448,6 @@ def _apply_operations_worker(
     edit_ops: Sequence[tuple[str, Operation]],
     forest: TreeBucket,
     queue: Queue[TreeOID | None],
-    shared_equiv_subtrees: ValueProxy[TREE_CLUSTER],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
@@ -476,7 +462,6 @@ def _apply_operations_worker(
     edit_ops: Sequence[tuple[str, Operation]],
     forest: Forest,
     queue: None,
-    shared_equiv_subtrees: ValueProxy[TREE_CLUSTER],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
@@ -490,7 +475,6 @@ def _apply_operations_worker(
     edit_ops: Sequence[tuple[str, Operation]],
     forest: TreeBucket | Forest,
     queue: Queue[TreeOID | None] | None,
-    shared_equiv_subtrees: ValueProxy[TREE_CLUSTER],
     early_exit: bool,
     simplification_operation: ValueProxy[int],
     barrier: Barrier,
@@ -520,7 +504,6 @@ def _apply_operations_worker(
     :param edit_ops: The list of operations to perform on the forest.
     :param forest: The forest or bucket of trees to process.
     :param queue: A shared queue of tree IDs still waiting to be processed (for bucket use).
-    :param shared_equiv_subtrees: The shared set of equivalent subtrees.
     :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
                        If `False`, all operations are applied.
     :param simplification_operation: A shared integer value to store the index of the operation that simplified a tree.
@@ -529,8 +512,6 @@ def _apply_operations_worker(
     :param batch_size: Number of trees to process before committing changes in bucket mode.
     :return: Tuple of MLflow request ID and modified forest, or None if using a bucket.
     """
-    equiv_subtrees = shared_equiv_subtrees.get()
-
     with (
         forest if isinstance(forest, TreeBucket) else nullcontext(),
         mlflow.start_run(run_id=run_id) if run_id else nullcontext(),
@@ -539,13 +520,11 @@ def _apply_operations_worker(
         request_id = span.request_id
 
         for op_id, (name, operation) in enumerate(edit_ops):
-            op_fn = functools.partial(operation.apply, equiv_subtrees=equiv_subtrees)
-
             with mlflow.start_span(name):
                 if queue is None:
                     # List-based mode: apply operation directly
                     forest_iterator = tqdm(forest, desc=name, total=len(forest), leave=False, position=idx + 1)
-                    simplified = any(map(op_fn, forest_iterator))
+                    simplified = any(map(operation.apply, forest_iterator))
 
                 elif isinstance(forest, TreeBucket):
                     # Bucket-based mode: apply operation for each tree in the queue and commit in batches
@@ -556,7 +535,7 @@ def _apply_operations_worker(
                         transaction_stack.enter_context(forest.transaction())
 
                         while (oid := queue.get()) is not None:
-                            modified = op_fn(forest[oid])
+                            modified = operation.apply(forest[oid])
                             modifications_in_transaction += modified
                             simplified |= modified
 
@@ -599,30 +578,32 @@ def create_group(subtree: Tree, group_name: str) -> None:
 
 
 def find_groups(
-    equiv_subtrees: TREE_CLUSTER,
+    tree_clusterer: TreeClusterer,
     min_support: int,
 ) -> bool:
     """
     Find and create groups based on the given set of equivalent subtrees.
 
-    :param equiv_subtrees: The set of equivalent subtrees.
+    :param tree_clusterer: A fitted tree clusterer.
     :param min_support: Minimum support of groups.
 
     :return: A boolean indicating if groups were created.
     """
+    clusters = tree_clusterer.clusters
+
     frequent_clusters = sorted(
-        filter(lambda cluster_name: len(equiv_subtrees[cluster_name]) > min_support, equiv_subtrees.keys()),
-        key=lambda cluster_name: (
-            len(equiv_subtrees[cluster_name]),
-            sum(len(st.entities()) for st in equiv_subtrees[cluster_name]) / len(equiv_subtrees[cluster_name]),
-            sum(st.depth for st in equiv_subtrees[cluster_name]) / len(equiv_subtrees[cluster_name]),
+        filter(lambda x: len(clusters[x]) > min_support, clusters.keys()),
+        key=lambda x: (
+            len(clusters[x]),
+            sum(len(st.entities()) for st in clusters[x]) / len(clusters[x]),
+            sum(st.depth for st in clusters[x]) / len(clusters[x]),
         ),
         reverse=True,
     )
 
     group_created = False
     for cluster_name in frequent_clusters:
-        subtree_cluster = equiv_subtrees[cluster_name]
+        subtree_cluster = clusters[cluster_name]
 
         # Create a group for each subtree in the cluster
         for subtree in subtree_cluster:

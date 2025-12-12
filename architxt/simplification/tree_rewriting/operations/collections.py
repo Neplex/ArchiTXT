@@ -10,7 +10,6 @@ from architxt.tree import NodeLabel, NodeType, Tree, has_type
 from .operation import Operation
 
 if TYPE_CHECKING:
-    from architxt.similarity import TREE_CLUSTER
     from architxt.tree import _TypedSubTree
 
 __all__ = [
@@ -32,7 +31,7 @@ class FindCollectionsOperation(Operation):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
+    def apply(self, tree: Tree) -> bool:
         simplified = False
 
         for subtree in sorted(
