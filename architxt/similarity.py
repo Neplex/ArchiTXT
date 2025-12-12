@@ -17,8 +17,8 @@ from tqdm.auto import tqdm
 
 from architxt.tree import NodeType, Tree, TreeOID, has_type
 
-MAX_DEPTH = 5
 MAX_HEIGHT_DIFF = 5
+MAX_SIM_CTX_DEPTH = 5
 DECAY = 2
 METRIC_FUNC = Callable[[Collection[str], Collection[str]], float]
 TREE_CLUSTER = dict[str, Sequence[Tree]]
@@ -70,8 +70,8 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay:
 
     .. math::
         \text{similarity}_\text{metric}(x, y) =
-        \frac{\sum_{i=1}^{d_{\min}} \text{decay}^{-i} \cdot \text{metric}(P^x_i, P^y_i)}
-             {\sum_{i=1}^{d_{\min}} \text{decay}^{-i}}
+        \frac{\sum_{i=0}^{d_{\min}} \text{decay}^{-i} \cdot \text{metric}(P^x_i, P^y_i)}
+             {\sum_{i=0}^{d_{\min}} \text{decay}^{-i}}
 
     where :math:`P^x_i` and :math:`P^y_i` are the :math:`i^\text{th}` parent nodes of
     :math:`x` and :math:`y` respectively, and :math:`d_{\\min}` is the depth of the shallowest tree
@@ -94,29 +94,29 @@ def similarity(x: Tree, y: Tree, *, metric: METRIC_FUNC = DEFAULT_METRIC, decay:
         msg = "decay must be a positive number"
         raise ValueError(msg)
 
-    if x.oid == y.oid or x.label == y.label:
-        return 1.0
+    if x.entity_labels().isdisjoint(y.entity_labels()):
+        return 0.0
 
     _x: Tree | None = x
     _y: Tree | None = y
 
     weight_sum = 0.0
     sim_sum = 0.0
-    distance = 1
+    distance = 0
 
-    while _x is not None and _y is not None and distance <= MAX_DEPTH:
-        # Extract the entity labels as sets for faster lookup
-        x_labels = _x.entity_labels()
-        y_labels = _y.entity_labels()
+    while _x is not None and _y is not None and distance <= MAX_SIM_CTX_DEPTH:
+        if _x.oid == _y.oid or _x.label == _y.label:
+            tree_sim = 1.0
 
-        # If no common entity labels, return similarity 0 early
-        if x_labels.isdisjoint(y_labels):
-            return 0.0
+        else:
+            x_labels = _x.entity_labels()
+            y_labels = _y.entity_labels()
+            tree_sim = metric(x_labels, y_labels)
 
         # Calculate similarity for current level and accumulate weighted sum
         weight = decay ** (-distance)
         weight_sum += weight
-        sim_sum += weight * metric(x_labels, y_labels)
+        sim_sum += weight * tree_sim
 
         # Move to parent nodes
         _x = _x.parent
