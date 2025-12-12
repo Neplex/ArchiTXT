@@ -1,3 +1,5 @@
+import numpy as np
+from architxt.similarity import TreeCluster, TreeClusterer
 from architxt.simplification.tree_rewriting import create_group, find_groups
 from architxt.tree import Tree
 
@@ -27,7 +29,8 @@ def test_create_group_recursive() -> None:
 
 
 def test_find_groups_no_simplification() -> None:
-    has_simplified = find_groups(equiv_subtrees={}, min_support=3)
+    clusterer = TreeClusterer()
+    has_simplified = find_groups(clusterer, min_support=3)
 
     assert not has_simplified
 
@@ -35,12 +38,12 @@ def test_find_groups_no_simplification() -> None:
 def test_find_groups_with_parent() -> None:
     tree = Tree.fromstring('(parent (1 (ENT::X xxx) (ENT::Y yyy)))')
 
-    has_simplified = find_groups(
-        equiv_subtrees={
-            '0': (tree[0],),
-        },
-        min_support=0,
-    )
+    clusterer = TreeClusterer()
+    clusterer._clusters = {
+        '0': TreeCluster(trees=[tree[0]], probabilities=np.asarray([1.0], dtype=np.float64)),
+    }
+
+    has_simplified = find_groups(clusterer, min_support=0)
 
     assert has_simplified
     assert tree == Tree.fromstring('(parent (GROUP::0 (ENT::X xxx) (ENT::Y yyy)))')
@@ -49,12 +52,12 @@ def test_find_groups_with_parent() -> None:
 def test_find_group_without_parent() -> None:
     tree = Tree.fromstring('(SENT (ENT::X xxx) (ENT::Y yyy))')
 
-    has_simplified = find_groups(
-        equiv_subtrees={
-            '0': (tree,),
-        },
-        min_support=0,
-    )
+    clusterer = TreeClusterer()
+    clusterer._clusters = {
+        '0': TreeCluster(trees=[tree], probabilities=np.asarray([1.0], dtype=np.float64)),
+    }
+
+    has_simplified = find_groups(clusterer, min_support=0)
 
     assert has_simplified
     assert tree == Tree.fromstring('(GROUP::0 (ENT::X xxx) (ENT::Y yyy))')
@@ -63,13 +66,13 @@ def test_find_group_without_parent() -> None:
 def test_find_group_largest() -> None:
     tree = Tree.fromstring('(1 (2 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
-    has_simplified = find_groups(
-        equiv_subtrees={
-            '0': (tree,),
-            '1': (tree[0],),
-        },
-        min_support=0,
-    )
+    clusterer = TreeClusterer()
+    clusterer._clusters = {
+        '0': TreeCluster(trees=[tree], probabilities=np.asarray([1.0], dtype=np.float64)),
+        '1': TreeCluster(trees=[tree[0]], probabilities=np.asarray([1.0], dtype=np.float64)),
+    }
+
+    has_simplified = find_groups(clusterer, min_support=0)
 
     assert has_simplified
     assert tree == Tree.fromstring('(1 (GROUP::1 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
@@ -78,13 +81,15 @@ def test_find_group_largest() -> None:
 def test_find_group_frequent() -> None:
     tree = Tree.fromstring('(1 (2 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
 
-    has_simplified = find_groups(
-        equiv_subtrees={
-            '1': (tree,),
-            '0': (tree[0], tree[0], tree[0]),
-        },
-        min_support=0,
-    )
+    clusterer = TreeClusterer()
+    clusterer._clusters = {
+        '1': TreeCluster(trees=[tree], probabilities=np.asarray([1.0], dtype=np.float64)),
+        '0': TreeCluster(
+            trees=[tree[0], tree[0], tree[0]], probabilities=np.asarray([1.0, 1.0, 1.0], dtype=np.float64)
+        ),
+    }
+
+    has_simplified = find_groups(clusterer, min_support=0)
 
     assert has_simplified
     assert tree == Tree.fromstring('(1 (GROUP::0 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz))')
@@ -95,13 +100,13 @@ def test_find_groups_multi() -> None:
         '(SENT (1 (ENT::X xxx) (ENT::Y yyy)) (ENT::Z zzz) (2 (ENT::A aaa) (ENT::B bbb) (ENT::C ccc)))'
     )
 
-    has_simplified = find_groups(
-        equiv_subtrees={
-            '1': (tree[0],),
-            '0': (tree[2],),
-        },
-        min_support=0,
-    )
+    clusterer = TreeClusterer()
+    clusterer._clusters = {
+        '1': TreeCluster(trees=[tree[0]], probabilities=np.asarray([1.0], dtype=np.float64)),
+        '0': TreeCluster(trees=[tree[2]], probabilities=np.asarray([1.0], dtype=np.float64)),
+    }
+
+    has_simplified = find_groups(clusterer, min_support=0)
 
     assert has_simplified
     assert tree == Tree.fromstring(

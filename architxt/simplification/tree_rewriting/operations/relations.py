@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import more_itertools
 
 from architxt.tree import NodeLabel, NodeType, Tree, has_type
 
 from .operation import Operation
-
-if TYPE_CHECKING:
-    from architxt.similarity import TREE_CLUSTER
 
 __all__ = [
     'FindRelationsOperation',
@@ -38,7 +35,7 @@ class FindRelationsOperation(Operation):
         super().__init__(*args, **kwargs)
         self.naming_only = naming_only
 
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:  # noqa: ARG002
+    def apply(self, tree: Tree) -> bool:
         simplified = False
 
         # Traverse subtrees, starting with the deepest, containing exactly 2 children
@@ -76,7 +73,7 @@ class FindRelationsOperation(Operation):
         # Log relation creation in MLFlow, if active
         if not has_type(tree, NodeType.REL):
             modified = True
-            self._log_to_mlflow({'name': rel_label})
+            self._log_to_mlflow({'name': rel_label.name})
 
         tree.label = rel_label
         return modified
