@@ -123,6 +123,7 @@ dev = [
     # linters/analysis
     "mypy==1.19.0",
     "ruff==0.14.7",
+    "pyrefly==0.45.2",
     "deptry>=0.23.0,<1.0.0",
     "vulture==2.14",
     # typing stubs
