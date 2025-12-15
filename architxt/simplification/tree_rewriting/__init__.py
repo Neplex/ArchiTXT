@@ -8,6 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import ExitStack, nullcontext
 from multiprocessing import Manager, cpu_count
 from queue import Full
+from threading import BrokenBarrierError
 from typing import TYPE_CHECKING, overload
 
 import mlflow
@@ -398,6 +399,9 @@ def _check_worker_health(futures: Sequence[Future], barrier: Barrier, error: Exc
     if errors := [exc for future in futures if not future.running() and (exc := future.exception())]:
         barrier.abort()
 
+        if len(errors) == 1:
+            raise errors[0]
+
         msg = 'Some workers has failed'
         raise ExceptionGroup(msg, errors) from error
 
@@ -438,7 +442,7 @@ def _fill_queue(
                 barrier.wait(timeout=timeout)
                 break
 
-            except TimeoutError as error:
+            except (TimeoutError, BrokenBarrierError) as error:
                 # As we wait, we check for worker failures to avoid deadlocks.
                 _check_worker_health(futures, barrier, error)
 
