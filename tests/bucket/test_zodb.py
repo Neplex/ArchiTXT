@@ -510,3 +510,130 @@ def test_threaded_worker_pool_abort() -> None:
         assert 'main-2' in labels
         assert 'worker-1' not in labels
         assert 'worker-2' not in labels
+
+
+@given(tree=tree_st())
+@settings(max_examples=20)
+def test_persistent_ref(tree: Tree) -> None:
+    """Property-based test for get_persistent_ref with various tree structures."""
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree.root)
+
+        ref = bucket.get_persistent_ref(tree)
+        resolved = bucket.resolve_ref(ref)
+
+        assert resolved is tree
+        assert resolved.root is tree.root
+
+
+def test_get_persistent_ref_not_stored() -> None:
+    """Test getting persistent reference for a tree not in the bucket raises KeyError."""
+    tree = Tree('test', [])
+
+    with ZODBTreeBucket() as bucket, pytest.raises(KeyError, match="not stored in the bucket"):
+        bucket.get_persistent_ref(tree)
+
+
+def test_resolve_ref_invalid_reference() -> None:
+    """Test resolving an invalid or fabricated reference."""
+    with ZODBTreeBucket() as bucket, pytest.raises(KeyError, match="not stored in the bucket"):
+        bucket.resolve_ref('invalid_reference')
+
+
+def test_resolve_ref_after_modification() -> None:
+    """Test resolving a reference after the tree has been modified."""
+    tree = Tree('original', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree)
+
+        ref = bucket.get_persistent_ref(tree)
+
+        # Modify the tree
+        with bucket.transaction():
+            tree.label = 'modified'
+
+        # Resolve the reference - should get the modified version
+        resolved = bucket.resolve_ref(ref)
+        assert resolved.label == 'modified'
+
+
+def test_resolve_ref_persists_across_connections(tmp_path: Path) -> None:
+    """Test that persistent references work across different bucket connections."""
+    tree = Tree('test', ['data'])
+    ref = None
+
+    # First connection: add tree and get reference
+    with ZODBTreeBucket(storage_path=tmp_path) as bucket1:
+        with bucket1.transaction():
+            bucket1.add(tree)
+
+        ref = bucket1.get_persistent_ref(tree)
+
+    # Second connection: resolve the reference
+    with ZODBTreeBucket(storage_path=tmp_path) as bucket2:
+        resolved = bucket2.resolve_ref(ref)
+        assert resolved == tree
+
+
+def test_resolve_ref_unique_to_bucket() -> None:
+    """Test that persistent references work across different bucket connections."""
+    tree = Tree('test', ['data'])
+    ref = None
+
+    # First connection: add tree and get reference
+    with ZODBTreeBucket() as bucket1:
+        with bucket1.transaction():
+            bucket1.add(tree)
+
+        ref = bucket1.get_persistent_ref(tree)
+
+    # Second connection: resolve the reference
+    with ZODBTreeBucket() as bucket2, pytest.raises(KeyError, match="not stored in the bucket"):
+        bucket2.resolve_ref(ref)
+
+
+def test_resolve_ref_with_tree_removed() -> None:
+    """Test resolving a reference after the tree has been removed from bucket."""
+    tree = Tree('test', [])
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree)
+
+        ref = bucket.get_persistent_ref(tree)
+
+        # Remove the tree
+        with bucket.transaction():
+            bucket.discard(tree)
+
+        # The tree object is removed from bucket
+        with pytest.raises(KeyError, match="not stored in the bucket"):
+            bucket.resolve_ref(ref)
+
+
+def test_persistent_ref_unique_with_same_oid() -> None:
+    """Test persistent references when multiple trees share the same OID."""
+    oid = uuid.uuid4()
+    tree = Tree(
+        'ROOT',
+        [
+            Tree('1', [], oid=oid),
+            Tree('2', [], oid=oid),
+        ],
+    )
+
+    with ZODBTreeBucket() as bucket:
+        with bucket.transaction():
+            bucket.add(tree)
+
+        ref1 = bucket.get_persistent_ref(tree[0])
+        ref2 = bucket.get_persistent_ref(tree[1])
+        assert ref1 != ref2
+
+        resolved1 = bucket.resolve_ref(ref1)
+        resolved2 = bucket.resolve_ref(ref2)
+        assert resolved1.label == '1'
+        assert resolved2.label == '2'

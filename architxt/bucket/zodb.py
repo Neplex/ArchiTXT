@@ -16,7 +16,7 @@ from transaction.interfaces import AlreadyInTransaction, NoTransaction
 from ZODB.Connection import resetCaches
 from zodburi import resolve_uri
 
-from architxt.tree import Tree, TreeOID
+from architxt.tree import Tree, TreeOID, TreePersistentRef
 from architxt.utils import update_url_queries
 
 from . import TreeBucket
@@ -273,6 +273,30 @@ class ZODBTreeBucket(TreeBucket):
     def oids(self) -> Generator[TreeOID, None, None]:
         for key in self._data:
             yield uuid.UUID(bytes=key)
+
+    def get_persistent_ref(self, tree: Tree) -> TreePersistentRef:
+        if (
+            hasattr(tree, '_p_oid')
+            and (ref := getattr(tree, '_p_oid')) is not None
+            and self.resolve_ref(ref) is not None
+        ):
+            return ref
+
+        msg = "The given tree is not stored in the bucket."
+        raise KeyError(msg)
+
+    def resolve_ref(self, ref: TreePersistentRef) -> Tree:
+        msg = "The given tree is not stored in the bucket."
+
+        try:
+            tree = self._connection.get(ref)
+        except Exception as error:
+            raise KeyError(msg) from error
+
+        if tree is None or tree.root not in self:
+            raise KeyError(msg)
+
+        return tree
 
     @overload
     def __getitem__(self, key: TreeOID) -> Tree: ...
