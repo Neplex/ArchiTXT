@@ -40,7 +40,7 @@ classifiers = [
     "Typing :: Typed"
 ]
 
-dynamic = ["version"]
+dynamic = []
 
 requires-python = '>=3.10,<3.13'
 dependencies = [
@@ -64,7 +64,6 @@ dependencies = [
     'sqlalchemy>=2.0.39,<3.0.0',
     'spacy>=3.7.0,<4.0.0',
     'scispacy>=0.5.5,<0.6.0',
-    'plotly<6.0',
     'xmltodict>=0.14.2,<1.1.0',
     'xlrd>=2.0.1,<3.0.0',
     'neo4j>=5.28.1,<6.0.0',
@@ -78,7 +77,10 @@ dependencies = [
     'scipy>=1.15.0,<2.0.0',
     'typing-extensions',
     'zodburi>=3.0,<3.1',
+    'hdbscan>=0.8.41,<0.9.0',
+    'matplotlib>=3.8.0,<4.0.0',
 ]
+version = "0.5.1.post13.dev0"
 
 [project.optional-dependencies]
 ui = ['streamlit>=1.39.0', 'streamlit-agraph', 'streamlit-tags']
@@ -165,10 +167,9 @@ requires = [
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
-version = "0.4.1"
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 metadata = false
 
 [tool.pytest.ini_options]
