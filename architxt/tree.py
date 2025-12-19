@@ -37,6 +37,7 @@ __all__ = [
     'NodeType',
     'Tree',
     'TreeOID',
+    'TreePersistentRef',
     'TreePosition',
     'has_type',
     'is_sub_tree',
@@ -44,9 +45,11 @@ __all__ = [
 
 if TYPE_CHECKING:
     __all__ += ['_SubTree', '_TypedSubTree', '_TypedTree']
+    from architxt.bucket import TreeBucket
 
 TreePosition: TypeAlias = tuple[int, ...]
 TreeOID: TypeAlias = uuid.UUID
+TreePersistentRef: TypeAlias = Any
 
 TREE_PARSER_RE = re.compile(r"\(\s*[^\s()]+|[()]|[^\s()]+")
 
@@ -192,8 +195,29 @@ class Tree(PersistentList['_SubTree | str']):
 
         return str(self.label) < str(other)
 
+    def persistent_ref(self, bucket: TreeBucket) -> TreePersistentRef:
+        """
+        Return a backend-specific, picklable reference that uniquely identifies this tree in the tree bucket.
+
+        You can retrieve the tree from this ref later by calling :py:meth:`TreeBucket.resolve_ref`.
+        """
+        return bucket.get_persistent_ref(self)
+
     @property
     def oid(self) -> TreeOID:
+        """
+        Application-level unique identifier for this tree.
+
+        This object identifier is a stable, human-readable identifier used within the application to
+        identify duplicated nodes or subtrees within a forest.
+
+        Important notes:
+        - This is **not** a storage backend's internal persistent identifier.
+        - It is **not** guaranteed to be globally unique across independent processes or database instances.
+        - It remains constant for the lifetime of the node, even if the tree structure changes.
+        - Duplicate identifiers may exist when the same logical entity appears multiple times
+            (e.g., duplicated entities or groups).
+        """
         return self._oid
 
     @property

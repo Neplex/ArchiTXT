@@ -9,7 +9,7 @@ import more_itertools
 from aiostream import stream
 from typing_extensions import Self
 
-from architxt.tree import Forest, Tree, TreeOID
+from architxt.tree import Forest, Tree, TreeOID, TreePersistentRef
 from architxt.utils import get_commit_batch_size
 
 if TYPE_CHECKING:
@@ -109,6 +109,28 @@ class TreeBucket(ABC, MutableSet[Tree], Forest):
     @abstractmethod
     def oids(self) -> Generator[TreeOID, None, None]:
         """Yield the object IDs (OIDs) of all trees stored in the bucket."""
+
+    @abstractmethod
+    def get_persistent_ref(self, tree: Tree) -> TreePersistentRef:
+        """
+        Get a persistent reference for a given tree.
+
+        :param tree: The tree to get the persistent reference for.
+        :return: The persistent reference of the tree for this bucket.
+        :raises KeyError: If the tree is not stored in the bucket.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def resolve_ref(self, ref: TreePersistentRef) -> Tree:
+        """
+        Resolve a persistent_ref back to a live Tree instance.
+
+        :param ref: The value returned by :py:meth:`Tree.persistent_ref`.
+        :return: The tree corresponding to the given persistent reference.
+        :raises KeyError: If the tree is not found in the bucket.
+        """
+        raise NotImplementedError
 
     @overload
     def __getitem__(self, key: TreeOID) -> Tree: ...
