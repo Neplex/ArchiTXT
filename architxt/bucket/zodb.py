@@ -293,10 +293,21 @@ class ZODBTreeBucket(TreeBucket):
         except Exception as error:
             raise KeyError(msg) from error
 
-        if tree is None or tree.root not in self:
-            raise KeyError(msg)
+        # If connection.get returned an object, accept it only if it is a Tree
+        # and its root belongs to this bucket.
+        if tree is not None and isinstance(tree, Tree) and tree.root in self:
+            return tree
 
-        return tree
+        # Fallback: search for the tree manually.
+        # We cannot always rely on `self._connection.get(ref)` alone.
+        # If a subtree is not retrieved from the cache, the parent reference will be invalid.
+        # We work around this by searching for the subtree manually.
+        for tree in self:
+            for sub_tree in tree.subtrees(include_self=True):
+                if getattr(sub_tree, '_p_oid', None) == ref:
+                    return sub_tree
+
+        raise KeyError(msg)
 
     @overload
     def __getitem__(self, key: TreeOID) -> Tree: ...
