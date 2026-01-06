@@ -1,10 +1,134 @@
 import json
 import uuid
 
-from architxt.tree import NodeLabel, NodeType, Tree
+from architxt.tree import NodeLabel, NodeType, Tree, is_sub_tree
 from hypothesis import given
 
 from tests.test_strategies import tree_st
+
+
+def test_append_reparents_and_updates_position() -> None:
+    """Test that appending a child updates its parent and position."""
+    t = Tree.fromstring("(ROOT (A (X x)) (B (Y y)))")
+
+    x = t[0][0]
+    b = t[1]
+
+    assert x.position == (0, 0)
+    assert b.position == (1,)
+
+    t[0].remove(x, recursive=False)
+
+    assert x.parent is None
+    assert x.position == ()
+
+    b.append(x)
+
+    assert x.parent is b
+    assert x.position == (1, 1)
+
+
+def test_append_does_not_change_existing_children_positions() -> None:
+    """Test that appending a new child does not change existing children's positions."""
+    t = Tree.fromstring("(S (A a) (B b))")
+    c = Tree("C", ["c"])
+
+    a = t[0]
+    b = t[1]
+
+    assert a.position == (0,)
+    assert b.position == (1,)
+
+    t.append(c)
+
+    assert a.position == (0,)
+    assert b.position == (1,)
+    assert c.position == (2,)
+
+
+def test_extend_reparents_multiple_children() -> None:
+    """Test that extending a tree with multiple children updates their parents and positions."""
+    t1 = Tree.fromstring("(T1 (A a) (B b))")
+    t2 = Tree.fromstring("(T2)")
+
+    a, b = t1[0], t1[1]
+
+    assert a.position == (0,)
+    assert b.position == (1,)
+
+    t2.extend([a.detach(), b.detach()])
+
+    assert a.parent is t2
+    assert b.parent is t2
+    assert a.position == (0,)
+    assert b.position == (1,)
+
+
+def test_slice_replacement_updates_positions() -> None:
+    """Test that replacing a slice of children updates their positions."""
+    t = Tree.fromstring("(S (A a) (B b) (C c) (D d))")
+
+    b, c = t[1], t[2]
+
+    assert b.position == (1,)
+    assert c.position == (2,)
+
+    t[1:3] = [c.detach(), b.detach()]
+
+    assert t[1] is c
+    assert t[2] is b
+    assert c.position == (1,)
+    assert b.position == (2,)
+
+
+def test_pop_invalidates_shifted_siblings() -> None:
+    """Test that popping a child updates the positions of its siblings."""
+    t = Tree.fromstring("(S (A a) (B b) (C c))")
+
+    a, b, c = t
+
+    assert a.position == (0,)
+    assert b.position == (1,)
+    assert c.position == (2,)
+
+    t.pop(0)
+
+    assert b.position == (0,)
+    assert c.position == (1,)
+
+
+def test_copy_then_index_using_original_position() -> None:
+    """Test that copying a subtree and indexing using the original position works correctly."""
+    t = Tree.fromstring("(ROOT (A (X x)) (B (Y y)) (C (Z z)))")
+
+    subtree = t[1]  # (B (Y y))
+    assert subtree.position == (1,)
+
+    new_tree = subtree.root.copy()
+    new_subtree = new_tree[subtree.position]
+
+    assert isinstance(new_subtree, Tree)
+    assert str(new_subtree) == str(subtree)
+
+
+def test_stale_position_cache_on_replacement() -> None:
+    """Test that replacing a subtree invalidates its position and parent index."""
+    t = Tree.fromstring("(ROOT (A (X x)) (B (Y y)) (C (Z z)))")
+
+    subtree = t[0]
+
+    assert subtree.position == (0,)
+    assert subtree.parent_index == 0
+    assert is_sub_tree(subtree)
+
+    new_subtree = Tree(NodeLabel(NodeType.ENT), children=[])
+
+    t[subtree.parent_index] = new_subtree
+
+    assert new_subtree.position == (0,)
+    assert new_subtree.parent_index == 0
+    assert subtree.position == ()
+    assert subtree.parent_index is None
 
 
 @given(tree=tree_st(has_parent=False))
