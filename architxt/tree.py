@@ -15,14 +15,14 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
-from copy import copy, deepcopy
+from copy import copy
 from enum import Enum
-from functools import partial, total_ordering
+from functools import total_ordering
 from typing import TYPE_CHECKING, Any, Literal, TextIO, TypeAlias, TypeGuard, overload
 from urllib.parse import quote, unquote
 
 import pandas as pd
-from cachetools import cachedmethod, keys
+from cachetools import cachedmethod
 from nltk import slice_bounds
 from nltk.grammar import Nonterminal, Production
 from persistent.list import PersistentList
@@ -124,7 +124,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         for child in self:
             if isinstance(child, Tree):
-                child._v_parent = weakref.ref(self)
+                child._set_parent(self)
 
     def _check_children(self, children: Iterable[Tree | str]) -> None:
         errors = []
@@ -134,22 +134,36 @@ class Tree(PersistentList['_SubTree | str']):
                 continue
 
             if self in child.subtrees():
-                msg = f'Child at index {index} creates a cyclic reference: a tree cannot contain itself.'
+                msg = f'Tree at index {index} creates a cyclic reference: a tree cannot contain itself.'
                 errors.append(ValueError(msg))
 
-            if is_sub_tree(child) and child.parent is not self:
-                msg = f'Child at index {index} is already attached to another parent: {child.parent}.'
+            if is_sub_tree(child):
+                msg = f'Tree at index {index} is already attached to a parent: {child.parent}.'
                 errors.append(ValueError(msg))
 
         if errors:
             msg = 'Invalid tree children detected'
             raise ExceptionGroup(msg, errors)
 
-    def _invalidate_cache(self) -> None:
+    def _set_parent(self, parent: Tree | None) -> None:
+        """Set the parent of the tree."""
+        self._v_parent = weakref.ref(parent) if parent is not None else None
+        self._invalidate_descendant_caches()
+
+    def _invalidate_ancestor_cache(self) -> None:
         self._v_cache.clear()
 
         if parent := self.parent:
-            parent._invalidate_cache()
+            parent._invalidate_ancestor_cache()
+
+    def _invalidate_descendant_caches(self, from_position: int = 0) -> None:
+        self._v_cache.pop('parent_index', None)
+        self._v_cache.pop('position', None)
+        self._v_cache.pop('depth', None)
+
+        for child in self[from_position:]:
+            if isinstance(child, Tree):
+                child._invalidate_descendant_caches()
 
     def __eq__(self, other: object) -> bool:
         """
@@ -179,7 +193,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         for child in self:
             if isinstance(child, Tree):
-                child._v_parent = weakref.ref(self)
+                child._set_parent(self)
 
     def __copy__(self) -> Tree:
         """Support for the copy.copy() interface."""
@@ -240,6 +254,7 @@ class Tree(PersistentList['_SubTree | str']):
         return self._v_parent() if self._v_parent else None
 
     @property
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'parent_index')
     def parent_index(self) -> int | None:
         """
         The index of this tree in its parent.
@@ -274,10 +289,9 @@ class Tree(PersistentList['_SubTree | str']):
     @label.setter
     def label(self, label: NodeLabel | str) -> None:
         self._label = NodeLabel.fromstring(label)
-        self._invalidate_cache()
+        self._invalidate_ancestor_cache()
 
     @property
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='root'))
     def root(self) -> Tree:
         """
         The root of this tree.
@@ -295,7 +309,7 @@ class Tree(PersistentList['_SubTree | str']):
         return node
 
     @property
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='height'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'height')
     def height(self) -> int:
         """
         Get the height of the tree.
@@ -311,7 +325,7 @@ class Tree(PersistentList['_SubTree | str']):
         return 1 + max((child.height if isinstance(child, Tree) else 1 for child in self), default=0)
 
     @property
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='depth'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'depth')
     def depth(self) -> int:
         """
         Get the depth of the tree.
@@ -327,7 +341,7 @@ class Tree(PersistentList['_SubTree | str']):
         return len(self.position) + 1
 
     @property
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='position'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'position')
     def position(self) -> TreePosition:
         """
         The tree position of this tree, relative to the root of the tree.
@@ -372,7 +386,7 @@ class Tree(PersistentList['_SubTree | str']):
         if order in ('postorder', 'bothorder'):
             yield ()
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='leaves'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'leaves')
     def leaves(self) -> list[str]:
         """
         Return the leaves of the tree.
@@ -510,7 +524,7 @@ class Tree(PersistentList['_SubTree | str']):
         msg = "index must be less than or equal to len(self)"
         raise IndexError(msg)
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='groups'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'groups')
     def groups(self) -> set[str]:
         """
         Get the set of group names present within the tree.
@@ -582,7 +596,7 @@ class Tree(PersistentList['_SubTree | str']):
 
         return pd.concat(dataframes, ignore_index=True).drop_duplicates()
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entities'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'entities')
     def entities(self) -> tuple[_TypedTree, ...]:
         """
         Get a tuple of subtrees that are entities.
@@ -598,7 +612,7 @@ class Tree(PersistentList['_SubTree | str']):
         """
         return tuple(ent for ent in self.subtrees() if has_type(ent, NodeType.ENT))
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entity_labels'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'entity_labels')
     def entity_labels(self) -> set[str]:
         """
         Get the set of entity labels present in the tree.
@@ -614,7 +628,7 @@ class Tree(PersistentList['_SubTree | str']):
         """
         return {ent.label.name for ent in self.entities()}
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='entity_label_count'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'entity_label_count')
     def entity_label_count(self) -> Counter[str]:
         """
         Return a Counter object that counts the labels of entity subtrees.
@@ -625,7 +639,7 @@ class Tree(PersistentList['_SubTree | str']):
         """
         return Counter(ent.label.name for ent in self.entities())
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='has_duplicate_entity'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'has_duplicate_entity')
     def has_duplicate_entity(self) -> bool:
         """
         Check if there are duplicate entity labels.
@@ -638,7 +652,7 @@ class Tree(PersistentList['_SubTree | str']):
         """
         return any(v > 1 for v in self.entity_label_count().values())
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='has_entity_child'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'has_entity_child')
     def has_entity_child(self) -> bool:
         """
         Check if there is at least one entity as direct children.
@@ -651,7 +665,7 @@ class Tree(PersistentList['_SubTree | str']):
         """
         return any(has_type(child, NodeType.ENT) for child in self)
 
-    @cachedmethod(lambda self: self._v_cache, key=partial(keys.methodkey, method='has_unlabelled_nodes'))
+    @cachedmethod(lambda self: self._v_cache, key=lambda _: 'has_unlabelled_nodes')
     def has_unlabelled_nodes(self) -> bool:
         """
         Check if any child has a non-typed label.
@@ -686,7 +700,7 @@ class Tree(PersistentList['_SubTree | str']):
         else:
             children.append(tree)
 
-        return type(self)('ROOT', deepcopy(children))
+        return type(self)('ROOT', [child.copy() for child in children])
 
     def reduce(self, skip_types: set[str | NodeType] | None = None) -> bool:
         """
@@ -812,15 +826,17 @@ class Tree(PersistentList['_SubTree | str']):
             # clear the child pointers of all parents we're removing
             for i in range(start, stop, step):
                 if isinstance((child := self[i]), Tree):
-                    child._v_parent = None
+                    child._set_parent(None)
             # set the child pointers of the new children. We do this
             # after clearing *all* child pointers, in case we're e.g.
             # reversing the elements in a tree.
             for i, child in enumerate(subtree):
                 if isinstance(child, Tree):
-                    child._v_parent = weakref.ref(self)
+                    child._set_parent(self)
             # finally, update the content of the child list itself.
             super().__setitem__(pos, subtree)
+            self._invalidate_descendant_caches(start)
+            self._invalidate_ancestor_cache()
 
         # ptree[i] = subtree
         elif isinstance(pos, int):
@@ -832,14 +848,16 @@ class Tree(PersistentList['_SubTree | str']):
             # if the subtree is not changing, do nothing.
             if subtree is self[pos]:
                 return
-            # Set the new child's parent pointer.
-            if isinstance(subtree, Tree):
-                subtree._v_parent = weakref.ref(self)
             # Remove the old child's parent pointer
             if isinstance((child := self[pos]), Tree):
-                child._v_parent = None
+                child._set_parent(None)
+            # Set the new child's parent pointer.
+            if isinstance(subtree, Tree):
+                subtree._set_parent(self)
             # Update our child list.
             super().__setitem__(pos, subtree)
+            self._invalidate_descendant_caches(pos)
+            self._invalidate_ancestor_cache()
 
         elif isinstance(pos, tuple):
             if not isinstance(subtree, Tree | str):
@@ -862,8 +880,6 @@ class Tree(PersistentList['_SubTree | str']):
             msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
             raise TypeError(msg)
 
-        self._invalidate_cache()
-
     def __delitem__(self, pos: TreePosition | int | slice) -> None:  # noqa: C901
         # del ptree[start:stop]
         if isinstance(pos, slice):
@@ -871,9 +887,11 @@ class Tree(PersistentList['_SubTree | str']):
             # Clear all the children pointers.
             for i in range(start, stop, step):
                 if isinstance((child := self[i]), Tree):
-                    child._v_parent = None
+                    child._set_parent(None)
             # Delete the children from our child list.
             super().__delitem__(pos)
+            self._invalidate_descendant_caches(start)
+            self._invalidate_ancestor_cache()
 
         # del ptree[i]
         elif isinstance(pos, int):
@@ -884,9 +902,11 @@ class Tree(PersistentList['_SubTree | str']):
                 raise IndexError(msg)
             # Clear the child's parent pointer.
             if isinstance((child := self[pos]), Tree):
-                child._v_parent = None
+                child._set_parent(None)
             # Remove the child from our child list.
             super().__delitem__(pos)
+            self._invalidate_descendant_caches(pos)
+            self._invalidate_ancestor_cache()
 
         elif isinstance(pos, tuple):
             # del ptree[()]
@@ -905,19 +925,16 @@ class Tree(PersistentList['_SubTree | str']):
             msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
             raise TypeError(msg)
 
-        self._invalidate_cache()
-
     def clear(self) -> None:
+        for child in self:
+            if isinstance(child, Tree):
+                child._set_parent(None)
+
         super().clear()
-        self._invalidate_cache()
+        self._invalidate_ancestor_cache()
 
     def append(self, child: Tree | str) -> None:
-        if isinstance(child, Tree):
-            self._check_children([child])
-            child._v_parent = weakref.ref(self)
-
-        super().append(child)
-        self._invalidate_cache()
+        self.extend([child])
 
     def extend(self, children: Iterable[Tree | str]) -> None:
         # Convert to list only if it's a one-shot iterable (like a generator)
@@ -927,30 +944,34 @@ class Tree(PersistentList['_SubTree | str']):
         self._check_children(children)
         for child in children:
             if isinstance(child, Tree):
-                child._v_parent = weakref.ref(self)
+                child._set_parent(self)
 
         super().extend(children)
-        self._invalidate_cache()
+        self._invalidate_ancestor_cache()
 
     def remove(self, child: _SubTree | str, *, recursive: bool = True) -> None:
+        idx = self.index(child)
         super().remove(child)
 
         if isinstance(child, Tree):
-            child._v_parent = None
+            child._set_parent(None)
 
         if recursive and len(self) == 0 and is_sub_tree(self):
             self.parent.remove(self)
 
-        self._invalidate_cache()
+        self._invalidate_ancestor_cache()
+        self._invalidate_descendant_caches(idx)
 
     def insert(self, pos: int, child: Tree | str) -> None:
+        self._check_children([child])
+
         # Set the child's parent and update our child list.
         if isinstance(child, Tree):
-            self._check_children([child])
-            child._v_parent = weakref.ref(self)
+            child._set_parent(self)
 
         super().insert(pos, child)
-        self._invalidate_cache()
+        self._invalidate_ancestor_cache()
+        self._invalidate_descendant_caches(pos)
 
     def pop(self, pos: int = -1, *, recursive: bool = True) -> Tree | str:
         """
@@ -979,12 +1000,13 @@ class Tree(PersistentList['_SubTree | str']):
         child = super().pop(pos)
 
         if isinstance(child, Tree):
-            child._v_parent = None
+            child._set_parent(None)
 
         if recursive and len(self) == 0 and is_sub_tree(self):
             self.parent.remove(self)
 
-        self._invalidate_cache()
+        self._invalidate_ancestor_cache()
+        self._invalidate_descendant_caches(pos)
 
         return child
 
