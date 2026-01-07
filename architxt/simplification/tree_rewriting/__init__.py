@@ -100,6 +100,9 @@ def rewrite(
     max_workers = min(len(forest) // batch_size, max_workers or (cpu_count() - 2)) or 1
     tree_clusterer = TreeClusterer(tau=tau, decay=decay, metric=metric)
 
+    if debug:
+        print('workers :', max_workers, '| batch size :', batch_size)
+
     if mlflow.active_run():
         mlflow.log_params(
             {
@@ -336,6 +339,14 @@ def apply_operations(
     workers_count = executor._max_workers
     futures: list[Future]
 
+    if workers_count == 1:
+        return _apply_operations_sequentially(
+            edit_ops=edit_ops_names,
+            forest=forest,
+            early_exit=early_exit,
+            batch_size=batch_size,
+        )
+
     with Manager() as manager:
         simplification_operation = manager.Value(ctypes.c_int, -1, lock=False)
         barrier = manager.Barrier(workers_count + isinstance(forest, TreeBucket))
@@ -552,7 +563,11 @@ def _apply_operations_worker(
             if simplified:
                 simplification_operation.set(op_id)
 
-            barrier.wait()  # Wait for all workers to finish this operation
+            try:
+                barrier.wait()  # Wait for all workers to finish this operation
+            except BrokenBarrierError:
+                # Barrier broken, likely due to an error in another worker; exit early
+                return request_id, None if isinstance(forest, TreeBucket) else forest
 
             if isinstance(forest, TreeBucket):
                 # Sync forest to avoid any cache issue between operations
@@ -564,6 +579,55 @@ def _apply_operations_worker(
                 break
 
     return request_id, None if isinstance(forest, TreeBucket) else forest
+
+
+def _apply_operations_sequentially(
+    edit_ops: Sequence[tuple[str, Operation]],
+    forest: TreeBucket | Forest,
+    early_exit: bool,
+    batch_size: int,
+) -> int | None:
+    """
+    Apply the given operations to a forest sequentially.
+
+    :param edit_ops: The list of operations to perform on the forest.
+    :param forest: The forest or bucket of trees to process.
+    :param early_exit: A boolean flag indicating whether to stop after the first successful operation.
+                       If `False`, all operations are applied.
+    :param batch_size: Number of trees to process before committing changes in bucket mode.
+    :return: The index of the operation that successfully simplified a tree, or `None` if no operation succeeded.
+    """
+    for op_id, (name, operation) in enumerate(edit_ops):
+        with mlflow.start_span(name):
+            forest_iterator = tqdm(forest, desc=f'{name} (sequential)', total=len(forest), leave=False)
+
+            if isinstance(forest, TreeBucket):
+                # Bucket-based mode: apply operation for each tree and commit in batches
+                simplified = False
+                modifications_in_transaction = 0
+
+                with ExitStack() as transaction_stack:
+                    transaction_stack.enter_context(forest.transaction())
+
+                    for tree in forest_iterator:
+                        modified = operation.apply(tree)
+                        modifications_in_transaction += modified
+                        simplified |= modified
+
+                        # Commit in batches to bound memory usage and enable cache clearing
+                        if modifications_in_transaction >= batch_size:
+                            transaction_stack.close()  # Commit current transaction
+                            transaction_stack.enter_context(forest.transaction())  # Begin new transaction
+                            modifications_in_transaction = 0
+
+            else:
+                # List-based mode: apply operation directly
+                simplified = any(map(operation.apply, forest_iterator))
+
+        if early_exit and simplified:
+            return op_id
+
+    return None
 
 
 def create_group(subtree: Tree, group_name: str) -> None:
