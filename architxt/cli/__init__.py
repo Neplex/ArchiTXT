@@ -26,7 +26,7 @@ from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
 from .loader import app as loader_app
-from .utils import console, load_forest, show_metrics, show_schema
+from .utils import console, load_forest, show_metrics, show_schema, show_valid_trees_metrics
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -62,6 +62,35 @@ def ui(ctx: typer.Context) -> None:
             "[red]Streamlit is not installed or not found. Please install it with `pip install architxt[ui]` to use the UI.[/]"
         )
         raise typer.Exit(code=1) from error
+
+
+@app.command(help="Cleanup a forest retaining only the valid tree structure")
+def cleanup(
+    files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
+    *,
+    tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
+    decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
+    output: Path | None = typer.Option(None, help="Path to save the result."),
+    metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
+) -> None:
+    with (
+        ZODBTreeBucket() as tmp_forest,
+        ZODBTreeBucket(storage_path=output) as output_forest,
+    ):
+        tmp_forest.update(load_forest(files), commit=True)
+        schema = Schema.from_forest(tmp_forest, keep_unlabelled=False)
+
+        show_schema(schema)
+
+        if metrics:
+            result_metrics = Metrics(tmp_forest, tau=tau, decay=decay)
+
+        trees = schema.extract_valid_trees(tmp_forest)
+        output_forest.update(trees, commit=True)
+
+        if metrics:
+            result_metrics.update(output_forest)
+            show_metrics(result_metrics)
 
 
 @app.command(help="Simplify a bunch of databased together.")
@@ -105,6 +134,7 @@ def simplify(
 
         if metrics:
             show_metrics(result_metrics)
+            show_valid_trees_metrics(result_metrics, schema, forest, epoch + 1, log)
 
 
 @app.command(help="Simplify a bunch of databased together.")
@@ -239,6 +269,7 @@ def simplify_llm(
 
         if metrics:
             show_metrics(result_metrics)
+            show_valid_trees_metrics(result_metrics, schema, forest, refining_steps + 1, log)
 
 
 @app.command(help="Display statistics of a dataset.")
