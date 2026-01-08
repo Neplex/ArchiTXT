@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 from mlflow.entities import SpanEvent
 
-from architxt.similarity import DECAY, METRIC_FUNC, TREE_CLUSTER, get_equiv_of
-
 if TYPE_CHECKING:
+    from architxt.similarity import TreeClusterer
     from architxt.tree import Tree
 
 
@@ -22,17 +21,12 @@ class Operation(ABC):
     for any concrete operation and enforces the structure through abstract
     methods.
 
-    :param tau: Threshold for subtree similarity when clustering.
-    :param decay: The similarity decay factor.
     :param min_support: The minimum support value for a structure to be considered frequent.
-    :param metric: The metric function to use for computing the similarity between subtrees.
     """
 
-    def __init__(self, *, tau: float, min_support: int, decay: float = DECAY, metric: METRIC_FUNC) -> None:
-        self.tau = tau
-        self.decay = decay
+    def __init__(self, *, tree_clusterer: TreeClusterer, min_support: int) -> None:
+        self.tree_clusterer = tree_clusterer
         self.min_support = min_support
-        self.metric = metric
 
     @property
     def name(self) -> str:
@@ -51,15 +45,17 @@ class Operation(ABC):
             event = SpanEvent(self.__class__.__name__, attributes=attributes)
             span.add_event(event)
 
-    def get_equiv_of(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> str | None:
-        return get_equiv_of(tree, equiv_subtrees, tau=self.tau, decay=self.decay, metric=self.metric)
+    def get_equiv_of(self, tree: Tree) -> str | None:
+        return self.tree_clusterer.get_equiv_of(tree)
+
+    def get_class_support(self, equiv_class_name: str) -> int:
+        return len(self.tree_clusterer.clusters.get(equiv_class_name, []))
 
     @abstractmethod
-    def apply(self, tree: Tree, *, equiv_subtrees: TREE_CLUSTER) -> bool:
+    def apply(self, tree: Tree) -> bool:
         """
         Apply the rewriting operation on the given tree.
 
         :param tree: The tree to perform the reduction on.
-        :param equiv_subtrees: The cluster of equivalent subtrees in the forest.
         :return: A boolean indicating whether the operation modified the tree (True) or left it unaltered (False).
         """

@@ -173,7 +173,7 @@ class Metrics:
         self._current_label_count = self._source_label_count
 
         self._source_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric, decay=self._decay)
-        self._current_clustering = entity_labels(self._forest, tau=self._tau, metric=self._metric, decay=self._decay)
+        self._current_clustering = self._source_clustering
 
     def update(self, forest: Forest | None = None) -> None:
         """
