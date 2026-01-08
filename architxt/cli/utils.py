@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from architxt.schema import Schema
     from architxt.tree import Tree
 
-__all__ = ['console', 'load_forest', 'show_metrics', 'show_schema']
+__all__ = ['console', 'load_forest', 'show_metrics', 'show_schema', 'show_valid_trees_metrics']
 
 
 console = Console()
@@ -67,6 +67,18 @@ def show_metrics(metrics: Metrics) -> None:
         )
 
         console.print(Columns([metrics_table, grammar_metrics_table]))
+
+
+def show_valid_trees_metrics(metrics: Metrics, schema: Schema, trees: Iterable[Tree], step: int, log: bool) -> None:
+    with ZODBTreeBucket() as tmp_forest:
+        valid_trees = schema.extract_valid_trees(trees)
+        tmp_forest.update(valid_trees, commit=True)
+        metrics.update(tmp_forest)
+
+        if log:
+            metrics.log_to_mlflow(step)
+
+        show_metrics(metrics)
 
 
 def load_forest(files: Iterable[str | Path]) -> Generator[Tree, None, None]:

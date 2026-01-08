@@ -369,7 +369,7 @@ class Schema(CFG):
             if tree.label not in valid_labels:
                 tree.label = 'ROOT'
                 for child in reversed(tree):
-                    if isinstance(child, str):
+                    if isinstance(child, str) or has_type(child, NodeType.ENT):
                         tree.remove(child)
 
             if tree:
