@@ -595,9 +595,5 @@ async def llm_rewrite(
                 metrics.update()
                 metrics.log_to_mlflow(iteration + 1, debug=debug)
 
-            # Early stopping if no tree was modified
-            if not any_modified:
-                break
-
     metrics.update()
     return metrics
