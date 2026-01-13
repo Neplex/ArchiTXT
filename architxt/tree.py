@@ -757,15 +757,15 @@ class Tree(PersistentList['_SubTree | str']):
                     break
 
     @overload
-    def __getitem__(self, pos: tuple[()]) -> Self: ...
+    def __getitem__(self, i: tuple[()]) -> Self: ...
 
     @overload
-    def __getitem__(self, pos: TreePosition | int) -> _SubTree | str: ...
+    def __getitem__(self, i: TreePosition | int) -> _SubTree | str: ...
 
     @overload
-    def __getitem__(self, pos: slice) -> list[_SubTree | str]: ...
+    def __getitem__(self, i: slice) -> list[_SubTree | str]: ...
 
-    def __getitem__(self, pos: TreePosition | int | slice) -> Tree | str | list[_SubTree | str]:
+    def __getitem__(self, i: TreePosition | int | slice) -> Tree | str | list[_SubTree | str]:
         """
         Retrieve a child or subtree using an index, a slice, or a tree position.
 
@@ -779,148 +779,153 @@ class Tree(PersistentList['_SubTree | str']):
         >>> print(t[1:][0])
         (Y (ENT::person Bob) (ENT::animal rabbit))
         """
-        if isinstance(pos, int | slice):
+        if isinstance(i, int | slice):
             # We access `data` directly instead of using `super()` because `UserList` casts slice outputs
             # to the parent class, which would return a Tree instead of a plain list.
-            return self.data[pos]
+            return self.data[i]
 
-        if not isinstance(pos, tuple):
-            msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
+        if not isinstance(i, tuple):
+            msg = f'indices must be integers, slices or tuple of int, not {type(i).__name__}'
             raise TypeError(msg)
 
         node = self
-        for depth, idx in enumerate(pos):
+        for depth, idx in enumerate(i):
             if not isinstance(idx, int):
-                msg = f'multi-level indices must be integers, not {type(pos).__name__}'
+                msg = f'multi-level indices must be integers, not {type(i).__name__}'
                 raise TypeError(msg)
 
             if not isinstance(node, Tree):
-                msg = f'index {idx} out of range at position {pos[:depth]} (leaf node reached)'
+                msg = f'index {idx} out of range at position {i[:depth]} (leaf node reached)'
                 raise IndexError(msg)
 
             try:
                 node = node.data[idx]
             except IndexError:
-                msg = f'index {idx} out of range at position {pos[:depth]}'
+                msg = f'index {idx} out of range at position {i[:depth]}'
                 raise IndexError(msg)
 
         return node
 
     @overload
-    def __setitem__(self, pos: TreePosition | int, subtree: Tree | str) -> None: ...
+    def __setitem__(self, i: TreePosition | int, item: Tree | str) -> None: ...
 
     @overload
-    def __setitem__(self, pos: slice, subtree: Iterable[Tree | str]) -> None: ...
+    def __setitem__(self, i: slice, item: Iterable[Tree | str]) -> None: ...
 
-    def __setitem__(self, pos: TreePosition | int | slice, subtree: Tree | str | Iterable[Tree | str]) -> None:  # noqa: C901
+    def __setitem__(self, i: TreePosition | int | slice, item: Tree | str | Iterable[Tree | str]) -> None:  # noqa: C901
         # ptree[start:stop] = subtree
-        if isinstance(pos, slice):
-            children = [child for child in self[pos] if isinstance(child, Tree)]
+        if isinstance(i, slice):
+            children = [child for child in self[i] if isinstance(child, Tree)]
             # make a copy of subtree, in case it's an iterator
-            if not isinstance(subtree, list | tuple):
-                subtree = list(subtree)
+            if not isinstance(item, list | tuple):
+                item = list(item)
             # Check for any error conditions, so we can avoid ending
             # up in an inconsistent state if an error does occur.
-            self._check_children(subtree)
+            self._check_children(item)
             # finally, update the content of the child list itself.
-            super().__setitem__(pos, subtree)
+            super().__setitem__(i, item)
             # clear the child pointers of all parents we're removing
             for child in children:
                 child._set_parent(None)
             # set the child pointers of the new children. We do this
             # after clearing *all* child pointers, in case we're e.g.
             # reversing the elements in a tree.
-            for child in subtree:
+            for child in item:
                 if isinstance(child, Tree):
                     child._set_parent(self)
-            self._invalidate_descendant_caches(pos.start or 0)
+            self._invalidate_descendant_caches(i.start or 0)
             self._invalidate_ancestor_cache()
 
         # ptree[i] = subtree
-        elif isinstance(pos, int):
-            if pos < 0:
-                pos += len(self)
-            if pos < 0:
+        elif isinstance(i, int):
+            if i < 0:
+                i += len(self)
+            if i < 0:
                 msg = 'pos out of range'
                 raise IndexError(msg)
-            child = self[pos]
+
+            if not isinstance(item, Tree | str):
+                msg = f'subtree must be a Tree or str, not {type(item).__name__}'
+                raise TypeError(msg)
+
+            child = self[i]
             # if the subtree is not changing, do nothing.
-            self._check_children([subtree])
+            self._check_children([item])
             # Update our child list.
-            super().__setitem__(pos, subtree)
+            super().__setitem__(i, item)
             # Remove the old child's parent pointer
             if isinstance(child, Tree):
                 child._set_parent(None)
             # Set the new child's parent pointer.
-            if isinstance(subtree, Tree):
-                subtree._set_parent(self)
-            self._invalidate_descendant_caches(pos)
+            if isinstance(item, Tree):
+                item._set_parent(self)
+            self._invalidate_descendant_caches(i)
             self._invalidate_ancestor_cache()
 
-        elif isinstance(pos, tuple):
-            if not isinstance(subtree, Tree | str):
-                msg = f'subtree must be a Tree or str, not {type(subtree).__name__}'
+        elif isinstance(i, tuple):
+            if not isinstance(item, Tree | str):
+                msg = f'subtree must be a Tree or str, not {type(item).__name__}'
                 raise TypeError(msg)
 
             # ptree[()] = subtree
-            if len(pos) == 0:
+            if len(i) == 0:
                 msg = 'position () may not be assigned to'
                 raise IndexError(msg)
 
             # ptree[i1, i2, i3] = subtree
-            node = self[pos[:-1]]
+            node = self[i[:-1]]
             if not isinstance(node, Tree):
-                msg = f'index {pos[-1]} out of range at position {pos[:-1]} (leaf node reached)'
+                msg = f'index {i[-1]} out of range at position {i[:-1]} (leaf node reached)'
                 raise IndexError(msg)
-            node[pos[-1]] = subtree
+            node[i[-1]] = item
 
         else:
-            msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
+            msg = f'indices must be integers, slices or tuple of int, not {type(i).__name__}'
             raise TypeError(msg)
 
-    def __delitem__(self, pos: TreePosition | int | slice) -> None:
+    def __delitem__(self, i: TreePosition | int | slice) -> None:
         # del ptree[start:stop]
-        if isinstance(pos, slice):
-            children = [child for child in self[pos] if isinstance(child, Tree)]
+        if isinstance(i, slice):
+            children = [child for child in self[i] if isinstance(child, Tree)]
             # Delete the children from our child list.
-            super().__delitem__(pos)
+            super().__delitem__(i)
             # Clear all the children pointers.
             for child in children:
                 child._set_parent(None)
-            self._invalidate_descendant_caches(pos.start or 0)
+            self._invalidate_descendant_caches(i.start or 0)
             self._invalidate_ancestor_cache()
 
         # del ptree[i]
-        elif isinstance(pos, int):
-            if pos < 0:
-                pos += len(self)
-            if pos < 0:
+        elif isinstance(i, int):
+            if i < 0:
+                i += len(self)
+            if i < 0:
                 msg = 'pos out of range'
                 raise IndexError(msg)
-            child = self[pos]
+            child = self[i]
             # Remove the child from our child list.
-            super().__delitem__(pos)
+            super().__delitem__(i)
             # Clear the child's parent pointer.
             if isinstance(child, Tree):
                 child._set_parent(None)
-            self._invalidate_descendant_caches(pos)
+            self._invalidate_descendant_caches(i)
             self._invalidate_ancestor_cache()
 
-        elif isinstance(pos, tuple):
+        elif isinstance(i, tuple):
             # del ptree[()]
-            if len(pos) == 0:
+            if len(i) == 0:
                 msg = 'position () may not be deleted'
                 raise IndexError(msg)
 
             # del ptree[i1, i2, i3]
-            node = self[pos[:-1]]
+            node = self[i[:-1]]
             if not isinstance(node, Tree):
-                msg = f'index {pos[-1]} out of range at position {pos[:-1]} (leaf node reached)'
+                msg = f'index {i[-1]} out of range at position {i[:-1]} (leaf node reached)'
                 raise IndexError(msg)
-            del node[pos[-1]]
+            del node[i[-1]]
 
         else:
-            msg = f'indices must be integers, slices or tuple of int, not {type(pos).__name__}'
+            msg = f'indices must be integers, slices or tuple of int, not {type(i).__name__}'
             raise TypeError(msg)
 
     def clear(self) -> None:
@@ -932,34 +937,34 @@ class Tree(PersistentList['_SubTree | str']):
 
         self._invalidate_ancestor_cache()
 
-    def append(self, child: Tree | str) -> None:
-        self.extend([child])
+    def append(self, item: Tree | str) -> None:
+        self.extend([item])
 
-    def extend(self, children: Iterable[Tree | str]) -> None:
+    def extend(self, other: Iterable[Tree | str]) -> None:
         # Convert to list only if it's a one-shot iterable (like a generator)
-        if not isinstance(children, Collection):
-            children = list(children)
+        if not isinstance(other, Collection):
+            other = list(other)
 
-        self._check_children(children)
-        super().extend(children)
+        self._check_children(other)
+        super().extend(other)
 
-        for child in children:
+        for child in other:
             if isinstance(child, Tree):
                 child._set_parent(self)
 
         self._invalidate_ancestor_cache()
 
-    def remove(self, child: _SubTree | str, *, recursive: bool = True) -> None:
-        if isinstance(child, str):
-            idx = self.index(child)
-            super().remove(child)
+    def remove(self, item: _SubTree | str, *, recursive: bool = True) -> None:
+        if isinstance(item, str):
+            idx = self.index(item)
+            super().remove(item)
 
         else:
-            if child.parent is not self:
+            if item.parent is not self:
                 msg = 'The child is not a child of this tree'
                 raise ValueError(msg)
 
-            idx = child.parent_index
+            idx = item.parent_index
             del self[idx]
 
         if recursive and len(self) == 0 and is_sub_tree(self):
@@ -969,24 +974,24 @@ class Tree(PersistentList['_SubTree | str']):
         self._invalidate_descendant_caches(idx)
         self._invalidate_ancestor_cache()
 
-    def insert(self, pos: int, child: Tree | str) -> None:
-        self._check_children([child])
-        super().insert(pos, child)
+    def insert(self, i: int, item: Tree | str) -> None:
+        self._check_children([item])
+        super().insert(i, item)
 
         # Set the child's parent and update our child list.
-        if isinstance(child, Tree):
-            child._set_parent(self)
+        if isinstance(item, Tree):
+            item._set_parent(self)
 
-        self._invalidate_descendant_caches(pos)
+        self._invalidate_descendant_caches(i)
         self._invalidate_ancestor_cache()
 
-    def pop(self, pos: int = -1, *, recursive: bool = True) -> Tree | str:
+    def pop(self, i: int = -1, *, recursive: bool = True) -> Tree | str:
         """
-        Delete an element from the tree at the specified position `pos`.
+        Delete an element from the tree at the specified position `i`.
 
         If the parent tree becomes empty after the deletion, parent nodes are recursively deleted.
 
-        :param pos: The position (index) of the element to delete in the tree.
+        :param i: The index of the element to delete in the tree.
         :param recursive: If an empty tree should be removed from the parent.
         :return: The element at the position. The function modifies the tree in place.
 
@@ -1004,7 +1009,7 @@ class Tree(PersistentList['_SubTree | str']):
         (S (VP ))
 
         """
-        child = super().pop(pos)
+        child = super().pop(i)
 
         if isinstance(child, Tree):
             child._set_parent(None)
@@ -1013,7 +1018,7 @@ class Tree(PersistentList['_SubTree | str']):
             self.parent.remove(self)
             return child
 
-        self._invalidate_descendant_caches(pos)
+        self._invalidate_descendant_caches(i)
         self._invalidate_ancestor_cache()
 
         return child
@@ -1274,11 +1279,11 @@ if TYPE_CHECKING:
 
 
 @overload
-def is_sub_tree(t: _TypedTree) -> TypeGuard[_TypedSubTree]: ...
+def is_sub_tree(tree: _TypedTree) -> TypeGuard[_TypedSubTree]: ...
 
 
 @overload
-def is_sub_tree(t: Tree) -> TypeGuard[_SubTree]: ...
+def is_sub_tree(tree: Tree) -> TypeGuard[_SubTree]: ...
 
 
 def is_sub_tree(tree: Tree) -> bool:

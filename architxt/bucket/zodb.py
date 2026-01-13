@@ -257,13 +257,13 @@ class ZODBTreeBucket(TreeBucket):
             self._data.update({tree.oid.bytes: tree for tree in trees})
             self._savepoint()
 
-    def add(self, tree: Tree) -> None:
+    def add(self, value: Tree) -> None:
         """Add a single :py:class:`~architxt.tree.Tree` to the bucket."""
-        self._data[tree.oid.bytes] = tree
+        self._data[value.oid.bytes] = value
 
-    def discard(self, tree: Tree) -> None:
+    def discard(self, value: Tree) -> None:
         """Remove a :py:class:`~architxt.tree.Tree` from the bucket if it exists."""
-        self._data.pop(tree.oid.bytes, None)
+        self._data.pop(value.oid.bytes, None)
 
     def clear(self) -> None:
         """Remove all :py:class:`~architxt.tree.Tree` objects from the bucket."""
@@ -321,12 +321,12 @@ class ZODBTreeBucket(TreeBucket):
 
         return (self._data[oid.bytes] for oid in key)
 
-    def __contains__(self, item: object) -> bool:
-        if isinstance(item, Tree):
-            return item.oid.bytes in self._data
+    def __contains__(self, x: object) -> bool:
+        if isinstance(x, Tree):
+            return x.oid.bytes in self._data
 
-        if isinstance(item, uuid.UUID):
-            return item.bytes in self._data
+        if isinstance(x, uuid.UUID):
+            return x.bytes in self._data
 
         return False
 
