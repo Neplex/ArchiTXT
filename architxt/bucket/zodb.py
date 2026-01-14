@@ -7,7 +7,7 @@ import tempfile
 import uuid
 import weakref
 from pathlib import Path
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
 import transaction
 import ZODB.config
@@ -16,7 +16,7 @@ from transaction.interfaces import AlreadyInTransaction, NoTransaction
 from ZODB.Connection import resetCaches
 from zodburi import resolve_uri
 
-from architxt.tree import Tree, TreeOID, TreePersistentRef
+from architxt.tree import Tree, TreeOID
 from architxt.utils import update_url_queries
 
 from . import TreeBucket
@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     from ZODB.Connection import Connection
 
 __all__ = ['ZODBTreeBucket']
+
+
+ZODBTreePersistentRef: TypeAlias = tuple[TreeOID, Any]
 
 
 class ZODBTreeBucket(TreeBucket):
@@ -274,37 +277,26 @@ class ZODBTreeBucket(TreeBucket):
         for key in self._data:
             yield uuid.UUID(bytes=key)
 
-    def get_persistent_ref(self, tree: Tree) -> TreePersistentRef:
-        if (
-            hasattr(tree, '_p_oid')
-            and (ref := getattr(tree, '_p_oid')) is not None
-            and self.resolve_ref(ref) is not None
-        ):
-            return ref
+    def get_persistent_ref(self, tree: Tree) -> ZODBTreePersistentRef:
+        if tree.root in self and hasattr(tree, '_p_oid') and (tree_ref := getattr(tree, '_p_oid')) is not None:
+            return tree.root.oid, tree_ref
 
         msg = "The given tree is not stored in the bucket."
         raise KeyError(msg)
 
-    def resolve_ref(self, ref: TreePersistentRef) -> Tree:
+    def resolve_ref(self, ref: ZODBTreePersistentRef) -> Tree:
         msg = "The given tree is not stored in the bucket."
 
-        try:
-            tree = self._connection.get(ref)
-        except Exception as error:
-            raise KeyError(msg) from error
+        if not isinstance(ref, tuple) or len(ref) != 2:
+            raise KeyError(msg)
 
-        # If connection.get returned an object, accept it only if it is a Tree
-        # and its root belongs to this bucket.
-        if tree is not None and isinstance(tree, Tree) and tree.root in self:
-            return tree
+        root_oid, tree_ref = ref
 
-        # Fallback: search for the tree manually.
-        # We cannot always rely on `self._connection.get(ref)` alone.
+        # We search for the tree manually as we cannot rely on `self._connection.get(ref)` alone.
         # If a subtree is not retrieved from the cache, the parent reference will be invalid.
-        # We work around this by searching for the subtree manually.
-        for tree in self:
-            for sub_tree in tree.subtrees(include_self=True):
-                if getattr(sub_tree, '_p_oid', None) == ref:
+        if root_oid in self:
+            for sub_tree in self[root_oid].subtrees(include_self=True):
+                if getattr(sub_tree, '_p_oid', None) == tree_ref:
                     return sub_tree
 
         raise KeyError(msg)

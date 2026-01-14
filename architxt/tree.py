@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import re
 import uuid
-import weakref
 from collections import Counter
 from collections.abc import (
     Callable,
@@ -100,7 +99,7 @@ class Tree(PersistentList['_SubTree | str']):
     _metadata: MutableMapping[str, Any]
     _oid: TreeOID
 
-    _v_parent: weakref.ReferenceType[Tree] | None
+    _v_parent: Tree | None
     _v_cache: MutableMapping[Hashable, Any]
 
     __slots__ = ('_label', '_metadata', '_oid', '_v_cache', '_v_parent')
@@ -146,7 +145,7 @@ class Tree(PersistentList['_SubTree | str']):
 
     def _set_parent(self, parent: Tree | None) -> None:
         """Set the parent of the tree."""
-        self._v_parent = weakref.ref(parent) if parent is not None else None
+        self._v_parent = parent
         self._invalidate_descendant_caches()
 
     def _invalidate_ancestor_cache(self) -> None:
@@ -154,6 +153,16 @@ class Tree(PersistentList['_SubTree | str']):
 
         if parent := self.parent:
             parent._invalidate_ancestor_cache()
+
+    def _p_deactivate(self) -> None:
+        # We recursively deactivate the parent to ensure that
+        # it would be reloaded from the database when accessed again
+        # recreating the parent-child links properly.
+        if self._v_parent is not None:
+            self._v_parent._p_deactivate()
+            self._v_parent = None
+
+        super()._p_deactivate()
 
     def _invalidate_descendant_caches(self, from_position: int = 0) -> None:
         self._v_cache.pop('parent_index', None)
@@ -180,7 +189,7 @@ class Tree(PersistentList['_SubTree | str']):
         return self._oid.int
 
     def __repr__(self) -> str:
-        return f'{type(self)}(len={len(self)})'
+        return f'{type(self).__name__}(label={self.label!r}, len={len(self)}, id={id(self)})'
 
     def __str__(self) -> str:
         return self.pformat()
@@ -250,7 +259,7 @@ class Tree(PersistentList['_SubTree | str']):
         >>> t[1].parent is t
         True
         """
-        return self._v_parent() if self._v_parent else None
+        return self._v_parent
 
     @property
     @cachedmethod(lambda self: self._v_cache, key=lambda _: 'parent_index')
