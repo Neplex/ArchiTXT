@@ -57,7 +57,7 @@ class FindSubGroupsOperation(Operation):
         new_subtree.insert(insertion_index, group_tree)
 
         # Reset label if subtree becomes invalid as a group
-        if has_type(subtree):
+        if has_type(new_subtree):
             new_subtree.label = f'UNDEF_{uuid.uuid4().hex}'
 
         # Compute support for the new subtree. It is a valid subgroup if its support exceeds the given threshold.
@@ -138,6 +138,7 @@ class FindSubGroupsOperation(Operation):
                     for sub_group in combinations(entity_trees, k)
                     if more_itertools.all_unique(ent.label for ent in sub_group)
                     and (new_sub_group := self._create_and_evaluate_subgroup(subtree, sub_group, min_support))
+                    is not None
                 )
 
                 # Select the subgroup with maximum support
@@ -261,12 +262,16 @@ class MergeGroupsOperation(Operation):
             while k > 1:
                 # Get k-subgroup with maximum support
                 k_groups = combinations(group_ent_trees, k)
-                k_groups_support = (self._merge_groups_inner(subtree, combined_groups) for combined_groups in k_groups)
+                k_groups_support = (
+                    merged_group_result
+                    for combined_groups in k_groups
+                    if (merged_group_result := self._merge_groups_inner(subtree, combined_groups)) is not None
+                )
 
                 # Identify the best possible merge based on maximum support
                 max_subtree: Tree | None
                 max_subtree, max_support, new_group_position = max(
-                    filter(None, k_groups_support),
+                    k_groups_support,
                     key=lambda x: x[1],
                     default=(None, 0, 0),
                 )
