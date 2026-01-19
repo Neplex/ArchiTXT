@@ -319,42 +319,44 @@ def inspect(
 
 @app.command(help="Simplify a bunch of databased together.")
 def compare(
-    file1: Path = typer.Argument(..., exists=True, readable=True, help="Path of the first data file to load."),
-    file2: Path = typer.Argument(..., exists=True, readable=True, help="Path of the first data file to load."),
+    src: Path = typer.Argument(..., exists=True, readable=True, help="Path of the data file to compare to."),
+    dst: Path = typer.Argument(..., exists=True, readable=True, help="Path of the data file to compare."),
     *,
     tau: float = typer.Option(0.7, help="The similarity threshold.", min=0, max=1),
     decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
 ) -> None:
     # Metrics
-    inspector1 = ForestInspector()
-    inspector2 = ForestInspector()
+    inspector_src = ForestInspector()
+    inspector_dst = ForestInspector()
 
-    with ZODBTreeBucket(storage_path=file1, read_only=True) as bucket:
-        for _ in inspector1(bucket):
-            pass
+    with ZODBTreeBucket() as bucket:
+        trees = inspector_src(load_forest([src]))
+        bucket.update(trees, commit=True)
         metrics = Metrics(bucket, tau=tau, decay=decay)
 
-    with ZODBTreeBucket(storage_path=file2, read_only=True) as bucket:
-        for _ in inspector2(bucket):
-            pass
+    with ZODBTreeBucket() as bucket:
+        trees = inspector_dst(load_forest([dst]))
+        bucket.update(trees, commit=True)
         metrics.update(bucket)
+        schema = Schema.from_forest(bucket, keep_unlabelled=False)
 
-    show_metrics(metrics)
+        show_metrics(metrics)
+        show_valid_trees_metrics(metrics, schema, bucket, 0, False)
 
     # Entity Count
     tables = []
-    entities = inspector1.entity_count.keys() | inspector2.entity_count.keys()
+    entities = inspector_src.entity_count.keys() | inspector_dst.entity_count.keys()
     for chunk in more_itertools.chunked_even(entities, 10):
         entity_table = Table()
         entity_table.add_column("Entity", style="cyan", no_wrap=True)
-        entity_table.add_column("Count File1", style="magenta")
-        entity_table.add_column("Count File2", style="magenta")
+        entity_table.add_column("Count source", style="magenta")
+        entity_table.add_column("Count destination", style="magenta")
 
         for entity in chunk:
             entity_table.add_row(
                 entity,
-                str(inspector1.entity_count[entity]),
-                str(inspector2.entity_count[entity]),
+                str(inspector_src.entity_count[entity]),
+                str(inspector_dst.entity_count[entity]),
             )
 
         tables.append(entity_table)
@@ -362,17 +364,17 @@ def compare(
     # Display statistics
     stats_table = Table()
     stats_table.add_column("Metric", style="cyan", no_wrap=True)
-    stats_table.add_column("Value File1", style="magenta")
-    stats_table.add_column("Value File2", style="magenta")
+    stats_table.add_column("Value source", style="magenta")
+    stats_table.add_column("Value destination", style="magenta")
 
-    stats_table.add_row("Total Trees", str(inspector1.total_trees), str(inspector2.total_trees))
-    stats_table.add_row("Total Entities", str(inspector1.total_entities), str(inspector2.total_entities))
-    stats_table.add_row("Average Tree Height", f"{inspector1.avg_height:.3f}", f"{inspector2.avg_height:.3f}")
-    stats_table.add_row("Maximum Tree Height", str(inspector1.max_height), str(inspector2.max_height))
-    stats_table.add_row("Average Tree size", f"{inspector1.avg_size:.3f}", f"{inspector2.avg_size:.3f}")
-    stats_table.add_row("Maximum Tree size", str(inspector1.max_size), str(inspector2.max_size))
-    stats_table.add_row("Average Branching", f"{inspector1.avg_branching:.3f}", f"{inspector2.avg_branching:.3f}")
-    stats_table.add_row("Maximum Branching", str(inspector1.max_children), str(inspector2.max_children))
+    stats_table.add_row("Total Trees", str(inspector_src.total_trees), str(inspector_dst.total_trees))
+    stats_table.add_row("Total Entities", str(inspector_src.total_entities), str(inspector_dst.total_entities))
+    stats_table.add_row("Average Tree Height", f"{inspector_src.avg_height:.3f}", f"{inspector_dst.avg_height:.3f}")
+    stats_table.add_row("Maximum Tree Height", str(inspector_src.max_height), str(inspector_dst.max_height))
+    stats_table.add_row("Average Tree size", f"{inspector_src.avg_size:.3f}", f"{inspector_dst.avg_size:.3f}")
+    stats_table.add_row("Maximum Tree size", str(inspector_src.max_size), str(inspector_dst.max_size))
+    stats_table.add_row("Average Branching", f"{inspector_src.avg_branching:.3f}", f"{inspector_dst.avg_branching:.3f}")
+    stats_table.add_row("Maximum Branching", str(inspector_src.max_children), str(inspector_dst.max_children))
 
     console.print(Columns([*tables, stats_table], equal=True))
 
