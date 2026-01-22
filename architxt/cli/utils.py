@@ -12,6 +12,7 @@ from rich.table import Table
 
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.forest import import_forest_from_jsonl
+from architxt.tree import NodeType
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
@@ -64,6 +65,15 @@ def show_metrics(metrics: Metrics) -> None:
         )
         grammar_metrics_table.add_row(
             "Balance ▲", f"{metrics.group_balance_score_origin():.3f}", f"{metrics.group_balance_score():.3f}"
+        )
+        grammar_metrics_table.add_row(
+            "Groups", f"{metrics.num_type_origin(NodeType.GROUP)}", f"{metrics.num_type(NodeType.GROUP)}"
+        )
+        grammar_metrics_table.add_row(
+            "Relations", f"{metrics.num_type_origin(NodeType.REL)}", f"{metrics.num_type(NodeType.REL)}"
+        )
+        grammar_metrics_table.add_row(
+            "Collections", f"{metrics.num_type_origin(NodeType.COLL)}", f"{metrics.num_type(NodeType.COLL)}"
         )
 
         console.print(Columns([metrics_table, grammar_metrics_table]))

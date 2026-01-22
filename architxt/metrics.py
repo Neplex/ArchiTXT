@@ -363,6 +363,15 @@ class Metrics:
         """
         return sum(has_type(label, node_type) for label in self._current_label_count)
 
+    @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_type_origin'))
+    def num_type_origin(self, node_type: NodeType) -> int:
+        """
+        Get the total number of nodes in the forest that match the given node type.
+
+        :param node_type: The type to filter by.
+        """
+        return sum(count for label, count in self._source_label_count.items() if has_type(label, node_type))
+
     @cachedmethod(attrgetter('_cache'), key=functools.partial(methodkey, method='num_type'))
     def num_type(self, node_type: NodeType) -> int:
         """

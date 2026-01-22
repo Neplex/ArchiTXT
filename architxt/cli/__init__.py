@@ -2,7 +2,6 @@ import shutil
 import subprocess
 from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
-from statistics import median
 from typing import TYPE_CHECKING
 
 import anyio
@@ -321,7 +320,7 @@ def inspect(
         if redundancy:
             datasets = schema.extract_datasets(forest)
             for tau in (1.0, 0.7, 0.5):
-                redundancy = median(redundancy_score(ds, tau=tau) for ds in datasets.values())
+                redundancy = sum(redundancy_score(ds, tau=tau) for ds in datasets.values()) / len(datasets)
                 stats_table.add_row(f"Redundant Trees ({tau}:.1f)", f"{redundancy:.3f}")
 
         console.print(Columns([*tables, stats_table], equal=True))
@@ -339,19 +338,21 @@ def compare(
     inspector_src = ForestInspector()
     inspector_dst = ForestInspector()
 
-    with ZODBTreeBucket() as bucket:
-        trees = inspector_src(load_forest([src]))
-        bucket.update(trees, commit=True)
-        metrics = Metrics(bucket, tau=tau, decay=decay)
+    with (
+        ZODBTreeBucket() as forest_src,
+        ZODBTreeBucket() as forest_dst,
+    ):
+        trees_src = inspector_src(load_forest([src]))
+        forest_src.update(trees_src, commit=True)
+        metrics = Metrics(forest_src, tau=tau, decay=decay)
 
-    with ZODBTreeBucket() as bucket:
-        trees = inspector_dst(load_forest([dst]))
-        bucket.update(trees, commit=True)
-        metrics.update(bucket)
-        schema = Schema.from_forest(bucket, keep_unlabelled=False)
+        trees_dst = inspector_dst(load_forest([dst]))
+        forest_dst.update(trees_dst, commit=True)
+        metrics.update(forest_dst)
+        schema = Schema.from_forest(forest_dst, keep_unlabelled=False)
 
         show_metrics(metrics)
-        show_valid_trees_metrics(metrics, schema, bucket, 0, False)
+        show_valid_trees_metrics(metrics, schema, forest_dst, 0, False)
 
     # Entity Count
     tables = []
