@@ -2,6 +2,7 @@ import shutil
 import subprocess
 from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
+from statistics import median
 from typing import TYPE_CHECKING
 
 import anyio
@@ -19,7 +20,7 @@ from typer.main import get_command
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
-from architxt.metrics import Metrics
+from architxt.metrics import Metrics, redundancy_score
 from architxt.schema import Group, Relation, Schema
 from architxt.similarity import DECAY
 from architxt.simplification.tree_rewriting import rewrite
@@ -275,46 +276,55 @@ def simplify_llm(
 @app.command(help="Display statistics of a dataset.")
 def inspect(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
+    redundancy: bool = typer.Option(False, help="Compute redundancy metrics."),
 ) -> None:
     """Display overall statistics."""
     inspector = ForestInspector()
-    forest = load_forest(files)
-    forest = inspector(forest)
 
-    # Display the schema
-    schema = Schema.from_forest(forest, keep_unlabelled=False)
-    show_schema(schema)
+    with ZODBTreeBucket() as forest:
+        trees = inspector(load_forest(files))
+        forest.update(trees, commit=True)
+        schema = Schema.from_forest(inspector(forest), keep_unlabelled=False)
 
-    # Display the largest tree
-    console.print(Panel(str(inspector.largest_tree), title="Largest Tree"))
+        # Display the schema
+        show_schema(schema)
 
-    # Entity Count
-    tables = []
-    for chunk in more_itertools.chunked_even(inspector.entity_count.most_common(), 10):
-        entity_table = Table()
-        entity_table.add_column("Entity", style="cyan", no_wrap=True)
-        entity_table.add_column("Count", style="magenta")
+        # Display the largest tree
+        console.print(Panel(str(inspector.largest_tree), title="Largest Tree"))
 
-        for entity, count in chunk:
-            entity_table.add_row(entity, str(count))
+        # Entity Count
+        tables = []
+        for chunk in more_itertools.chunked_even(inspector.entity_count.most_common(), 10):
+            entity_table = Table()
+            entity_table.add_column("Entity", style="cyan", no_wrap=True)
+            entity_table.add_column("Count", style="magenta")
 
-        tables.append(entity_table)
+            for entity, count in chunk:
+                entity_table.add_row(entity, str(count))
 
-    # Display statistics
-    stats_table = Table()
-    stats_table.add_column("Metric", style="cyan", no_wrap=True)
-    stats_table.add_column("Value", style="magenta")
+            tables.append(entity_table)
 
-    stats_table.add_row("Total Trees", str(inspector.total_trees))
-    stats_table.add_row("Total Entities", str(inspector.total_entities))
-    stats_table.add_row("Average Tree Height", f"{inspector.avg_height:.3f}")
-    stats_table.add_row("Maximum Tree Height", str(inspector.max_height))
-    stats_table.add_row("Average Tree size", f"{inspector.avg_size:.3f}")
-    stats_table.add_row("Maximum Tree size", str(inspector.max_size))
-    stats_table.add_row("Average Branching", f"{inspector.avg_branching:.3f}")
-    stats_table.add_row("Maximum Branching", str(inspector.max_children))
+        # Display statistics
+        stats_table = Table()
+        stats_table.add_column("Metric", style="cyan", no_wrap=True)
+        stats_table.add_column("Value", style="magenta")
 
-    console.print(Columns([*tables, stats_table], equal=True))
+        stats_table.add_row("Total Trees", str(inspector.total_trees))
+        stats_table.add_row("Total Entities", str(inspector.total_entities))
+        stats_table.add_row("Average Tree Height", f"{inspector.avg_height:.3f}")
+        stats_table.add_row("Maximum Tree Height", str(inspector.max_height))
+        stats_table.add_row("Average Tree size", f"{inspector.avg_size:.3f}")
+        stats_table.add_row("Maximum Tree size", str(inspector.max_size))
+        stats_table.add_row("Average Branching", f"{inspector.avg_branching:.3f}")
+        stats_table.add_row("Maximum Branching", str(inspector.max_children))
+
+        if redundancy:
+            datasets = schema.extract_datasets(forest)
+            for tau in (1.0, 0.7, 0.5):
+                redundancy = median(redundancy_score(ds, tau=tau) for ds in datasets.values())
+                stats_table.add_row(f"Redundant Trees ({tau}:.1f)", f"{redundancy:.3f}")
+
+        console.print(Columns([*tables, stats_table], equal=True))
 
 
 @app.command(help="Simplify a bunch of databased together.")
