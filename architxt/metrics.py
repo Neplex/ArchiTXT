@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections import Counter
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from itertools import combinations
 from operator import attrgetter
 from typing import TYPE_CHECKING, Any
@@ -95,6 +95,13 @@ def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> fl
     return dep_score
 
 
+def process_subset(dataframe: pd.DataFrame, tau: float, attrs: tuple[str, ...]) -> pd.Series[bool] | None:
+    if dependency_score(dataframe, attrs) >= tau:
+        return dataframe[list(attrs)].dropna().duplicated(keep=False)
+
+    return None
+
+
 def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
     """
     Compute the redundancy score for an entire DataFrame.
@@ -119,10 +126,16 @@ def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
 
     # For each candidate attribute set, if its dependency score is above the threshold,
     # mark the rows that are duplicates on that set.
-    for i in range(2, len(attributes) + 1):
-        for attrs in combinations(attributes, i):
-            if dependency_score(dataframe, attrs) >= tau:
-                duplicates |= dataframe[list(attrs)].dropna().duplicated(keep=False)
+    with ProcessPoolExecutor() as executor:
+        futures = [
+            executor.submit(process_subset, dataframe, tau, attrs)
+            for i in range(2, len(attributes) + 1)
+            for attrs in combinations(attributes, i)
+        ]
+
+        for future in as_completed(futures):
+            if (result := future.result()) is not None:
+                duplicates |= result
 
     # The table-level redundancy is the fraction of rows that are duplicates in at least one candidate set.
     return duplicates.sum() / dataframe.shape[0]
@@ -273,11 +286,9 @@ class Metrics:
             return 0.0
 
         redundancy_fn = functools.partial(redundancy_score, tau=tau)
-
-        with ProcessPoolExecutor() as executor:
-            results: Iterable[float] = executor.map(redundancy_fn, self._datasets.values())
-            results = tqdm(results, total=len(self._datasets), leave=False, desc=f'Redundancy ({tau})')
-            redundancy = pd.Series(results).median()
+        results: Iterable[float] = map(redundancy_fn, self._datasets.values())
+        results = tqdm(results, total=len(self._datasets), leave=False, desc=f'Redundancy ({tau})')
+        redundancy = pd.Series(results).mean()
 
         return redundancy if redundancy is not pd.NA else 0.0
 

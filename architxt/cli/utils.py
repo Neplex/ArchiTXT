@@ -45,9 +45,8 @@ def show_metrics(metrics: Metrics) -> None:
         metrics_table = Table("Metric", "Value", title="Valid instance")
 
         metrics_table.add_row("Coverage ▲", f"{metrics.coverage():.3f}")
-        metrics_table.add_row("Redundancy (1.0) ▼", f"{metrics.redundancy(tau=1.0):.3f}")
-        metrics_table.add_row("Redundancy (0.7) ▼", f"{metrics.redundancy(tau=0.7):.3f}")
-        metrics_table.add_row("Redundancy (0.5) ▼", f"{metrics.redundancy(tau=0.5):.3f}")
+        for tau in (1.0, 0.7, 0.5):
+            metrics_table.add_row(f"Redundancy ({tau}:.1f) ▼", f"{metrics.redundancy(tau=tau):.3f}")
 
         metrics_table.add_section()
 
