@@ -26,7 +26,7 @@ from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
 from .loader import app as loader_app
-from .utils import console, load_forest, show_metrics, show_schema, show_valid_trees_metrics
+from .utils import console, get_schema_metrics, load_forest, show_metrics, show_schema, show_valid_trees_metrics
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -294,7 +294,7 @@ def inspect(
         # Entity Count
         tables = []
         for chunk in more_itertools.chunked_even(inspector.entity_count.most_common(), 10):
-            entity_table = Table()
+            entity_table = Table(title='Entity Counts')
             entity_table.add_column("Entity", style="cyan", no_wrap=True)
             entity_table.add_column("Count", style="magenta")
 
@@ -304,12 +304,14 @@ def inspect(
             tables.append(entity_table)
 
         # Display statistics
-        stats_table = Table()
+        stats_table = Table(title='Statistics')
         stats_table.add_column("Metric", style="cyan", no_wrap=True)
         stats_table.add_column("Value", style="magenta")
 
         stats_table.add_row("Total Trees", str(inspector.total_trees))
         stats_table.add_row("Total Entities", str(inspector.total_entities))
+        stats_table.add_row("Total Groups", str(inspector.total_groups))
+        stats_table.add_row("Total Relations", str(inspector.total_relations))
         stats_table.add_row("Average Tree Height", f"{inspector.avg_height:.3f}")
         stats_table.add_row("Maximum Tree Height", str(inspector.max_height))
         stats_table.add_row("Average Tree size", f"{inspector.avg_size:.3f}")
@@ -323,7 +325,7 @@ def inspect(
                 redundancy = sum(redundancy_score(ds, tau=tau) for ds in datasets.values()) / len(datasets)
                 stats_table.add_row(f"Redundant Trees ({tau}:.1f)", f"{redundancy:.3f}")
 
-        console.print(Columns([*tables, stats_table], equal=True))
+        console.print(Columns([*tables, stats_table, get_schema_metrics(schema)], equal=True))
 
 
 @app.command(help="Simplify a bunch of databased together.")
@@ -380,6 +382,8 @@ def compare(
 
     stats_table.add_row("Total Trees", str(inspector_src.total_trees), str(inspector_dst.total_trees))
     stats_table.add_row("Total Entities", str(inspector_src.total_entities), str(inspector_dst.total_entities))
+    stats_table.add_row("Total Entities", str(inspector_src.total_entities), str(inspector_dst.total_entities))
+    stats_table.add_row("Total Groups", str(inspector_src.total_groups), str(inspector_dst.total_groups))
     stats_table.add_row("Average Tree Height", f"{inspector_src.avg_height:.3f}", f"{inspector_dst.avg_height:.3f}")
     stats_table.add_row("Maximum Tree Height", str(inspector_src.max_height), str(inspector_dst.max_height))
     stats_table.add_row("Average Tree size", f"{inspector_src.avg_size:.3f}", f"{inspector_dst.avg_size:.3f}")

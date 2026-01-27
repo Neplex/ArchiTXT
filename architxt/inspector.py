@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import Counter
 from typing import TYPE_CHECKING
 
+from architxt.tree import NodeType, has_type
+
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
@@ -15,6 +17,8 @@ class ForestInspector:
     def __init__(self) -> None:
         self.total_trees = 0
         self.total_entities = 0
+        self.total_groups = 0
+        self.total_relations = 0
         self.total_nodes = 0
         self.sum_children = 0
         self.max_children = 0
@@ -61,6 +65,12 @@ class ForestInspector:
             entities = [ent.label for ent in tree.entities()]
             self.total_entities += len(entities)
             self.entity_count.update(entities)
+
+            # Count groups
+            self.total_groups += sum(1 for st in tree.subtrees() if has_type(st, NodeType.GROUP))
+
+            # Count relations
+            self.total_relations += sum(1 for st in tree.subtrees() if has_type(st, NodeType.REL))
 
             # Calculate branching factor
             for node in tree.subtrees():

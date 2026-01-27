@@ -40,6 +40,15 @@ def show_schema(schema: Schema) -> None:
     )
 
 
+def get_schema_metrics(schema: Schema) -> Table:
+    table = Table("Metric", "Value", title="Schema")
+    table.add_row("Productions", str(len(schema.productions())))
+    table.add_row("Entities", str(len(schema.entities)))
+    table.add_row("Groups", str(len({g.name for g in schema.groups})))
+    table.add_row("Relations", str(len({r.name for r in schema.relations})))
+    return table
+
+
 def show_metrics(metrics: Metrics) -> None:
     with console.status("[cyan]Computing metrics. This may take a while. Please wait..."):
         metrics_table = Table("Metric", "Value", title="Valid instance")
