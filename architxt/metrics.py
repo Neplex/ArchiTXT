@@ -102,15 +102,18 @@ def process_subset(dataframe: pd.DataFrame, tau: float, attrs: tuple[str, ...]) 
     return None
 
 
-def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
+def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0, null_threshold: float = 0.8) -> float:
     """
     Compute the redundancy score for an entire DataFrame.
 
     The overall redundancy score measures the fraction of rows that are redundant in at least one subset of attributes
     that satisfies a functional dependency above a given threshold tau.
 
+    Attributes with a proportion of null values exceeding the null_threshold are filtered out before analysis.
+
     :param dataframe: A Pandas DataFrame containing the data to analyze.
     :param tau: The dependency threshold to determine redundancy (default is 1.0).
+    :param null_threshold: The maximum proportion of null values allowed in an attribute (default is 0.5).
     :return: The proportion of redundant rows in the dataset.
 
     >>> data = pd.DataFrame({
@@ -120,9 +123,15 @@ def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0) -> float:
     >>> redundancy_score(data)
     0.8
     """
+    # Filter attributes with too many null values
+    null_proportions = dataframe.isna().mean()
+    attributes = [col for col in dataframe.columns if null_proportions[col] <= null_threshold]
+
+    if len(attributes) < 2:
+        return 0.0
+
     # Create a boolean Series initialized to False for all rows.
     duplicates = pd.Series(False, index=dataframe.index)
-    attributes = dataframe.columns.tolist()
 
     # For each candidate attribute set, if its dependency score is above the threshold,
     # mark the rows that are duplicates on that set.
