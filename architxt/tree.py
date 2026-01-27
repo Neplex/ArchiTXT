@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import re
 import uuid
+import warnings
 from collections import Counter
 from collections.abc import (
     Callable,
@@ -123,6 +124,67 @@ class Tree(PersistentList['_SubTree | str']):
         for child in self:
             if isinstance(child, Tree):
                 child._set_parent(self)
+
+    def _is_valid(self) -> bool:
+        """
+        Validate the subtree structure rooted at `self`.
+
+        Emits warnings describing every structural issue found and returns False if any issue
+        was detected, True otherwise.
+
+        Checks performed:
+          - Cyclic references (a node appears in its own ancestor chain).
+          - Child.parent is exactly the containing node.
+          - child's parent_index matches the index where the child appears in the parent.
+          - Any parent_index lookup failures (child not present in its parent).
+        """
+        problems: list[str] = []
+
+        def dfs(node: Tree, ancestors: set[int], path: tuple[int, ...]) -> None:
+            nid = id(node)
+            ancestors.add(nid)
+
+            for idx, child in enumerate(node):
+                child_path = (*path, idx)
+                if not isinstance(child, Tree):
+                    # leaves are fine
+                    continue
+
+                # 1) Detect cycles (direct or indirect)
+                if id(child) in ancestors:
+                    problems.append(
+                        f"Cyclic reference detected at {child_path}: {child!r} is already an ancestor of {node!r}."
+                    )
+
+                # 2) parent pointer consistency
+                actual_parent = child.parent
+                if actual_parent is not node:
+                    problems.append(
+                        f"Parent mismatch for child at {child_path}: "
+                        f"child.parent is {actual_parent!r}, "
+                        f"expected {node!r}."
+                    )
+
+                # 3) parent_index should point back to the same index
+                pidx = child.parent_index
+                if pidx != idx:
+                    problems.append(
+                        f"Parent index mismatch at {child_path}: "
+                        f"child.parent_index is {pidx!r}, but the child is at index {idx} in its parent."
+                    )
+
+                # proceed recursively
+                dfs(child, ancestors, child_path)
+
+            ancestors.remove(nid)
+
+        dfs(self, set(), ())
+
+        # Emit warnings for all problems found
+        for msg in problems:
+            warnings.warn(msg, stacklevel=3)
+
+        return not problems
 
     def _check_children(self, children: Iterable[Tree | str]) -> None:
         errors = []
