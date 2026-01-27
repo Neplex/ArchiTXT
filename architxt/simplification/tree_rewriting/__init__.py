@@ -97,7 +97,7 @@ def rewrite(
 
     batch_size = get_commit_batch_size(commit)
     min_support = min_support or max((len(forest) // 10), 2)
-    max_workers = min(len(forest) // batch_size, max_workers or (cpu_count() - 2)) or 1
+    max_workers = max_workers or min(len(forest) // batch_size, (cpu_count() - 2)) or 1
     tree_clusterer = TreeClusterer(tau=tau, decay=decay, metric=metric)
 
     if debug:
