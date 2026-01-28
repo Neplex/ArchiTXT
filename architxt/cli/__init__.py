@@ -382,8 +382,8 @@ def compare(
 
     stats_table.add_row("Total Trees", str(inspector_src.total_trees), str(inspector_dst.total_trees))
     stats_table.add_row("Total Entities", str(inspector_src.total_entities), str(inspector_dst.total_entities))
-    stats_table.add_row("Total Entities", str(inspector_src.total_entities), str(inspector_dst.total_entities))
     stats_table.add_row("Total Groups", str(inspector_src.total_groups), str(inspector_dst.total_groups))
+    stats_table.add_row("Total Relations", str(inspector_src.total_relations), str(inspector_dst.total_relations))
     stats_table.add_row("Average Tree Height", f"{inspector_src.avg_height:.3f}", f"{inspector_dst.avg_height:.3f}")
     stats_table.add_row("Maximum Tree Height", str(inspector_src.max_height), str(inspector_dst.max_height))
     stats_table.add_row("Average Tree size", f"{inspector_src.avg_size:.3f}", f"{inspector_dst.avg_size:.3f}")
