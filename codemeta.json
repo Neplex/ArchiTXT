@@ -75,8 +75,8 @@
         {
             "@type": "Person",
             "email": [
-                "baptiste.haudebourg37@orange.fr",
-                "118758890+bap-haudebourg@users.noreply.github.com"
+                "118758890+bap-haudebourg@users.noreply.github.com",
+                "baptiste.haudebourg37@orange.fr"
             ],
             "familyName": [
                 "Haudebourg",
@@ -86,7 +86,7 @@
         }
     ],
     "dateCreated": "2023-09-08T17:17:08Z+0200",
-    "dateModified": "2026-01-28T17:03:54Z+0100",
+    "dateModified": "2026-02-11T10:48:05Z+0100",
     "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
     "developmentStatus": "https://www.repostatus.org/#wip",
     "identifier": "ArchiTXT",
