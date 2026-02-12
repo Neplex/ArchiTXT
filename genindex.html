@@ -1,0 +1,2547 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Index &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=30646c52"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js"></script>
+    <link rel="canonical" href="https://neplex.github.io/ArchiTXT/genindex.html" />
+    <link rel="icon" href="_static/favicon.png"/>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/logo_h.png" class="logo__image only-light" alt="ArchiTXT Documentation - Home"/>
+    <script>document.write(`<img src="_static/logo_h.png" class="logo__image only-dark" alt="ArchiTXT Documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="importers.html">Import data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="importers/cypher.html">Loading property graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="importers/document.html">Loading document databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="importers/sql.html">Loading relational databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="importers/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="transformers.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="transformers/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="exporters.html">Export data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="exporters/cypher.html">Export as property graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exporters/sql.html">Export as relational databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="examples.html">Usage examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/corpus_exploration.html">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_api_reference/architxt.bucket.html">architxt.bucket</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.bucket.zodb.html">architxt.bucket.zodb</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_api_reference/architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_api_reference/architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.database.export.cypher.html">architxt.database.export.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.database.export.sql.html">architxt.database.export.sql</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_api_reference/architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.database.loader.cypher.html">architxt.database.loader.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.forest.html">architxt.forest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.inspector.html">architxt.inspector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.nlp.entity_extractor.html">architxt.nlp.entity_extractor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.simplification.llm.html">architxt.simplification.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/ArchiTXT">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/neplex/ArchiTXT/issues/new?title=Issue%20on%20page%20%2Fgenindex.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button"
+   title="Open an issue"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#J"><strong>J</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ | <a href="#Z"><strong>Z</strong></a>
+ 
+</div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.add">add() (architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.add_foreign_keys_to_table">add_foreign_keys_to_table() (in module architxt.database.export.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.AnnotatedSentence">AnnotatedSentence (class in architxt.nlp.model)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.append">append() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.collections.html#architxt.simplification.tree_rewriting.operations.collections.FindCollectionsOperation.apply">apply() (architxt.simplification.tree_rewriting.operations.collections.FindCollectionsOperation method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.groups.html#architxt.simplification.tree_rewriting.operations.groups.FindSubGroupsOperation.apply">(architxt.simplification.tree_rewriting.operations.groups.FindSubGroupsOperation method)</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.groups.html#architxt.simplification.tree_rewriting.operations.groups.MergeGroupsOperation.apply">(architxt.simplification.tree_rewriting.operations.groups.MergeGroupsOperation method)</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#architxt.simplification.tree_rewriting.operations.operation.Operation.apply">(architxt.simplification.tree_rewriting.operations.operation.Operation method)</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceOperation.apply">(architxt.simplification.tree_rewriting.operations.reductions.ReduceOperation method)</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.relations.html#architxt.simplification.tree_rewriting.operations.relations.FindRelationsOperation.apply">(architxt.simplification.tree_rewriting.operations.relations.FindRelationsOperation method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.apply_operations">apply_operations() (in module architxt.simplification.tree_rewriting)</a>
+</li>
+      <li>
+    architxt
+
+      <ul>
+        <li><a href="_api_reference/architxt.html#module-architxt">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.bucket
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.html#module-architxt.bucket">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.bucket.zodb
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#module-architxt.bucket.zodb">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.cli
+
+      <ul>
+        <li><a href="_api_reference/architxt.cli.html#module-architxt.cli">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.cli.export
+
+      <ul>
+        <li><a href="_api_reference/architxt.cli.export.html#module-architxt.cli.export">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.cli.loader
+
+      <ul>
+        <li><a href="_api_reference/architxt.cli.loader.html#module-architxt.cli.loader">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.cli.utils
+
+      <ul>
+        <li><a href="_api_reference/architxt.cli.utils.html#module-architxt.cli.utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.html#module-architxt.database">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.export
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.html#module-architxt.database.export">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.export.cypher
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.cypher.html#module-architxt.database.export.cypher">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.export.sql
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.sql.html#module-architxt.database.export.sql">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.loader
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.loader.html#module-architxt.database.loader">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.loader.cypher
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.loader.cypher.html#module-architxt.database.loader.cypher">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.loader.documents
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.loader.documents.html#module-architxt.database.loader.documents">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.database.loader.sql
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.loader.sql.html#module-architxt.database.loader.sql">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.forest
+
+      <ul>
+        <li><a href="_api_reference/architxt.forest.html#module-architxt.forest">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.generator
+
+      <ul>
+        <li><a href="_api_reference/architxt.generator.html#module-architxt.generator">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.grammar
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.html#module-architxt.grammar">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.grammar.metagrammarLexer
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#module-architxt.grammar.metagrammarLexer">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.grammar.metagrammarListener
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#module-architxt.grammar.metagrammarListener">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.grammar.metagrammarParser
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#module-architxt.grammar.metagrammarParser">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.inspector
+
+      <ul>
+        <li><a href="_api_reference/architxt.inspector.html#module-architxt.inspector">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.metrics
+
+      <ul>
+        <li><a href="_api_reference/architxt.metrics.html#module-architxt.metrics">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    architxt.nlp
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.html#module-architxt.nlp">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.brat
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.brat.html#module-architxt.nlp.brat">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.entity_extractor
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.entity_extractor.html#module-architxt.nlp.entity_extractor">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.entity_resolver
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.entity_resolver.html#module-architxt.nlp.entity_resolver">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.model
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.model.html#module-architxt.nlp.model">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.parser
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.parser.html#module-architxt.nlp.parser">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.parser.benepar
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.parser.benepar.html#module-architxt.nlp.parser.benepar">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.parser.corenlp
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.parser.corenlp.html#module-architxt.nlp.parser.corenlp">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.nlp.utils
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.utils.html#module-architxt.nlp.utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.schema
+
+      <ul>
+        <li><a href="_api_reference/architxt.schema.html#module-architxt.schema">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.similarity
+
+      <ul>
+        <li><a href="_api_reference/architxt.similarity.html#module-architxt.similarity">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.html#module-architxt.simplification">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.llm
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.llm.html#module-architxt.simplification.llm">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.simple_rewrite
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.simple_rewrite.html#module-architxt.simplification.simple_rewrite">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.html#module-architxt.simplification.tree_rewriting">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting.operations
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.html#module-architxt.simplification.tree_rewriting.operations">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting.operations.collections
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.collections.html#module-architxt.simplification.tree_rewriting.operations.collections">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting.operations.groups
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.groups.html#module-architxt.simplification.tree_rewriting.operations.groups">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting.operations.operation
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#module-architxt.simplification.tree_rewriting.operations.operation">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting.operations.reductions
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#module-architxt.simplification.tree_rewriting.operations.reductions">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.simplification.tree_rewriting.operations.relations
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.relations.html#module-architxt.simplification.tree_rewriting.operations.relations">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.tree
+
+      <ul>
+        <li><a href="_api_reference/architxt.tree.html#module-architxt.tree">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.ui
+
+      <ul>
+        <li><a href="_api_reference/architxt.ui.html#module-architxt.ui">module</a>
+</li>
+      </ul></li>
+      <li>
+    architxt.utils
+
+      <ul>
+        <li><a href="_api_reference/architxt.utils.html#module-architxt.utils">module</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.as_cfg">as_cfg() (architxt.schema.Schema method)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.async_update">async_update() (architxt.bucket.TreeBucket method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.atn">atn (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.atn">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.inspector.html#architxt.inspector.ForestInspector.avg_branching">avg_branching (architxt.inspector.ForestInspector property)</a>
+</li>
+      <li><a href="_api_reference/architxt.inspector.html#architxt.inspector.ForestInspector.avg_height">avg_height (architxt.inspector.ForestInspector property)</a>
+</li>
+      <li><a href="_api_reference/architxt.inspector.html#architxt.inspector.ForestInspector.avg_size">avg_size (architxt.inspector.ForestInspector property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.EntityExtractor.batch">batch() (architxt.nlp.entity_extractor.EntityExtractor method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.FlairEntityExtractor.batch">(architxt.nlp.entity_extractor.FlairEntityExtractor method)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.SpacyEntityExtractor.batch">(architxt.nlp.entity_extractor.SpacyEntityExtractor method)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.entity_resolver.html#architxt.nlp.entity_resolver.EntityResolver.batch">(architxt.nlp.entity_resolver.EntityResolver method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.nlp.entity_resolver.html#architxt.nlp.entity_resolver.EntityResolver.batch_sentences">batch_sentences() (architxt.nlp.entity_resolver.EntityResolver method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.benepar.html#architxt.nlp.parser.benepar.BeneparParser">BeneparParser (class in architxt.nlp.parser.benepar)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.RelationOrientation.BOTH">BOTH (architxt.schema.RelationOrientation attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.build_group">build_group() (in module architxt.database.loader.cypher)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.build_group">(in module architxt.database.loader.sql)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.build_relation">build_relation() (in module architxt.database.loader.cypher)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.build_relation">(in module architxt.database.loader.sql)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.buildParseTrees">buildParseTrees (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.channelNames">channelNames (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.cleanup">cleanup() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.clear">clear() (architxt.bucket.zodb.ZODBTreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.clear">(architxt.tree.Tree method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.clear_cache">clear_cache() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.close">close() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.close">(architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.cluster_ami">cluster_ami() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.cluster_completeness">cluster_completeness() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.clusters">clusters (architxt.similarity.TreeClusterer property)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.COLL">COLL (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.COLL">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeType.COLL">(architxt.tree.NodeType attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.COLL">COLL() (architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.COLL">(architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.COLL">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.compare">compare() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.confidence">confidence() (in module architxt.metrics)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.brat.html#architxt.nlp.brat.convert_brat_entities">convert_brat_entities() (in module architxt.nlp.brat)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.brat.html#architxt.nlp.brat.convert_brat_example">convert_brat_example() (in module architxt.nlp.brat)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.brat.html#architxt.nlp.brat.convert_brat_relations">convert_brat_relations() (in module architxt.nlp.brat)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.copy">copy() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.corenlp.html#architxt.nlp.parser.corenlp.CoreNLPParser">CoreNLPParser (class in architxt.nlp.parser.corenlp)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.count_tokens">count_tokens() (in module architxt.simplification.llm)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.coverage">coverage() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.create_group">create_group() (in module architxt.simplification.tree_rewriting)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.create_schema">create_schema() (in module architxt.database.export.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.create_table_for_group">create_table_for_group() (in module architxt.database.export.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.create_table_for_relation">create_table_for_relation() (in module architxt.database.export.sql)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.ui.html#architxt.ui.dataframe">dataframe() (in module architxt.ui)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.decisionsToDFA">decisionsToDFA (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.decisionsToDFA">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.DEFAULT_METRIC">DEFAULT_METRIC() (in module architxt.similarity)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.default_pk_factory">default_pk_factory() (in module architxt.database.export.sql)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.delete_id_column">delete_id_column() (in module architxt.database.export.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.dependency_score">dependency_score() (in module architxt.metrics)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.depth">depth (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.detach">detach() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.discard">discard() (architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Relation.dst">dst (architxt.nlp.model.Relation attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.ui.html#architxt.ui.Edge">Edge (class in architxt.ui)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Entity.end">end (architxt.nlp.model.Entity attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.EntityExtractor.enrich">enrich() (architxt.nlp.entity_extractor.EntityExtractor method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.enrich_tree">enrich_tree() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.ENT">ENT (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.ENT">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeType.ENT">(architxt.tree.NodeType attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.ENT">ENT() (architxt.grammar.metagrammarParser.metagrammarParser.EntListContext method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterEntList">enterEntList() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterGroup">enterGroup() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterGroupColl">enterGroupColl() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterRelation">enterRelation() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterRelationColl">enterRelationColl() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterRootList">enterRootList() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.enterRule">enterRule() (architxt.grammar.metagrammarParser.metagrammarParser.EntListContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.enterRule">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterRuleList">enterRuleList() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.enterStart">enterStart() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.AnnotatedSentence.entities">entities (architxt.nlp.model.AnnotatedSentence attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.schema.html#architxt.schema.Group.entities">(architxt.schema.Group attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.entities">(architxt.schema.Schema property)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.entities">entities() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Entity">Entity (class in architxt.nlp.model)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.entity_label_count">entity_label_count() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.entity_labels">entity_labels() (architxt.tree.Tree method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.entity_labels">(in module architxt.similarity)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.EntityExtractor">EntityExtractor (class in architxt.nlp.entity_extractor)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.entity_resolver.html#architxt.nlp.entity_resolver.EntityResolver">EntityResolver (class in architxt.nlp.entity_resolver)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.entList">entList() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.entList">(architxt.grammar.metagrammarParser.metagrammarParser.EntListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.entList">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EOF">EOF (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.EOF">EOF() (architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.estimate_tokens">estimate_tokens() (in module architxt.simplification.llm)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitEntList">exitEntList() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitGroup">exitGroup() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitGroupColl">exitGroupColl() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitRelation">exitRelation() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitRelationColl">exitRelationColl() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitRootList">exitRootList() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.exitRule">exitRule() (architxt.grammar.metagrammarParser.metagrammarParser.EntListContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.exitRule">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitRuleList">exitRuleList() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener.exitStart">exitStart() (architxt.grammar.metagrammarListener.metagrammarListener method)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.export_cypher">export_cypher() (in module architxt.database.export.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.export_data">export_data() (in module architxt.database.export.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.forest.html#architxt.forest.export_forest_to_jsonl">export_forest_to_jsonl() (in module architxt.forest)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.export.html#architxt.cli.export.export_graph">export_graph() (in module architxt.cli.export)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.export_group">export_group() (in module architxt.database.export.cypher)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.export_group">(in module architxt.database.export.sql)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.export_relation">export_relation() (in module architxt.database.export.cypher)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.export_relation">(in module architxt.database.export.sql)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.export_relation_edge_with_data">export_relation_edge_with_data() (in module architxt.database.export.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.export.html#architxt.cli.export.export_sql">export_sql() (in module architxt.cli.export)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.export_sql">(in module architxt.database.export.sql)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.export_table_to_insert">export_table_to_insert() (in module architxt.database.export.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.export_tree">export_tree() (in module architxt.database.export.cypher)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.export_tree">(in module architxt.database.export.sql)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.extend">extend() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.extract_datasets">extract_datasets() (architxt.schema.Schema method)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.extract_valid_trees">extract_valid_trees() (architxt.schema.Schema method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.extract_vocab">extract_vocab() (in module architxt.simplification.llm)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.find_collapsible_groups">find_collapsible_groups() (architxt.schema.Schema method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.find_groups">find_groups() (in module architxt.simplification.tree_rewriting)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.collections.html#architxt.simplification.tree_rewriting.operations.collections.FindCollectionsOperation">FindCollectionsOperation (class in architxt.simplification.tree_rewriting.operations.collections)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.relations.html#architxt.simplification.tree_rewriting.operations.relations.FindRelationsOperation">FindRelationsOperation (class in architxt.simplification.tree_rewriting.operations.relations)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.groups.html#architxt.simplification.tree_rewriting.operations.groups.FindSubGroupsOperation">FindSubGroupsOperation (class in architxt.simplification.tree_rewriting.operations.groups)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.fit">fit() (architxt.similarity.TreeClusterer method)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.fit_predict">fit_predict() (architxt.similarity.TreeClusterer method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.fix_all_coord">fix_all_coord() (in module architxt.nlp.parser)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.fix_conj">fix_conj() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.fix_coord">fix_coord() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.FlairEntityExtractor">FlairEntityExtractor (class in architxt.nlp.entity_extractor)</a>
+</li>
+      <li><a href="_api_reference/architxt.inspector.html#architxt.inspector.ForestInspector">ForestInspector (class in architxt.inspector)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.from_description">from_description() (architxt.schema.Schema class method)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.from_forest">from_forest() (architxt.schema.Schema class method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.from_json">from_json() (architxt.tree.Tree class method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeLabel.fromstring">fromstring() (architxt.tree.NodeLabel class method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.fromstring">(architxt.tree.Tree class method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.generator.html#architxt.generator.gen_collection">gen_collection() (in module architxt.generator)</a>
+</li>
+      <li><a href="_api_reference/architxt.generator.html#architxt.generator.gen_group">gen_group() (in module architxt.generator)</a>
+</li>
+      <li><a href="_api_reference/architxt.generator.html#architxt.generator.gen_instance">gen_instance() (in module architxt.generator)</a>
+</li>
+      <li><a href="_api_reference/architxt.generator.html#architxt.generator.gen_relation">gen_relation() (in module architxt.generator)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#architxt.simplification.tree_rewriting.operations.operation.Operation.get_class_support">get_class_support() (architxt.simplification.tree_rewriting.operations.operation.Operation method)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.get_cluster">get_cluster() (architxt.similarity.TreeClusterer method)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.get_clusters_keys">get_clusters_keys() (architxt.similarity.TreeClusterer method)</a>
+</li>
+      <li><a href="_api_reference/architxt.utils.html#architxt.utils.get_commit_batch_size">get_commit_batch_size() (in module architxt.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.get_cycle_tables">get_cycle_tables() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.export.sql.html#architxt.database.export.sql.get_data_from_group">get_data_from_group() (in module architxt.database.export.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.get_equiv_of">get_equiv_of() (architxt.similarity.TreeClusterer method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#architxt.simplification.tree_rewriting.operations.operation.Operation.get_equiv_of">(architxt.simplification.tree_rewriting.operations.operation.Operation method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.get_oid">get_oid() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.get_persistent_ref">get_persistent_ref() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.get_persistent_ref">(architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.export.cypher.html#architxt.database.export.cypher.get_properties">get_properties() (in module architxt.database.export.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.get_relation_with_data">get_relation_with_data() (in module architxt.database.loader.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.get_root_nodes">get_root_nodes() (in module architxt.database.loader.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.get_root_tables">get_root_tables() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.utils.html#architxt.cli.utils.get_schema_metrics">get_schema_metrics() (in module architxt.cli.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.getRuleIndex">getRuleIndex() (architxt.grammar.metagrammarParser.metagrammarParser.EntListContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.getRuleIndex">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.grammarFileName">grammarFileName (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.grammarFileName">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.ui.html#architxt.ui.graph">graph() (in module architxt.ui)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.GROUP">GROUP (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GROUP">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeType.GROUP">(architxt.tree.NodeType attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Group">Group (class in architxt.schema)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.group">group() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.GROUP">GROUP() (architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.GROUP">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.GROUP">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.GROUP">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.group">group() (architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.group_balance_score">group_balance_score (architxt.schema.Schema property)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.group_balance_score">group_balance_score() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.group_balance_score_origin">group_balance_score_origin() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.group_instances">group_instances() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.group_overlap">group_overlap (architxt.schema.Schema property)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.group_overlap">group_overlap() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.group_overlap_origin">group_overlap_origin() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.groupColl">groupColl() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.groupColl">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.groups">groups (architxt.schema.Schema property)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.groups">groups() (architxt.tree.Tree method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.has_duplicate_entity">has_duplicate_entity() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.has_entity_child">has_entity_child() (architxt.tree.Tree method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.has_type">has_type() (in module architxt.tree)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.has_unlabelled_nodes">has_unlabelled_nodes() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.height">height (architxt.tree.Tree property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Entity.id">id (architxt.nlp.model.Entity attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.forest.html#architxt.forest.import_forest_from_jsonl">import_forest_from_jsonl() (in module architxt.forest)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.ins_ent">ins_ent() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.ins_rel">ins_rel() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.insert">insert() (architxt.tree.Tree method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.inspect">inspect() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.instance_generator">instance_generator() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.is_association_table">is_association_table() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.is_conflicting_entity">is_conflicting_entity() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.is_sub_tree">is_sub_tree() (in module architxt.tree)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="J">J</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.jaccard">jaccard() (in module architxt.similarity)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.jaro">jaro() (in module architxt.similarity)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.label">label (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.leaf_position">leaf_position() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.leaves">leaves() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Relation.left">left (architxt.schema.Relation attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.RelationOrientation.LEFT">LEFT (architxt.schema.RelationOrientation attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.levenshtein">levenshtein() (in module architxt.similarity)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.literalNames">literalNames (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.literalNames">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.llm_rewrite">llm_rewrite() (in module architxt.simplification.llm)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.llm_simplify">llm_simplify() (in module architxt.simplification.llm)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.brat.html#architxt.nlp.brat.load_brat_dataset">load_brat_dataset() (in module architxt.nlp.brat)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_corpus">load_corpus() (in module architxt.cli.loader)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_document">load_document() (in module architxt.cli.loader)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.utils.html#architxt.cli.utils.load_forest">load_forest() (in module architxt.cli.utils)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.ui.html#architxt.ui.load_forest">(in module architxt.ui)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_graph">load_graph() (in module architxt.cli.loader)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_sql">load_sql() (in module architxt.cli.loader)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.log_to_mlflow">log_to_mlflow() (architxt.metrics.Metrics method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.merge">merge() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.groups.html#architxt.simplification.tree_rewriting.operations.groups.MergeGroupsOperation">MergeGroupsOperation (class in architxt.simplification.tree_rewriting.operations.groups)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.metadata">metadata (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer">metagrammarLexer (class in architxt.grammar.metagrammarLexer)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#architxt.grammar.metagrammarListener.metagrammarListener">metagrammarListener (class in architxt.grammar.metagrammarListener)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser">metagrammarParser (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext">metagrammarParser.EntListContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext">metagrammarParser.GroupCollContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext">metagrammarParser.GroupContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext">metagrammarParser.RelationCollContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext">metagrammarParser.RelationContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext">metagrammarParser.RootListContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext">metagrammarParser.RuleListContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext">metagrammarParser.StartContext (class in architxt.grammar.metagrammarParser)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics">Metrics (class in architxt.metrics)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer.mlflow_plot">mlflow_plot() (architxt.similarity.TreeClusterer method)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.mlflow_setup">mlflow_setup() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.modeNames">modeNames (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="_api_reference/architxt.html#module-architxt">architxt</a>
+</li>
+        <li><a href="_api_reference/architxt.bucket.html#module-architxt.bucket">architxt.bucket</a>
+</li>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#module-architxt.bucket.zodb">architxt.bucket.zodb</a>
+</li>
+        <li><a href="_api_reference/architxt.cli.html#module-architxt.cli">architxt.cli</a>
+</li>
+        <li><a href="_api_reference/architxt.cli.export.html#module-architxt.cli.export">architxt.cli.export</a>
+</li>
+        <li><a href="_api_reference/architxt.cli.loader.html#module-architxt.cli.loader">architxt.cli.loader</a>
+</li>
+        <li><a href="_api_reference/architxt.cli.utils.html#module-architxt.cli.utils">architxt.cli.utils</a>
+</li>
+        <li><a href="_api_reference/architxt.database.html#module-architxt.database">architxt.database</a>
+</li>
+        <li><a href="_api_reference/architxt.database.export.html#module-architxt.database.export">architxt.database.export</a>
+</li>
+        <li><a href="_api_reference/architxt.database.export.cypher.html#module-architxt.database.export.cypher">architxt.database.export.cypher</a>
+</li>
+        <li><a href="_api_reference/architxt.database.export.sql.html#module-architxt.database.export.sql">architxt.database.export.sql</a>
+</li>
+        <li><a href="_api_reference/architxt.database.loader.html#module-architxt.database.loader">architxt.database.loader</a>
+</li>
+        <li><a href="_api_reference/architxt.database.loader.cypher.html#module-architxt.database.loader.cypher">architxt.database.loader.cypher</a>
+</li>
+        <li><a href="_api_reference/architxt.database.loader.documents.html#module-architxt.database.loader.documents">architxt.database.loader.documents</a>
+</li>
+        <li><a href="_api_reference/architxt.database.loader.sql.html#module-architxt.database.loader.sql">architxt.database.loader.sql</a>
+</li>
+        <li><a href="_api_reference/architxt.forest.html#module-architxt.forest">architxt.forest</a>
+</li>
+        <li><a href="_api_reference/architxt.generator.html#module-architxt.generator">architxt.generator</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.html#module-architxt.grammar">architxt.grammar</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#module-architxt.grammar.metagrammarLexer">architxt.grammar.metagrammarLexer</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarListener.html#module-architxt.grammar.metagrammarListener">architxt.grammar.metagrammarListener</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#module-architxt.grammar.metagrammarParser">architxt.grammar.metagrammarParser</a>
+</li>
+        <li><a href="_api_reference/architxt.inspector.html#module-architxt.inspector">architxt.inspector</a>
+</li>
+        <li><a href="_api_reference/architxt.metrics.html#module-architxt.metrics">architxt.metrics</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.html#module-architxt.nlp">architxt.nlp</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.brat.html#module-architxt.nlp.brat">architxt.nlp.brat</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.entity_extractor.html#module-architxt.nlp.entity_extractor">architxt.nlp.entity_extractor</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.entity_resolver.html#module-architxt.nlp.entity_resolver">architxt.nlp.entity_resolver</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.model.html#module-architxt.nlp.model">architxt.nlp.model</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.parser.html#module-architxt.nlp.parser">architxt.nlp.parser</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.parser.benepar.html#module-architxt.nlp.parser.benepar">architxt.nlp.parser.benepar</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.parser.corenlp.html#module-architxt.nlp.parser.corenlp">architxt.nlp.parser.corenlp</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.utils.html#module-architxt.nlp.utils">architxt.nlp.utils</a>
+</li>
+        <li><a href="_api_reference/architxt.schema.html#module-architxt.schema">architxt.schema</a>
+</li>
+        <li><a href="_api_reference/architxt.similarity.html#module-architxt.similarity">architxt.similarity</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.html#module-architxt.simplification">architxt.simplification</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.llm.html#module-architxt.simplification.llm">architxt.simplification.llm</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.simple_rewrite.html#module-architxt.simplification.simple_rewrite">architxt.simplification.simple_rewrite</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.html#module-architxt.simplification.tree_rewriting">architxt.simplification.tree_rewriting</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.html#module-architxt.simplification.tree_rewriting.operations">architxt.simplification.tree_rewriting.operations</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.collections.html#module-architxt.simplification.tree_rewriting.operations.collections">architxt.simplification.tree_rewriting.operations.collections</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.groups.html#module-architxt.simplification.tree_rewriting.operations.groups">architxt.simplification.tree_rewriting.operations.groups</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#module-architxt.simplification.tree_rewriting.operations.operation">architxt.simplification.tree_rewriting.operations.operation</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#module-architxt.simplification.tree_rewriting.operations.reductions">architxt.simplification.tree_rewriting.operations.reductions</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.relations.html#module-architxt.simplification.tree_rewriting.operations.relations">architxt.simplification.tree_rewriting.operations.relations</a>
+</li>
+        <li><a href="_api_reference/architxt.tree.html#module-architxt.tree">architxt.tree</a>
+</li>
+        <li><a href="_api_reference/architxt.ui.html#module-architxt.ui">architxt.ui</a>
+</li>
+        <li><a href="_api_reference/architxt.utils.html#module-architxt.utils">architxt.utils</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.EntityExtractor.name">name (architxt.nlp.entity_extractor.EntityExtractor property)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.entity_resolver.html#architxt.nlp.entity_resolver.EntityResolver.name">(architxt.nlp.entity_resolver.EntityResolver property)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.entity_resolver.html#architxt.nlp.entity_resolver.ScispacyResolver.name">(architxt.nlp.entity_resolver.ScispacyResolver property)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Entity.name">(architxt.nlp.model.Entity attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Relation.name">(architxt.nlp.model.Relation attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeEntity.name">(architxt.nlp.model.TreeEntity attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeRel.name">(architxt.nlp.model.TreeRel attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.schema.html#architxt.schema.Group.name">(architxt.schema.Group attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.schema.html#architxt.schema.Relation.name">(architxt.schema.Relation attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#architxt.simplification.tree_rewriting.operations.operation.Operation.name">(architxt.simplification.tree_rewriting.operations.operation.Operation property)</a>
+</li>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeLabel.name">(architxt.tree.NodeLabel attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.ui.html#architxt.ui.Node">Node (class in architxt.ui)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeLabel">NodeLabel (class in architxt.tree)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeType">NodeType (class in architxt.tree)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_distinct_type">num_distinct_type() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_nodes">num_nodes() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_non_terminal">num_non_terminal() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_productions">num_productions() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_productions_origin">num_productions_origin() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_type">num_type() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_type_origin">num_type_origin() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.num_unlabeled_nodes">num_unlabeled_nodes() (architxt.metrics.Metrics method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.oid">oid (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.oids">oids() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.oids">(architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.html#architxt.nlp.open_archive">open_archive() (in module architxt.nlp)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.operation.html#architxt.simplification.tree_rewriting.operations.operation.Operation">Operation (class in architxt.simplification.tree_rewriting.operations.operation)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Relation.orientation">orientation (architxt.schema.Relation attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.parent">parent (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.parent_index">parent_index (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.Parser.parse">parse() (architxt.nlp.parser.Parser method)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.parse_association_table">parse_association_table() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.Parser.parse_batch">parse_batch() (architxt.nlp.parser.Parser method)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.documents.html#architxt.database.loader.documents.parse_document_tree">parse_document_tree() (in module architxt.database.loader.documents)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.documents.html#architxt.database.loader.documents.parse_file">parse_file() (in module architxt.database.loader.documents)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.parse_relation">parse_relation() (in module architxt.database.loader.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.parse_table">parse_table() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.parser">parser (architxt.grammar.metagrammarParser.metagrammarParser.EntListContext attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.parser">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.Parser">Parser (class in architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.persistent_ref">persistent_ref() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.pformat">pformat() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.pop">pop() (architxt.tree.Tree method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeRel.pos_end">pos_end (architxt.nlp.model.TreeRel attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeRel.pos_start">pos_start (architxt.nlp.model.TreeRel attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.position">position (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeEntity.positions">positions (architxt.nlp.model.TreeEntity attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.positions">positions() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.pretty_print">pretty_print() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeCluster.probabilities">probabilities (architxt.similarity.TreeCluster attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.process_subset">process_subset() (in module architxt.metrics)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.process_tree">process_tree() (in module architxt.nlp.parser)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.PROD_SEPARATOR">PROD_SEPARATOR (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SEPARATOR">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.PROD_SEPARATOR">PROD_SEPARATOR() (architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SEPARATOR">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.PROD_SYMBOL">PROD_SYMBOL (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SYMBOL">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.PROD_SYMBOL">PROD_SYMBOL() (architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.PROD_SYMBOL">(architxt.grammar.metagrammarParser.metagrammarParser.GroupContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.PROD_SYMBOL">(architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.PROD_SYMBOL">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SYMBOL">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.productions">productions() (architxt.tree.Tree method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.ratio_productions">ratio_productions() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.ratio_type">ratio_type() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.ratio_unlabeled_nodes">ratio_unlabeled_nodes() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.html#architxt.nlp.raw_load_corpus">raw_load_corpus() (in module architxt.nlp)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.benepar.html#architxt.nlp.parser.benepar.BeneparParser.raw_parse">raw_parse() (architxt.nlp.parser.benepar.BeneparParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.parser.corenlp.html#architxt.nlp.parser.corenlp.CoreNLPParser.raw_parse">(architxt.nlp.parser.corenlp.CoreNLPParser method)</a>
+</li>
+        <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.Parser.raw_parse">(architxt.nlp.parser.Parser method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.read_cypher">read_cypher() (in module architxt.database.loader.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.documents.html#architxt.database.loader.documents.read_document">read_document() (in module architxt.database.loader.documents)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.documents.html#architxt.database.loader.documents.read_document_file">read_document_file() (in module architxt.database.loader.documents)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.cypher.html#architxt.database.loader.cypher.read_node">read_node() (in module architxt.database.loader.cypher)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.read_sql">read_sql() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.read_table">read_table() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.documents.html#architxt.database.loader.documents.read_tree">read_tree() (in module architxt.database.loader.documents)</a>
+</li>
+      <li><a href="_api_reference/architxt.database.loader.sql.html#architxt.database.loader.sql.read_unreferenced_table">read_unreferenced_table() (in module architxt.database.loader.sql)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.reduce">reduce() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.reduce_all">reduce_all() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceBottomOperation">ReduceBottomOperation (class in architxt.simplification.tree_rewriting.operations.reductions)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceOperation">ReduceOperation (class in architxt.simplification.tree_rewriting.operations.reductions)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceTopOperation">ReduceTopOperation (class in architxt.simplification.tree_rewriting.operations.reductions)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.redundancy">redundancy() (architxt.metrics.Metrics method)</a>
+</li>
+      <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.redundancy_score">redundancy_score() (in module architxt.metrics)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.REL">REL (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.REL">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+        <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeType.REL">(architxt.tree.NodeType attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.REL">REL() (architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.REL">(architxt.grammar.metagrammarParser.metagrammarParser.RelationContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.REL">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Relation">Relation (class in architxt.nlp.model)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.schema.html#architxt.schema.Relation">(class in architxt.schema)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.relation">relation() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relation">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.relationColl">relationColl() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relationColl">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.RelationOrientation">RelationOrientation (class in architxt.schema)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.relations">relations (architxt.schema.Schema property)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.AnnotatedSentence.rels">rels (architxt.nlp.model.AnnotatedSentence attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.remove">remove() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.resolve_ref">resolve_ref() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.resolve_ref">(architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.html#architxt.simplification.tree_rewriting.rewrite">rewrite() (in module architxt.simplification.tree_rewriting)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Relation.right">right (architxt.schema.Relation attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.RelationOrientation.RIGHT">RIGHT (architxt.schema.RelationOrientation attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.ROOT">ROOT (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.ROOT">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.root">root (architxt.tree.Tree property)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ROOT">ROOT() (architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeEntity.root_pos">root_pos (architxt.nlp.model.TreeEntity property)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.rootList">rootList() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.rootList">(architxt.grammar.metagrammarParser.metagrammarParser.RootListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.rootList">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_entList">RULE_entList (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_group">RULE_group (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_groupColl">RULE_groupColl (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relation">RULE_relation (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relationColl">RULE_relationColl (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_rootList">RULE_rootList (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_ruleList">RULE_ruleList (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RULE_start">RULE_start (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.ruleList">ruleList() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.ruleList">(architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext method)</a>
+</li>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ruleList">(architxt.grammar.metagrammarParser.metagrammarParser.StartContext method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.ruleNames">ruleNames (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.ruleNames">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema">Schema (class in architxt.schema)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.entity_resolver.html#architxt.nlp.entity_resolver.ScispacyResolver">ScispacyResolver (class in architxt.nlp.entity_resolver)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.serializedATN">serializedATN() (in module architxt.grammar.metagrammarLexer)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.serializedATN">(in module architxt.grammar.metagrammarParser)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.sharedContextCache">sharedContextCache (architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.utils.html#architxt.cli.utils.show_metrics">show_metrics() (in module architxt.cli.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.utils.html#architxt.cli.utils.show_schema">show_schema() (in module architxt.cli.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.utils.html#architxt.cli.utils.show_valid_trees_metrics">show_valid_trees_metrics() (in module architxt.cli.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.similarity">similarity() (in module architxt.similarity)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.simple_rewrite.html#architxt.simplification.simple_rewrite.simple_rewrite">simple_rewrite() (in module architxt.simplification.simple_rewrite)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.simplify">simplify() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.simplify_llm">simplify_llm() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.entity_extractor.html#architxt.nlp.entity_extractor.SpacyEntityExtractor">SpacyEntityExtractor (class in architxt.nlp.entity_extractor)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.utils.html#architxt.nlp.utils.split_entities">split_entities() (in module architxt.nlp.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.utils.html#architxt.nlp.utils.split_relations">split_relations() (in module architxt.nlp.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.utils.html#architxt.nlp.utils.split_sentences">split_sentences() (in module architxt.nlp.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Relation.src">src (architxt.nlp.model.Relation attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Entity.start">start (architxt.nlp.model.Entity attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.start">start() (architxt.grammar.metagrammarParser.metagrammarParser method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.subtrees">subtrees() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceBottomOperation.subtrees_to_reduce">subtrees_to_reduce() (architxt.simplification.tree_rewriting.operations.reductions.ReduceBottomOperation method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceOperation.subtrees_to_reduce">(architxt.simplification.tree_rewriting.operations.reductions.ReduceOperation method)</a>
+</li>
+        <li><a href="_api_reference/architxt.simplification.tree_rewriting.operations.reductions.html#architxt.simplification.tree_rewriting.operations.reductions.ReduceTopOperation.subtrees_to_reduce">(architxt.simplification.tree_rewriting.operations.reductions.ReduceTopOperation method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.symbolicNames">symbolicNames (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.symbolicNames">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.sync">sync() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.sync">(architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.utils.html#architxt.utils.T">T (in module architxt.utils)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.to_json">to_json() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree.to_svg">to_svg() (architxt.tree.Tree method)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.transaction">transaction() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket.transaction">(architxt.bucket.zodb.ZODBTreeBucket method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.database.loader.documents.html#architxt.database.loader.documents.traverse_tree">traverse_tree() (in module architxt.database.loader.documents)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.Tree">Tree (class in architxt.tree)</a>
+</li>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket">TreeBucket (class in architxt.bucket)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeCluster">TreeCluster (class in architxt.similarity)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterer">TreeClusterer (class in architxt.similarity)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeClusterView">TreeClusterView (class in architxt.similarity)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeEntity">TreeEntity (class in architxt.nlp.model)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeRel">TreeRel (class in architxt.nlp.model)</a>
+</li>
+      <li><a href="_api_reference/architxt.similarity.html#architxt.similarity.TreeCluster.trees">trees (architxt.similarity.TreeCluster attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.AnnotatedSentence.txt">txt (architxt.nlp.model.AnnotatedSentence attribute)</a>
+</li>
+      <li><a href="_api_reference/architxt.tree.html#architxt.tree.NodeLabel.type">type (architxt.tree.NodeLabel attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.cli.html#architxt.cli.ui">ui() (in module architxt.cli)</a>
+</li>
+      <li><a href="_api_reference/architxt.nlp.parser.html#architxt.nlp.parser.unnest_ent">unnest_ent() (in module architxt.nlp.parser)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.bucket.html#architxt.bucket.TreeBucket.update">update() (architxt.bucket.TreeBucket method)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.metrics.html#architxt.metrics.Metrics.update">(architxt.metrics.Metrics method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api_reference/architxt.utils.html#architxt.utils.update_url_queries">update_url_queries() (in module architxt.utils)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.Entity.value">value (architxt.nlp.model.Entity attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.nlp.model.html#architxt.nlp.model.TreeEntity.value">(architxt.nlp.model.TreeEntity attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.schema.html#architxt.schema.Schema.verify">verify() (architxt.schema.Schema method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.utils.html#architxt.utils.windowed_shuffle">windowed_shuffle() (in module architxt.utils)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.grammar.metagrammarLexer.html#architxt.grammar.metagrammarLexer.metagrammarLexer.WS">WS (architxt.grammar.metagrammarLexer.metagrammarLexer attribute)</a>
+
+      <ul>
+        <li><a href="_api_reference/architxt.grammar.metagrammarParser.html#architxt.grammar.metagrammarParser.metagrammarParser.WS">(architxt.grammar.metagrammarParser.metagrammarParser attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Z">Z</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api_reference/architxt.bucket.zodb.html#architxt.bucket.zodb.ZODBTreeBucket">ZODBTreeBucket (class in architxt.bucket.zodb)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
