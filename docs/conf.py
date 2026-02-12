@@ -63,7 +63,7 @@ language = 'en'
 
 html_title = f'{project} Documentation'
 html_short_title = project
-html_baseurl = f'https://{github_username}.github.io/{github_repository}'
+html_baseurl = f'https://{github_username}.github.io/{github_repository}/'
 
 html_logo = '_static/logo_h.png'
 html_favicon = '_static/favicon.png'
@@ -89,6 +89,20 @@ html_theme_options = {
         'binderhub_url': 'https://mybinder.org',
     },
 }
+
+# -- Options for sitemap extension -------------------------------------------
+# https://sphinx-sitemap.readthedocs.io/en/latest/index.html
+
+sitemap_url_scheme = "{link}"
+sitemap_filename = "sitemap.xml"
+sitemap_show_lastmod = True
+sitemap_excludes = [
+    "_modules/*",
+    "_sources/*",
+    "search.html",
+    "genindex.html",
+    "py-modindex.html",
+]
 
 # -- Options for autodoc extension -------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
