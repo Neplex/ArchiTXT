@@ -106,6 +106,7 @@ docs = [
     "sphinx-autodoc-typehints",
     "sphinxcontrib-typer",
     "sphinxcontrib-mermaid",
+    "sphinxext-opengraph[social_cards]",
     "myst-nb>=1.2.0",
     "notebook>=7.3.3",
     "itables>=2.3.0",

@@ -1,8 +1,8 @@
-ArchiTXT Documentation
-======================
+ArchiTXT, the Python Library for Converting Unstructured Text into Structured, Searchable Data
+==============================================================================================
 
 .. meta::
-    :description: ArchiTXT is an open source Python library that transforms unstructured text into structured, searchable, and AI-ready data, enabling automated database generation and seamless integration.
+    :description: ArchiTXT is an open-source Python library that converts unstructured text into structured, searchable, and AI-ready data for automated database generation and NLP workflows.
     :keywords: ArchiTXT, open source Python library, data structuration, text conversion, structured data, searchable data, AI-ready, automatic modeling, text parsing, natural language processing, data modeling, machine learning, auditable, meta grammar, tree rewriting
     :keywords lang=fr: ArchiTXT, bibliothèque Python open source, structuration de données, conversion de texte, données structurées, données interrogeables, prêtes pour l'IA, modelisation automatique, analyse de texte, traitement du langage naturel, modélisation de données, apprentissage automatique, auditable, méta-grammaire, réécriture d'arbres
     :google-site-verification: C3f4U0di9zxWmENJ1ygHRE2kcZtLukgoqttNziqXBHg
@@ -60,11 +60,19 @@ ArchiTXT Documentation
     :pypi: architxt
     :github:
 
-What is ArchiTXT ?
-------------------
+What is ArchiTXT?
+-----------------
 
-ArchiTXT is an open source Python library that transforms unstructured text into structured, searchable, and AI-ready data, enabling automated database generation and seamless integration.
-It ensures transparency, interoperability, and trust by offering a fully auditable, fair, and unbiased data modeling process.
+ArchiTXT is an open-source Python library that converts unstructured text into structured, queryable data and relational database schemas.
+
+Managing raw textual data becomes challenging when it must be stored, queried, and integrated into downstream systems.
+ArchiTXT addresses this by discovering latent structural patterns in annotated corpora, inferring database schemas, and generating structured data instances aligned with the extracted model.
+The result is a searchable, database-ready representation of large text collections suitable for analytics and machine learning workflows.
+
+Unlike conventional NLP pipelines that rely on manual schema engineering, ArchiTXT performs automated data modeling through a meta-grammar and iterative tree-rewriting process.
+This approach ensures transparency, auditability, and reproducibility in the transformation from text to database structure.
+
+ArchiTXT is particularly suited for AI-ready dataset creation, document ingestion pipelines, knowledge base construction, and large-scale text-to-database automation.
 
 Key Features
 ------------

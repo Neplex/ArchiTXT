@@ -8,14 +8,25 @@
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/Neplex/ArchiTXT/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/Neplex/ArchiTXT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15688157.svg)](https://doi.org/10.5281/zenodo.15688157)
 
-**ArchiTXT** is a robust tool designed to convert unstructured textual data into structured formats that are ready for
-database storage. It automates the generation of database schemas and creates corresponding data instances, simplifying
-the integration of text-based information into database systems.
+**ArchiTXT** is a Python library and CLI tool that automatically converts unstructured text corpora into structured,
+database-ready data. It infers database schemas directly from text and generates corresponding structured instances
+using a meta-grammar and iterative tree-rewriting process.
 
-Working with unstructured text can be challenging when you need to store and query it in a structured database.
-**ArchiTXT** bridges this gap by transforming raw text into organized, query-friendly structures. By automating both
-schema generation and data instance creation, it streamlines the entire process of managing textual information in
-databases.
+**ArchiTXT** is designed for researchers, data engineers, and NLP practitioners who need a transparent and auditable
+process to transform raw textual data into storable, queryable and machine-learning-ready datasets.
+
+## Why ArchiTXT?
+
+Working with unstructured text becomes complex when you need:
+- Structured storage
+- Queryable entities and relations
+- Reproducible data modeling
+
+**ArchiTXT** bridges this gap by:
+- Discovering latent structural patterns in annotated corpora
+- Automatically generating database schemas
+- Producing structured instances aligned with the inferred schema
+- Ensuring transparency through rule-based rewriting
 
 ## Installation
 
@@ -34,54 +45,28 @@ pip install git+https://github.com/Neplex/ArchiTXT.git
 ## Usage
 
 **ArchiTXT** is built to work seamlessly with BRAT-annotated corpora that includes pre-labeled named entities.
-It also requires access to a CoreNLP server, which you can set up using the Docker configuration available in
-the source repository.
+It can parse the texts using either CoreNLP or SpaCy, depending on your preference and setup.
+See the [documentation](https://neplex.github.io/ArchiTXT/importers/text.html) for more information.
 
-```sh
-$ architxt --help
-
- Usage: architxt [OPTIONS] COMMAND [ARGS]...
-
- ArchiTXT is a tool for structuring textual data into a valid database model.
- It is guided by a meta-grammar and uses an iterative process of tree rewriting.
-
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --install-completion          Install completion for the current shell.                                        │
-│ --show-completion             Show completion for the current shell, to copy it or customize the installation. │
-│ --help                        Show this message and exit.                                                      │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ run   Extract a database schema form a corpus.                                                                 │
-│ ui    Launch the web-based UI.                                                                                 │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
-
-```sh
-$ architxt run --help
-
- Usage: architxt run [OPTIONS] CORPUS_PATH
-
- Extract a database schema form a corpus.
-
-╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    corpus_path      PATH  Path to the input corpus. [default: None] [required]                               │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --tau                            FLOAT    The similarity threshold. [default: 0.7]                             │
-│ --epoch                          INTEGER  Number of iteration for tree rewriting. [default: 100]               │
-│ --min-support                    INTEGER  Minimum support for tree patterns. [default: 20]                     │
-│ --corenlp-url                    TEXT     URL of the CoreNLP server. [default: http://localhost:9000]          │
-│ --gen-instances                  INTEGER  Number of synthetic instances to generate. [default: 0]              │
-│ --language                       TEXT     Language of the input corpus. [default: French]                      │
-│ --debug            --no-debug             Enable debug mode for more verbose output. [default: no-debug]       │
-│ --help                                    Show this message and exit.                                          │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
-
-To deploy the CoreNLP server using the source repository, you can use Docker Compose with the following command:
+For CoreNLP, it requires access to a CoreNLP server, which you can set up using the Docker Compose configuration
+available in the source repository. To deploy it, you can use the following command:
 
 ```sh
 docker compose up -d corenlp
+```
+
+After parsing the annotated texts into **ArchiTXT**'s internal representation, you can infer a database schema and instance based on
+the annotated entities and generate structured instances accordingly.
+See the [documentation](https://neplex.github.io/ArchiTXT/transformers/simplify.html) for more information.
+
+The result can be exported as a relational or property graph database.
+See the [documentation](https://neplex.github.io/ArchiTXT/exporters.html) for more information.
+
+**ArchiTXT** is available as a Python library but also provides a command-line interface (CLI) for users who prefer
+working in the terminal. You can run the CLI using:
+
+```sh
+architxt --help
 ```
 
 ## Sponsors
