@@ -1,0 +1,1130 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>architxt.cli.loader &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/architxt/cli/loader';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js"></script>
+    <link rel="canonical" href="https://neplex.github.io/ArchiTXT/_modules/architxt/cli/loader.html" />
+    <link rel="icon" href="../../../_static/favicon.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_h.png" class="logo__image only-light" alt="ArchiTXT Documentation - Home"/>
+    <script>document.write(`<img src="../../../_static/logo_h.png" class="logo__image only-dark" alt="ArchiTXT Documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../importers.html">Import data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/cypher.html">Loading property graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/document.html">Loading document databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/sql.html">Loading relational databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../transformers.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../transformers/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../exporters.html">Export data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../exporters/cypher.html">Export as property graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../exporters/sql.html">Export as relational databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../examples.html">Usage examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/corpus_exploration.html">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.bucket.html">architxt.bucket</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.bucket.zodb.html">architxt.bucket.zodb</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.export.cypher.html">architxt.database.export.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.export.sql.html">architxt.database.export.sql</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.cypher.html">architxt.database.loader.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.forest.html">architxt.forest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.inspector.html">architxt.inspector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.entity_extractor.html">architxt.nlp.entity_extractor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.simplification.llm.html">architxt.simplification.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/ArchiTXT">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/neplex/ArchiTXT/issues/new?title=Issue%20on%20page%20%2F_modules/architxt/cli/loader.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button"
+   title="Open an issue"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for architxt.cli.loader</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">anyio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">click</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neo4j</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphDatabase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_engine</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.bucket</span><span class="w"> </span><span class="kn">import</span> <span class="n">TreeBucket</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.bucket.zodb</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZODBTreeBucket</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">loader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp</span><span class="w"> </span><span class="kn">import</span> <span class="n">raw_load_corpus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp.entity_resolver</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScispacyResolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.nlp.parser.corenlp</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoreNLPParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tree</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">console</span><span class="p">,</span> <span class="n">show_schema</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;app&#39;</span><span class="p">]</span>
+
+<span class="n">ENTITIES_FILTER</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;TIME&#39;</span><span class="p">,</span> <span class="s1">&#39;MOMENT&#39;</span><span class="p">,</span> <span class="s1">&#39;DUREE&#39;</span><span class="p">,</span> <span class="s1">&#39;DURATION&#39;</span><span class="p">,</span> <span class="s1">&#39;DATE&#39;</span><span class="p">,</span> <span class="s1">&#39;OTHER_ENTITY&#39;</span><span class="p">,</span> <span class="s1">&#39;OTHER_EVENT&#39;</span><span class="p">,</span> <span class="s1">&#39;COREFERENCE&#39;</span><span class="p">}</span>
+<span class="n">RELATIONS_FILTER</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;TEMPORALITE&#39;</span><span class="p">,</span> <span class="s1">&#39;CAUSE-CONSEQUENCE&#39;</span><span class="p">}</span>
+<span class="n">ENTITIES_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;FREQ&#39;</span><span class="p">:</span> <span class="s1">&#39;FREQUENCY&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;FREQUENCE&#39;</span><span class="p">:</span> <span class="s1">&#39;FREQUENCY&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SIGN_SYMPTOM&#39;</span><span class="p">:</span> <span class="s1">&#39;SOSY&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;VALEUR&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;HEIGHT&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;WEIGHT&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;MASS&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;QUANTITATIVE_CONCEPT&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;QUALITATIVE_CONCEPT&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DISTANCE&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;VOLUME&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;AREA&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;LAB_VALUE&#39;</span><span class="p">:</span> <span class="s1">&#39;VALUE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;TRAITEMENT&#39;</span><span class="p">:</span> <span class="s1">&#39;THERAPEUTIC_PROCEDURE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;MEDICATION&#39;</span><span class="p">:</span> <span class="s1">&#39;THERAPEUTIC_PROCEDURE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DOSE&#39;</span><span class="p">:</span> <span class="s1">&#39;DOSAGE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;OUTCOME&#39;</span><span class="p">:</span> <span class="s1">&#39;SOSY&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;EXAMEN&#39;</span><span class="p">:</span> <span class="s1">&#39;DIAGNOSTIC_PROCEDURE&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;PATHOLOGIE&#39;</span><span class="p">:</span> <span class="s1">&#39;DISEASE_DISORDER&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;MODE&#39;</span><span class="p">:</span> <span class="s1">&#39;ADMINISTRATION&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Typer</span><span class="p">(</span><span class="n">no_args_is_help</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ingest</span><span class="p">(</span><span class="n">forest</span><span class="p">:</span> <span class="n">TreeBucket</span><span class="p">,</span> <span class="n">trees</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">],</span> <span class="n">incremental</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">incremental</span><span class="p">:</span>
+        <span class="n">forest</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">commit</span><span class="o">=</span><span class="n">incremental</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">forest</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
+            <span class="n">forest</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_async_ingest</span><span class="p">(</span><span class="n">forest</span><span class="p">:</span> <span class="n">TreeBucket</span><span class="p">,</span> <span class="n">trees</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">]</span> <span class="o">|</span> <span class="n">AsyncIterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">],</span> <span class="n">incremental</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">incremental</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">forest</span><span class="o">.</span><span class="n">async_update</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">commit</span><span class="o">=</span><span class="n">incremental</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">forest</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
+            <span class="k">await</span> <span class="n">forest</span><span class="o">.</span><span class="n">async_update</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="load_document">
+<a class="viewcode-back" href="../../../_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_document">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;document&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Extract document database into a formatted tree.&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_document</span><span class="p">(</span>
+    <span class="n">file</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Argument</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">readable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The document file to read.&quot;</span><span class="p">),</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span>
+        <span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable row reading, skipping any transformation to convert it to the metamodel.&quot;</span>
+    <span class="p">),</span>
+    <span class="n">root_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s1">&#39;ROOT&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The root node name.&quot;</span><span class="p">),</span>
+    <span class="n">sample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of element to sample from the document.&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to save the result.&quot;</span><span class="p">),</span>
+    <span class="n">merge_existing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Should we merge data if output file already exist&quot;</span><span class="p">),</span>
+    <span class="n">incremental</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable incremental loading of the database.&quot;</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read a parse a document file to a structured tree.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">output</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">merge_existing</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">typer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="s2">&quot;The storage path already exists. Merge existing data?&quot;</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;[red]Cannot store data due to conflict.[/]&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">typer</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">ZODBTreeBucket</span><span class="p">(</span><span class="n">storage_path</span><span class="o">=</span><span class="n">output</span><span class="p">)</span> <span class="k">as</span> <span class="n">forest</span><span class="p">:</span>
+        <span class="n">trees</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">read_document</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">raw_read</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">root_name</span><span class="o">=</span><span class="n">root_name</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="n">sample</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">_ingest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">trees</span><span class="p">,</span> <span class="n">incremental</span><span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">keep_unlabelled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">show_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_sql">
+<a class="viewcode-back" href="../../../_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_sql">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;sql&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Extract a SQL compatible database into a formatted tree.&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_sql</span><span class="p">(</span>
+    <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Argument</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Database connection string.&quot;</span><span class="p">),</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">simplify_association</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Simplify association tables.&quot;</span><span class="p">),</span>
+    <span class="n">sample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of sentences to sample from the corpus.&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to save the result.&quot;</span><span class="p">),</span>
+    <span class="n">merge_existing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Should we merge data if output file already exist&quot;</span><span class="p">),</span>
+    <span class="n">incremental</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable incremental loading of the database.&quot;</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract the database schema and relations to a tree format.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">output</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">merge_existing</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">typer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="s2">&quot;The storage path already exists. Merge existing data?&quot;</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;[red]Cannot store data due to conflict.[/]&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">typer</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="p">(</span>
+        <span class="n">create_engine</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">connection</span><span class="p">,</span>
+        <span class="n">ZODBTreeBucket</span><span class="p">(</span><span class="n">storage_path</span><span class="o">=</span><span class="n">output</span><span class="p">)</span> <span class="k">as</span> <span class="n">forest</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">trees</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">simplify_association</span><span class="o">=</span><span class="n">simplify_association</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="n">sample</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">_ingest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">trees</span><span class="p">,</span> <span class="n">incremental</span><span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">keep_unlabelled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">show_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_graph">
+<a class="viewcode-back" href="../../../_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_graph">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;graph&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Extract a cypher/bolt compatible database into a formatted tree.&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_graph</span><span class="p">(</span>
+    <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Argument</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Database connection string.&quot;</span><span class="p">),</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s1">&#39;neo4j&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Username to use for authentication.&quot;</span><span class="p">),</span>
+    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Password to use for authentication.&quot;</span><span class="p">),</span>
+    <span class="n">sample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of sentences to sample from the corpus.&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to save the result.&quot;</span><span class="p">),</span>
+    <span class="n">merge_existing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Should we merge data if output file already exist&quot;</span><span class="p">),</span>
+    <span class="n">incremental</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable incremental loading of the database.&quot;</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">output</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">merge_existing</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">typer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="s2">&quot;The storage path already exists. Merge existing data?&quot;</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;[red]Cannot store data due to conflict.[/]&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">typer</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+
+    <span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span> <span class="k">if</span> <span class="n">username</span> <span class="ow">and</span> <span class="n">password</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">with</span> <span class="p">(</span>
+        <span class="n">GraphDatabase</span><span class="o">.</span><span class="n">driver</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span> <span class="k">as</span> <span class="n">driver</span><span class="p">,</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">,</span>
+        <span class="n">ZODBTreeBucket</span><span class="p">(</span><span class="n">storage_path</span><span class="o">=</span><span class="n">output</span><span class="p">)</span> <span class="k">as</span> <span class="n">forest</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">trees</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">read_cypher</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="n">sample</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">_ingest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">trees</span><span class="p">,</span> <span class="n">incremental</span><span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">keep_unlabelled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">show_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_corpus">
+<a class="viewcode-back" href="../../../_api_reference/architxt.cli.loader.html#architxt.cli.loader.load_corpus">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;corpus&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Extract a database schema form a corpus.&quot;</span><span class="p">,</span> <span class="n">no_args_is_help</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_corpus</span><span class="p">(</span>
+    <span class="n">corpus_path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">typer</span><span class="o">.</span><span class="n">FileBinaryRead</span><span class="p">]</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Argument</span><span class="p">(</span>
+        <span class="o">...</span><span class="p">,</span> <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">readable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the input corpus.&quot;</span>
+    <span class="p">),</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">language</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">([</span><span class="s1">&#39;French&#39;</span><span class="p">],</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Language of the input corpus.&quot;</span><span class="p">),</span>
+    <span class="n">corenlp_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="s1">&#39;http://localhost:9000&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;URL of the CoreNLP server.&quot;</span><span class="p">),</span>
+    <span class="n">sample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of sentences to sample from the corpus.&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">resolver</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The entity resolver to use when loading the corpus.&quot;</span><span class="p">,</span>
+        <span class="n">click_type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s1">&#39;umls&#39;</span><span class="p">,</span> <span class="s1">&#39;mesh&#39;</span><span class="p">,</span> <span class="s1">&#39;rxnorm&#39;</span><span class="p">,</span> <span class="s1">&#39;go&#39;</span><span class="p">,</span> <span class="s1">&#39;hpo&#39;</span><span class="p">],</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to save the result.&quot;</span><span class="p">),</span>
+    <span class="n">merge_existing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Should we merge data if output file already exist&quot;</span><span class="p">),</span>
+    <span class="n">incremental</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable incremental loading of the database.&quot;</span><span class="p">),</span>
+    <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable caching of the analyzed corpus to prevent re-parsing.&quot;</span><span class="p">),</span>
+    <span class="n">log</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable logging to MLFlow.&quot;</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a corpus and print the database schema as a CFG.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">output</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">merge_existing</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">typer</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span><span class="s2">&quot;The storage path already exists. Merge existing data?&quot;</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;[red]Cannot store data due to conflict.[/]&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">typer</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[green]MLFlow logging enabled. Logs will be send to </span><span class="si">{</span><span class="n">mlflow</span><span class="o">.</span><span class="n">get_tracking_uri</span><span class="p">()</span><span class="si">}</span><span class="s1">[/]&#39;</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;corpus_processing&#39;</span><span class="p">)</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">CoreNLPParser</span><span class="p">(</span><span class="n">corenlp_url</span><span class="o">=</span><span class="n">corenlp_url</span><span class="p">)</span>
+    <span class="n">_resolver</span> <span class="o">=</span> <span class="n">ScispacyResolver</span><span class="p">(</span><span class="n">cleanup</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">translate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kb_name</span><span class="o">=</span><span class="n">resolver</span><span class="p">)</span> <span class="k">if</span> <span class="n">resolver</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">with</span> <span class="n">ZODBTreeBucket</span><span class="p">(</span><span class="n">storage_path</span><span class="o">=</span><span class="n">output</span><span class="p">)</span> <span class="k">as</span> <span class="n">forest</span><span class="p">:</span>
+        <span class="n">anyio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">_async_ingest</span><span class="p">,</span>
+            <span class="n">forest</span><span class="p">,</span>
+            <span class="n">raw_load_corpus</span><span class="p">(</span>
+                <span class="n">corpus_path</span><span class="p">,</span>
+                <span class="n">language</span><span class="p">,</span>
+                <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">,</span>
+                <span class="n">resolver</span><span class="o">=</span><span class="n">_resolver</span><span class="p">,</span>
+                <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
+                <span class="n">entities_filter</span><span class="o">=</span><span class="n">ENTITIES_FILTER</span><span class="p">,</span>
+                <span class="n">relations_filter</span><span class="o">=</span><span class="n">RELATIONS_FILTER</span><span class="p">,</span>
+                <span class="n">entities_mapping</span><span class="o">=</span><span class="n">ENTITIES_MAPPING</span><span class="p">,</span>
+                <span class="n">sample</span><span class="o">=</span><span class="n">sample</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">incremental</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">keep_unlabelled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">show_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

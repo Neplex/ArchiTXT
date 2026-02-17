@@ -1,0 +1,1512 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>architxt.simplification.llm &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/architxt/simplification/llm';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js"></script>
+    <link rel="canonical" href="https://neplex.github.io/ArchiTXT/_modules/architxt/simplification/llm.html" />
+    <link rel="icon" href="../../../_static/favicon.png"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/logo_h.png" class="logo__image only-light" alt="ArchiTXT Documentation - Home"/>
+    <script>document.write(`<img src="../../../_static/logo_h.png" class="logo__image only-dark" alt="ArchiTXT Documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../importers.html">Import data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/cypher.html">Loading property graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/document.html">Loading document databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/sql.html">Loading relational databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../importers/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../transformers.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../transformers/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../exporters.html">Export data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../exporters/cypher.html">Export as property graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../exporters/sql.html">Export as relational databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../examples.html">Usage examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/corpus_exploration.html">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../_api_reference/architxt.html">architxt</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.bucket.html">architxt.bucket</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.bucket.zodb.html">architxt.bucket.zodb</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.export.cypher.html">architxt.database.export.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.export.sql.html">architxt.database.export.sql</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.cypher.html">architxt.database.loader.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.forest.html">architxt.forest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.grammar.html">architxt.grammar</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.grammar.metagrammarParser.html">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.inspector.html">architxt.inspector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.entity_extractor.html">architxt.nlp.entity_extractor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../_api_reference/architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.simplification.llm.html">architxt.simplification.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../_api_reference/architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../_api_reference/architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../_api_reference/architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../_api_reference/architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/ArchiTXT">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/neplex/ArchiTXT/issues/new?title=Issue%20on%20page%20%2F_modules/architxt/simplification/llm.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button"
+   title="Open an issue"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for architxt.simplification.llm</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">difflib</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_close_matches</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json_repair</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">more_itertools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aiostream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="n">stream</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">json_repair</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONReturnType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.messages</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIMessage</span><span class="p">,</span> <span class="n">HumanMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.output_parsers</span><span class="w"> </span><span class="kn">import</span> <span class="n">NumberedListOutputParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.prompts</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BasePromptTemplate</span><span class="p">,</span>
+    <span class="n">ChatPromptTemplate</span><span class="p">,</span>
+    <span class="n">HumanMessagePromptTemplate</span><span class="p">,</span>
+    <span class="n">SystemMessagePromptTemplate</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.runnables</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Runnable</span><span class="p">,</span>
+    <span class="n">RunnableLambda</span><span class="p">,</span>
+    <span class="n">RunnableParallel</span><span class="p">,</span>
+    <span class="n">RunnablePassthrough</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mlflow.entities</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpanEvent</span><span class="p">,</span> <span class="n">SpanType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span><span class="p">,</span> <span class="n">trange</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.bucket</span><span class="w"> </span><span class="kn">import</span> <span class="n">TreeBucket</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.forest</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_forest_to_jsonl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metrics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">DECAY</span><span class="p">,</span> <span class="n">DEFAULT_METRIC</span><span class="p">,</span> <span class="n">METRIC_FUNC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">Forest</span><span class="p">,</span> <span class="n">NodeLabel</span><span class="p">,</span> <span class="n">NodeType</span><span class="p">,</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">TreeOID</span><span class="p">,</span> <span class="n">has_type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">architxt.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">windowed_shuffle</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span><span class="p">,</span> <span class="n">Collection</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Sequence</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.language_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseChatModel</span><span class="p">,</span> <span class="n">BaseLanguageModel</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;estimate_tokens&#39;</span><span class="p">,</span> <span class="s1">&#39;llm_rewrite&#39;</span><span class="p">]</span>
+
+<span class="n">DEFAULT_PROMPT</span> <span class="o">=</span> <span class="n">ChatPromptTemplate</span><span class="o">.</span><span class="n">from_messages</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">SystemMessagePromptTemplate</span><span class="o">.</span><span class="n">from_template</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">You are a data-engineer agent whose task is deterministic JSON tree normalization and schema induction for noisy JSON trees.</span>
+<span class="s2">Goal: produce one simplified, canonical JSON tree per input tree.</span>
+<span class="s2">You can restructure JSON trees by adding, removing, renaming, or moving nodes.</span>
+<span class="s2">ENT = property, GROUP = table, REL = relation.</span>
+<span class="s2">Keep existing groups and relations when possible.</span>
+<span class="s2">All trees should share the same vocabulary, rename groups and relations according to the relevant vocabulary.</span>
+<span class="si">{vocab}</span>
+
+<span class="s2">Node format:</span>
+<span class="s2">{{&quot;oid&quot;:&lt;str|null&gt;,&quot;name&quot;:&lt;str&gt;,&quot;type&quot;:&quot;GROUP&quot;|&quot;REL&quot;|&quot;ENT&quot;|null,&quot;metadata&quot;:&lt;obj|null&gt;,&quot;children&quot;:[...]}}</span>
+
+<span class="s2">Rules:</span>
+<span class="s2">- Do **NOT** modify or rename ENT nodes.</span>
+<span class="s2">- You can duplicates ENT nodes if needed.</span>
+<span class="s2">- Return one simplified tree per input. No notes or explanations.</span>
+<span class="s2">- Each output tree must start with root:</span>
+<span class="s2">  {{&quot;oid&quot;:null,&quot;name&quot;:&quot;ROOT&quot;,&quot;type&quot;:null,&quot;metadata&quot;:{{}},&quot;children&quot;:[...]}}</span>
+<span class="s2">- Create meaningful GROUP nodes to collect related ENT nodes.</span>
+<span class="s2">- Link GROUPs with REL nodes where appropriate.</span>
+<span class="s2">- Preserve original oids; any new node gets &quot;oid&quot;:null.</span>
+<span class="s2">- Keep the tree structure as close as possible to the original one.</span>
+<span class="s2">- Create generic semantic group names (eg. Person). Avoid dataset- or domain-specific names (eg. prefer Exam over EGC).</span>
+
+<span class="s2">Your response should be a numbered list with each item on a new line (do not put linebreak in the resulting json).</span>
+<span class="s2">For example:</span>
+<span class="s2">1. {{...}}</span>
+<span class="s2">2. {{...}}</span>
+<span class="s2">3. {{...}}</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">),</span>
+        <span class="n">HumanMessage</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">1. {&quot;oid&quot;:&quot;1&quot;,&quot;name&quot;:&quot;UNDEF&quot;,&quot;type&quot;:null,&quot;children&quot;:[{&quot;oid&quot;:&quot;2&quot;,&quot;name&quot;:&quot;FruitName&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;banana&quot;]},{&quot;oid&quot;:&quot;3&quot;,&quot;name&quot;:&quot;Color&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;yellow&quot;]}]}</span>
+<span class="s2">2. {&quot;oid&quot;:&quot;4&quot;,&quot;name&quot;:&quot;UNDEF&quot;,&quot;type&quot;:null,&quot;children&quot;:[{&quot;oid&quot;:&quot;5&quot;,&quot;name&quot;:&quot;FruitName&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;orange&quot;]},{&quot;oid&quot;:&quot;6&quot;,&quot;name&quot;:&quot;PersonName&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;Alice&quot;]},{&quot;oid&quot;:&quot;7&quot;,&quot;name&quot;:&quot;Age&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;30&quot;]}]}</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">),</span>
+        <span class="n">AIMessage</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">1. {&quot;oid&quot;:null,&quot;name&quot;:&quot;ROOT&quot;,&quot;type&quot;:null,&quot;children&quot;:[{&quot;oid&quot;:&quot;1&quot;,&quot;name&quot;:&quot;Fruit&quot;,&quot;type&quot;:&quot;GROUP&quot;,&quot;children&quot;:[{&quot;oid&quot;:&quot;2&quot;,&quot;name&quot;:&quot;FruitName&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;banana&quot;]},{&quot;oid&quot;:&quot;3&quot;,&quot;name&quot;:&quot;Color&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;yellow&quot;]}]}]}</span>
+<span class="s2">2. {&quot;oid&quot;:null,&quot;name&quot;:&quot;ROOT&quot;,&quot;type&quot;:null,&quot;children&quot;:[{&quot;oid&quot;:null,&quot;name&quot;:&quot;Eat&quot;,&quot;type&quot;:&quot;REL&quot;,&quot;children&quot;:[{&quot;oid&quot;:null,&quot;name&quot;:&quot;Fruit&quot;,&quot;type&quot;:&quot;GROUP&quot;,&quot;children&quot;:[{&quot;oid&quot;:&quot;5&quot;,&quot;name&quot;:&quot;FruitName&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;orange&quot;]}]},{&quot;oid&quot;:null,&quot;name&quot;:&quot;Person&quot;,&quot;type&quot;:&quot;GROUP&quot;,&quot;children&quot;:[{&quot;oid&quot;:&quot;6&quot;,&quot;name&quot;:&quot;PersonName&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;Alice&quot;]},{&quot;oid&quot;:&quot;7&quot;,&quot;name&quot;:&quot;Age&quot;,&quot;type&quot;:&quot;ENT&quot;,&quot;children&quot;:[&quot;30&quot;]}]}]}]}</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">),</span>
+        <span class="n">HumanMessagePromptTemplate</span><span class="o">.</span><span class="n">from_template</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{trees}</span><span class="s2">&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_trees_to_markdown_list</span><span class="p">(</span><span class="n">trees</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a numbered Markdown list where each line is a JSON representation of a :py:class:`~architxt.tree.Tree`.</span>
+
+<span class="sd">    :param trees: An Iterable of trees to format</span>
+
+<span class="sd">    :return: A string with one line per tree in the form &quot;N. &lt;json&gt;&quot;, using compact separators and stable key ordering.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">. </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">to_json</span><span class="p">(),</span><span class="w"> </span><span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w"> </span><span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;:&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tree</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">Tree</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_tree</span><span class="p">(</span><span class="n">json_data</span><span class="p">:</span> <span class="n">JSONReturnType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tree</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a JSON object into a Tree.</span>
+
+<span class="sd">    :param json_data: The JSON object to parse.</span>
+<span class="sd">    :raise ValueError: If the JSON object is not a valid tree.</span>
+<span class="sd">    :raise TypeError: If the JSON object is of an invalid type.</span>
+<span class="sd">    :return: The parsed Tree.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">json_data</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Empty JSON data cannot be parsed into a tree.&#39;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">Tree</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">sub_tree</span><span class="p">)</span> <span class="k">for</span> <span class="n">sub_tree</span> <span class="ow">in</span> <span class="n">json_data</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_tree</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">children</span><span class="p">:</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="p">(</span><span class="s1">&#39;ROOT&#39;</span><span class="p">,</span> <span class="n">children</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;No valid tree objects found in JSON list data.&#39;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Invalid JSON data type for tree parsing: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span><span class="si">}</span><span class="s1">.&#39;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tree</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sanitize</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">oid</span><span class="p">:</span> <span class="n">TreeOID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tree</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sanitize a :py:class:`~architxt.tree.Tree` in-place by renaming invalid nodes with a `UNDEF_&lt;oid&gt;` label.</span>
+
+<span class="sd">    :param tree: The tree to sanitize.</span>
+<span class="sd">    :param oid: The Tree OID to use.</span>
+
+<span class="sd">    :return: The sanitized tree.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ensure ROOT and assign old oid to avoid duplicates</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span><span class="p">]</span> <span class="k">if</span> <span class="n">has_type</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">tree</span><span class="p">]</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">Tree</span><span class="p">(</span><span class="s1">&#39;ROOT&#39;</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">oid</span><span class="o">=</span><span class="n">oid</span><span class="p">)</span>
+
+    <span class="c1"># ensure groups and relations are valid</span>
+    <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">subtrees</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">has_type</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_type</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">ENT</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">st</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">has_type</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">REL</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">has_type</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">st</span><span class="p">))</span>
+        <span class="p">):</span>
+            <span class="n">st</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;UNDEF_</span><span class="si">{</span><span class="n">st</span><span class="o">.</span><span class="n">oid</span><span class="o">.</span><span class="n">hex</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    <span class="k">return</span> <span class="n">tree</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fix_vocab</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">vocab</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">vocab_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tree</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fix the vocabulary in the tree by updating GROUP and REL labels in-place to match canonical forms.</span>
+
+<span class="sd">    :param tree: Trees to fix.</span>
+<span class="sd">    :param vocab: Collection of canonical labels.</span>
+<span class="sd">    :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.</span>
+<span class="sd">    :return: An updated tree with fixed vocabulary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">subtree</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">subtrees</span><span class="p">():</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">,</span> <span class="p">{</span><span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">REL</span><span class="p">})</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">label</span> <span class="o">:=</span> <span class="n">_normalize</span><span class="p">(</span><span class="n">subtree</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">matches</span> <span class="o">:=</span> <span class="n">get_close_matches</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">vocab</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">vocab_similarity</span><span class="p">))</span>
+        <span class="p">):</span>
+            <span class="n">subtree</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">NodeLabel</span><span class="p">(</span><span class="n">subtree</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">tree</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_tree_output</span><span class="p">(</span>
+    <span class="n">raw_output</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">fallback</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span>
+    <span class="n">vocab</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">vocab_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a raw LLM output string into a Tree, returning the provided fallback when parsing fails or output is empty.</span>
+
+<span class="sd">    Attempts to repair and load JSON from raw_output, convert the object into a :py:class:`~architxt.tree.Tree`,</span>
+<span class="sd">    and wrap the parsed content under a ROOT node that reuses the fallback&#39;s oid before validating the result.</span>
+<span class="sd">    If parsing fails or the JSON does not contain a suitable object,</span>
+<span class="sd">    the original fallback :py:class:`~architxt.tree.Tree` is returned.</span>
+
+<span class="sd">    :param raw_output: The raw LLM output string to parse.</span>
+<span class="sd">    :param fallback: The fallback original :py:class:`~architxt.tree.Tree` to return when parsing fails.</span>
+<span class="sd">    :param vocab: Collection of canonical labels.</span>
+<span class="sd">    :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.</span>
+<span class="sd">    :param debug: If True, emit warnings on parse errors and log JSON repair/parse metadata to MLflow.</span>
+
+<span class="sd">    :return: The parsed :py:class:`~architxt.tree.Tree`, or the original fallback if parsing is unsuccessful.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">raw_output</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fallback</span><span class="p">,</span> <span class="kc">False</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">raw_output</span> <span class="o">=</span> <span class="n">raw_output</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">json_data</span> <span class="o">=</span> <span class="n">json_repair</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw_output</span><span class="p">,</span> <span class="n">skip_json_loads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logging</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">json_data</span><span class="p">,</span> <span class="n">fixes</span> <span class="o">=</span> <span class="n">json_data</span>
+            <span class="k">if</span> <span class="n">fixes</span> <span class="ow">and</span> <span class="p">(</span><span class="n">span</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_current_active_span</span><span class="p">()):</span>
+                <span class="n">event</span> <span class="o">=</span> <span class="n">SpanEvent</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;JSON fixes&#39;</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;json_fixes&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">fix</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">fix</span> <span class="ow">in</span> <span class="n">fixes</span> <span class="k">if</span> <span class="s1">&#39;text&#39;</span> <span class="ow">in</span> <span class="n">fix</span><span class="p">]}</span>
+                <span class="p">)</span>
+                <span class="n">span</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">_parse_tree</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">_sanitize</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">oid</span><span class="o">=</span><span class="n">fallback</span><span class="o">.</span><span class="n">oid</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">vocab</span><span class="p">:</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="n">_fix_vocab</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span> <span class="n">vocab_similarity</span><span class="o">=</span><span class="n">vocab_similarity</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">span</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_current_active_span</span><span class="p">():</span>
+                <span class="n">span</span><span class="o">.</span><span class="n">record_exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tree</span><span class="p">,</span> <span class="n">tree</span> <span class="o">!=</span> <span class="n">fallback</span>
+
+    <span class="k">return</span> <span class="n">fallback</span><span class="p">,</span> <span class="kc">False</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_simplify_langchain_graph</span><span class="p">(</span>
+    <span class="n">llm</span><span class="p">:</span> <span class="n">BaseChatModel</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="n">ChatPromptTemplate</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">vocab</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">vocab_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runnable</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Tree</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a LangChain graph that simplifies :py:class:`~architxt.tree.Tree` using the provided model and prompt.</span>
+
+<span class="sd">    :param llm: The LLM model to use for simplification.</span>
+<span class="sd">    :param prompt: The prompt template to use for simplification.</span>
+<span class="sd">    :param debug: If True, emit warnings on parse errors and log JSON repair/parse metadata to MLflow.</span>
+
+<span class="sd">    :return: A Runnable LangChain graph that simplifies :py:class:`~architxt.tree.Tree`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">to_json</span> <span class="o">=</span> <span class="n">RunnableLambda</span><span class="p">(</span><span class="k">lambda</span> <span class="n">trees</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;trees&quot;</span><span class="p">:</span> <span class="n">_trees_to_markdown_list</span><span class="p">(</span><span class="n">trees</span><span class="p">)})</span>
+    <span class="n">llm_chain</span> <span class="o">=</span> <span class="n">to_json</span> <span class="o">|</span> <span class="n">prompt</span> <span class="o">|</span> <span class="n">llm</span><span class="o">.</span><span class="n">with_retry</span><span class="p">(</span><span class="n">stop_after_attempt</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="o">|</span> <span class="n">NumberedListOutputParser</span><span class="p">()</span>
+    <span class="n">parallel</span> <span class="o">=</span> <span class="n">RunnableParallel</span><span class="p">(</span><span class="n">origin</span><span class="o">=</span><span class="n">RunnablePassthrough</span><span class="p">(),</span> <span class="n">simplified</span><span class="o">=</span><span class="n">llm_chain</span><span class="p">)</span>
+    <span class="n">tree_parser</span> <span class="o">=</span> <span class="n">RunnableLambda</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">result</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">_parse_tree_output</span><span class="p">(</span><span class="n">simplified</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="n">origin</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span> <span class="n">vocab_similarity</span><span class="o">=</span><span class="n">vocab_similarity</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">origin</span><span class="p">,</span> <span class="n">simplified</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">zip_longest</span><span class="p">(</span>
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;origin&#39;</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;simplified&#39;</span><span class="p">][:</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;origin&#39;</span><span class="p">])]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">parallel</span> <span class="o">|</span> <span class="n">tree_parser</span>
+
+
+<div class="viewcode-block" id="count_tokens">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.count_tokens">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_tokens</span><span class="p">(</span><span class="n">llm</span><span class="p">:</span> <span class="n">BaseLanguageModel</span><span class="p">,</span> <span class="n">trees</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Count the number of tokens in the prompt for a set of trees.</span>
+
+<span class="sd">    :param llm: LLM model to use.</span>
+<span class="sd">    :param trees: Sequence of trees to simplify.</span>
+
+<span class="sd">    :return: Number of tokens in the formatted prompt.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">json_trees</span> <span class="o">=</span> <span class="n">_trees_to_markdown_list</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">llm</span><span class="o">.</span><span class="n">get_num_tokens</span><span class="p">(</span><span class="n">json_trees</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="estimate_tokens">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.estimate_tokens">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_tokens</span><span class="p">(</span>
+    <span class="n">trees</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">],</span>
+    <span class="n">llm</span><span class="p">:</span> <span class="n">BaseLanguageModel</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="n">BasePromptTemplate</span> <span class="o">=</span> <span class="n">DEFAULT_PROMPT</span><span class="p">,</span>
+    <span class="n">refining_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">error_adjustment</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.2</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the total number of tokens (input/output) and queries required for a rewrite.</span>
+
+<span class="sd">    :param trees: Sequence of trees to simplify.</span>
+<span class="sd">    :param llm: LM model to use.</span>
+<span class="sd">    :param max_tokens: Maximum number of tokens to allow per prompt.</span>
+<span class="sd">    :param prompt: Prompt template to use.</span>
+<span class="sd">    :param refining_steps: Number of refining steps to perform after the initial rewrite.</span>
+<span class="sd">    :param error_adjustment: Factor to adjust the estimated number of tokens for error.</span>
+
+<span class="sd">    :return: The total number of tokens (input/output) and the number of queries estimated for a rewrite.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prompt_tokens</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">get_num_tokens</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trees</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+    <span class="n">batches</span> <span class="o">=</span> <span class="n">more_itertools</span><span class="o">.</span><span class="n">constrained_batches</span><span class="p">(</span>
+        <span class="n">trees</span><span class="p">,</span>
+        <span class="n">max_size</span><span class="o">=</span><span class="n">max_tokens</span> <span class="o">-</span> <span class="n">prompt_tokens</span><span class="p">,</span>
+        <span class="n">get_len</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">count_tokens</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">]),</span>
+        <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">queries</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">input_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">output_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batches</span><span class="p">:</span>
+        <span class="n">queries</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="n">count_tokens</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+        <span class="n">input_tokens</span> <span class="o">+=</span> <span class="n">prompt_tokens</span> <span class="o">+</span> <span class="n">tokens</span>
+        <span class="n">output_tokens</span> <span class="o">+=</span> <span class="n">tokens</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">input_tokens</span> <span class="o">*</span> <span class="p">(</span><span class="n">refining_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">error_adjustment</span><span class="p">),</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">output_tokens</span> <span class="o">*</span> <span class="p">(</span><span class="n">refining_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">error_adjustment</span><span class="p">),</span>
+        <span class="n">queries</span> <span class="o">*</span> <span class="p">(</span><span class="n">refining_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="llm_simplify">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.llm_simplify">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">llm_simplify</span><span class="p">(</span>
+    <span class="n">llm</span><span class="p">:</span> <span class="n">BaseChatModel</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="n">ChatPromptTemplate</span><span class="p">,</span>
+    <span class="n">trees</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tree</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">vocab</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">vocab_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">task_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="nb">bool</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simplify parse trees using an LLM.</span>
+
+<span class="sd">    It uses the following flow where the tree parser falls back to the original tree in case of parsing errors:</span>
+
+<span class="sd">    .. mermaid::</span>
+<span class="sd">        :alt: ArchiTXT Schema</span>
+<span class="sd">        :align: center</span>
+
+<span class="sd">        ---</span>
+<span class="sd">        config:</span>
+<span class="sd">          theme: neutral</span>
+<span class="sd">        ---</span>
+<span class="sd">        flowchart LR</span>
+<span class="sd">            A[Trees] --&gt; B[Convert to JSON] --&gt; C[LLM]</span>
+<span class="sd">            A &amp; C --&gt; E[Tree parser]</span>
+<span class="sd">            E --&gt; F[Simplified trees]</span>
+
+<span class="sd">    :param llm: LLM model to use.</span>
+<span class="sd">    :param max_tokens: Maximum number of tokens to allow per prompt.</span>
+<span class="sd">    :param prompt: Prompt template to use.</span>
+<span class="sd">    :param trees: Sequence of trees to simplify.</span>
+<span class="sd">    :param vocab: Optional list of vocabulary words to use in the prompt.</span>
+<span class="sd">    :param vocab_similarity: Similarity threshold in [0, 1] for merging labels.</span>
+<span class="sd">    :param task_limit: Maximum number of concurrent requests to make.</span>
+<span class="sd">    :param debug: Whether to enable debug logging.</span>
+
+<span class="sd">    :yield: Simplified trees objects with the same oid as input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">vocab_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Prefer these labels : </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vocab</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span> <span class="k">if</span> <span class="n">vocab</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">vocab</span><span class="o">=</span><span class="n">vocab_str</span><span class="p">)</span>
+    <span class="n">chain</span> <span class="o">=</span> <span class="n">_build_simplify_langchain_graph</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span> <span class="n">vocab_similarity</span><span class="o">=</span><span class="n">vocab_similarity</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="n">prompt_tokens</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">get_num_tokens</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trees</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+
+    <span class="c1"># Group trees respecting the maximum number of tokens per prompt</span>
+    <span class="n">batches</span> <span class="o">=</span> <span class="n">more_itertools</span><span class="o">.</span><span class="n">constrained_batches</span><span class="p">(</span>
+        <span class="n">trees</span><span class="p">,</span>
+        <span class="n">max_size</span><span class="o">=</span><span class="n">max_tokens</span> <span class="o">-</span> <span class="n">prompt_tokens</span><span class="p">,</span>
+        <span class="n">get_len</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">count_tokens</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="p">[</span><span class="n">x</span><span class="p">]),</span>
+        <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nd">@mlflow</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;llm-invoke&#39;</span><span class="p">,</span> <span class="n">span_type</span><span class="o">=</span><span class="n">SpanType</span><span class="o">.</span><span class="n">CHAIN</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_safe_traced_invoke</span><span class="p">(</span><span class="n">tree_batch</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tree</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">chain</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">tree_batch</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">span</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_current_active_span</span><span class="p">():</span>
+                <span class="n">span</span><span class="o">.</span><span class="n">record_exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">[(</span><span class="n">orig_tree</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">orig_tree</span> <span class="ow">in</span> <span class="n">tree_batch</span><span class="p">]</span>
+
+    <span class="c1"># Run queries concurrently</span>
+    <span class="n">tree_stream</span><span class="p">:</span> <span class="n">Stream</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span> <span class="o">|</span> <span class="n">pipe</span><span class="o">.</span><span class="n">amap</span><span class="p">(</span>
+        <span class="n">_safe_traced_invoke</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">task_limit</span><span class="o">=</span><span class="n">task_limit</span>
+    <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">with</span> <span class="n">tree_stream</span><span class="o">.</span><span class="n">stream</span><span class="p">()</span> <span class="k">as</span> <span class="n">streamer</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">streamer</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tree</span><span class="p">,</span> <span class="n">simplified</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">tree</span><span class="p">,</span> <span class="n">simplified</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize a string for vocabulary extraction.</span>
+
+<span class="sd">    Applies Unicode NFKC normalization, removes non-alphanumeric characters,</span>
+<span class="sd">    and converts to upper snake_case (e.g., &quot;hello, world&quot; -&gt; &quot;HELLO_WORLD&quot;).</span>
+
+<span class="sd">    :param s: String to normalize.</span>
+<span class="sd">    :return: Normalized upper snake_case string, or empty string if no alphanumeric characters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># unicode normalize</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFKC&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="c1"># keep alnum and spaces</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ch</span> <span class="k">if</span> <span class="n">ch</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39; &#39;</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">s</span><span class="p">)</span>
+    <span class="c1"># convert to upper case</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="c1"># convert to snake_case</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="extract_vocab">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.extract_vocab">[docs]</a>
+<span class="nd">@mlflow</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">span_type</span><span class="o">=</span><span class="n">SpanType</span><span class="o">.</span><span class="n">PARSER</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_vocab</span><span class="p">(</span><span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span> <span class="n">min_support</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">min_similarity</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">close_match</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract a normalized set of labels that appear in GROUP or REL subtrees with at least a given support.</span>
+
+<span class="sd">    - Normalization: Unicode NFKC, remove non-alphanumeric chars, collapse spaces, upper snake_case.</span>
+<span class="sd">    - Aggregation: merge labels that are similar above `min_similarity` (SequenceMatcher ratio).</span>
+<span class="sd">        We select the one with the most occurrences as canonical label if multiple match.</span>
+<span class="sd">    - Returns: Set of canonical labels.</span>
+
+<span class="sd">    :param forest: Forest to extract vocabulary from.</span>
+<span class="sd">    :param min_support: Minimum support threshold for vocabulary.</span>
+<span class="sd">    :param min_similarity: Similarity threshold in [0, 1] for merging labels.</span>
+<span class="sd">    :param close_match: Number of close matches to consider when merging labels.</span>
+<span class="sd">    :return: Set of canonical labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">vocab_counter</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">forest</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">subtree</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">subtrees</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">has_type</span><span class="p">(</span><span class="n">subtree</span><span class="p">,</span> <span class="p">{</span><span class="n">NodeType</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span> <span class="n">NodeType</span><span class="o">.</span><span class="n">REL</span><span class="p">}):</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">subtree</span><span class="o">.</span><span class="n">label</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">label</span> <span class="o">:=</span> <span class="n">_normalize</span><span class="p">(</span><span class="n">subtree</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">name</span><span class="p">)):</span>
+                <span class="k">continue</span>
+
+            <span class="n">matches</span> <span class="o">=</span> <span class="n">get_close_matches</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">vocab_counter</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">n</span><span class="o">=</span><span class="n">close_match</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">min_similarity</span><span class="p">)</span>
+            <span class="n">canonical_label</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">vocab_counter</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+            <span class="n">vocab_counter</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">canonical_label</span><span class="p">])</span>
+
+    <span class="n">selected_vocab</span> <span class="o">=</span> <span class="p">{</span><span class="n">label</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">cnt</span> <span class="ow">in</span> <span class="n">vocab_counter</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">cnt</span> <span class="o">&gt;=</span> <span class="n">min_support</span><span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">span</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_current_active_span</span><span class="p">():</span>
+        <span class="n">span</span><span class="o">.</span><span class="n">set_attributes</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;vocab.total_unique&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">vocab_counter</span><span class="p">),</span>
+                <span class="s1">&#39;vocab.selected_size&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_vocab</span><span class="p">),</span>
+                <span class="s1">&#39;vocab.top10_counts&#39;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">vocab_counter</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">selected_vocab</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_mlflow_schema</span><span class="p">(</span><span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="o">.</span><span class="n">from_forest</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s1">&#39;forest.size&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span>
+        <span class="s1">&#39;schema.size&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">productions</span><span class="p">()),</span>
+        <span class="s1">&#39;schema.entities&#39;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">entities</span><span class="p">),</span>
+        <span class="s1">&#39;schema.groups&#39;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">group</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">groups</span><span class="p">}),</span>
+        <span class="s1">&#39;schema.relations&#39;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">relation</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">relation</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">relations</span><span class="p">}),</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="llm_rewrite">
+<a class="viewcode-back" href="../../../_api_reference/architxt.simplification.llm.html#architxt.simplification.llm.llm_rewrite">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">llm_rewrite</span><span class="p">(</span>
+    <span class="n">forest</span><span class="p">:</span> <span class="n">Forest</span><span class="p">,</span>
+    <span class="n">llm</span><span class="p">:</span> <span class="n">BaseChatModel</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DECAY</span><span class="p">,</span>
+    <span class="n">min_support</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">vocab_similarity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">refining_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">intermediate_output_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">task_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">METRIC_FUNC</span> <span class="o">=</span> <span class="n">DEFAULT_METRIC</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="n">ChatPromptTemplate</span> <span class="o">=</span> <span class="n">DEFAULT_PROMPT</span><span class="p">,</span>
+    <span class="n">commit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Metrics</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Rewrite a forest into a valid schema using a LLM agent.</span>
+
+<span class="sd">    :param forest: A forest to be rewritten in place.</span>
+<span class="sd">    :param llm: The LLM model to interact with for rewriting and simplification tasks.</span>
+<span class="sd">    :param max_tokens: The token limit of the prompt.</span>
+<span class="sd">    :param tau: Threshold for subtree similarity when clustering.</span>
+<span class="sd">    :param decay: The similarity decay factor.</span>
+<span class="sd">        The higher the value, the more the weight of context decreases with distance.</span>
+<span class="sd">    :param min_support: Minimum support for vocab.</span>
+<span class="sd">    :param vocab_similarity: Similarity threshold in [0, 1] for merging vocabulary labels.</span>
+<span class="sd">    :param refining_steps: Number of refining steps to perform after the initial rewrite.</span>
+<span class="sd">    :param debug: Whether to enable debug logging.</span>
+<span class="sd">    :param intermediate_output_path: Optional path to save intermediate results after each iteration.</span>
+<span class="sd">    :param task_limit: Maximum number of concurrent requests to make.</span>
+<span class="sd">    :param metric: The metric function used to compute similarity between subtrees.</span>
+<span class="sd">    :param prompt: The prompt template to use for the LLM during the simplification.</span>
+<span class="sd">    :param commit: Commit automatically if using TreeBucket. If already in a transaction, no commit is applied.</span>
+<span class="sd">        - If False, no commits are made, it relies on the current transaction.</span>
+<span class="sd">        - If True (default), commits in batch.</span>
+<span class="sd">        - If an integer, commits every N tree.</span>
+<span class="sd">        To avoid memory issues, we recommend using incremental commit with large iterables.</span>
+
+<span class="sd">    :return: A `Metrics` object encapsulating the results and metrics calculated for the LLM rewrite process.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="n">Metrics</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">decay</span><span class="o">=</span><span class="n">decay</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+    <span class="n">min_support</span> <span class="o">=</span> <span class="n">min_support</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">//</span> <span class="mi">20</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_params</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;nb_sentences&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span>
+                <span class="s1">&#39;tau&#39;</span><span class="p">:</span> <span class="n">tau</span><span class="p">,</span>
+                <span class="s1">&#39;decay&#39;</span><span class="p">:</span> <span class="n">decay</span><span class="p">,</span>
+                <span class="s1">&#39;min_support&#39;</span><span class="p">:</span> <span class="n">min_support</span><span class="p">,</span>
+                <span class="s1">&#39;vocab_similarity&#39;</span><span class="p">:</span> <span class="n">vocab_similarity</span><span class="p">,</span>
+                <span class="s1">&#39;metric&#39;</span><span class="p">:</span> <span class="n">metric</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="s1">&#39;refining_steps&#39;</span><span class="p">:</span> <span class="n">refining_steps</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">log_to_mlflow</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="n">mlflow_schema</span> <span class="o">=</span> <span class="n">_get_mlflow_schema</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">iteration</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="n">refining_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;rewriting iterations&#39;</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_span</span><span class="p">(</span>
+            <span class="s1">&#39;llm-rewriting&#39;</span><span class="p">,</span>
+            <span class="n">span_type</span><span class="o">=</span><span class="n">SpanType</span><span class="o">.</span><span class="n">CHAIN</span><span class="p">,</span>
+            <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="n">iteration</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">iteration_span</span><span class="p">:</span>
+            <span class="n">iteration_span</span><span class="o">.</span><span class="n">set_inputs</span><span class="p">(</span><span class="n">mlflow_schema</span><span class="p">)</span>
+
+            <span class="n">vocab</span> <span class="o">=</span> <span class="n">extract_vocab</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">min_support</span><span class="p">,</span> <span class="n">vocab_similarity</span><span class="p">)</span>
+
+            <span class="n">shuffled_forest</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">windowed_shuffle</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;simplifying&#39;</span><span class="p">)</span>
+            <span class="n">simplification</span> <span class="o">=</span> <span class="n">llm_simplify</span><span class="p">(</span>
+                <span class="n">llm</span><span class="p">,</span>
+                <span class="n">max_tokens</span><span class="p">,</span>
+                <span class="n">prompt</span><span class="p">,</span>
+                <span class="n">shuffled_forest</span><span class="p">,</span>
+                <span class="n">vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span>
+                <span class="n">vocab_similarity</span><span class="o">=</span><span class="n">vocab_similarity</span><span class="p">,</span>
+                <span class="n">task_limit</span><span class="o">=</span><span class="n">task_limit</span><span class="p">,</span>
+                <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Track if any tree was modified</span>
+            <span class="n">any_modified</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_simplification_wrap</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Tree</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+                <span class="k">nonlocal</span> <span class="n">any_modified</span>
+                <span class="k">async</span> <span class="k">for</span> <span class="n">tree</span><span class="p">,</span> <span class="n">simplified</span> <span class="ow">in</span> <span class="n">simplification</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">simplified</span><span class="p">:</span>
+                        <span class="n">any_modified</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">yield</span> <span class="n">tree</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">TreeBucket</span><span class="p">):</span>
+                <span class="k">await</span> <span class="n">forest</span><span class="o">.</span><span class="n">async_update</span><span class="p">(</span><span class="n">_simplification_wrap</span><span class="p">(),</span> <span class="n">commit</span><span class="o">=</span><span class="n">commit</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">forest</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span> <span class="k">async</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">_simplification_wrap</span><span class="p">()]</span>
+
+            <span class="n">mlflow_schema</span> <span class="o">=</span> <span class="n">_get_mlflow_schema</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span>
+            <span class="n">iteration_span</span><span class="o">.</span><span class="n">set_outputs</span><span class="p">(</span><span class="n">mlflow_schema</span><span class="p">)</span>
+            <span class="n">iteration_span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s1">&#39;simplified&#39;</span><span class="p">,</span> <span class="n">any_modified</span><span class="p">)</span>
+
+            <span class="c1"># Save intermediate results</span>
+            <span class="k">if</span> <span class="n">intermediate_output_path</span><span class="p">:</span>
+                <span class="n">intermediate_output_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">intermediate_file</span> <span class="o">=</span> <span class="n">intermediate_output_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;intermediate_</span><span class="si">{</span><span class="n">iteration</span><span class="si">}</span><span class="s1">.jsonl&#39;</span>
+                <span class="n">export_forest_to_jsonl</span><span class="p">(</span><span class="n">intermediate_file</span><span class="p">,</span> <span class="n">forest</span><span class="p">)</span>
+
+            <span class="c1"># Log metrics to MLflow</span>
+            <span class="k">if</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">():</span>
+                <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+                <span class="n">metrics</span><span class="o">.</span><span class="n">log_to_mlflow</span><span class="p">(</span><span class="n">iteration</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">metrics</span></div>
+
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

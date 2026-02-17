@@ -1,0 +1,1357 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="architxt.grammar.metagrammarParser" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://neplex.github.io/ArchiTXT/_api_reference/architxt.grammar.metagrammarParser.html" />
+<meta property="og:site_name" content="ArchiTXT" />
+<meta property="og:description" content="Functions Classes" />
+<meta property="og:image:width" content="1146" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image" content="https://neplex.github.io/ArchiTXT/_images/social_previews/summary__api_reference_architxt.grammar.metagrammarParser_c9a4d8c0.png" />
+<meta property="og:image:alt" content="Functions Classes" />
+<meta name="description" content="Functions Classes" />
+<meta name="twitter:card" content="summary_large_image" />
+
+    <title>architxt.grammar.metagrammarParser &#8212; ArchiTXT Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/sphinx-toolbox.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_api_reference/architxt.grammar.metagrammarParser';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js"></script>
+    <link rel="canonical" href="https://neplex.github.io/ArchiTXT/_api_reference/architxt.grammar.metagrammarParser.html" />
+    <link rel="icon" href="../_static/favicon.png"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="architxt.inspector" href="architxt.inspector.html" />
+    <link rel="prev" title="architxt.grammar.metagrammarListener" href="architxt.grammar.metagrammarListener.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is currently in active development. Features may change, and some sections might be incomplete.</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo_h.png" class="logo__image only-light" alt="ArchiTXT Documentation - Home"/>
+    <script>document.write(`<img src="../_static/logo_h.png" class="logo__image only-dark" alt="ArchiTXT Documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../getting_started.html">Getting Started</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/cli.html">Use the Command-Line Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/ui.html">Web Interface</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../fundamentals.html">Fundamentals</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../importers.html">Import data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../importers/cypher.html">Loading property graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../importers/document.html">Loading document databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../importers/sql.html">Loading relational databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../importers/text.html">Loading textual datas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../transformers.html">Transform data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../transformers/simplify.html">Simplification</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../exporters.html">Export data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../exporters/cypher.html">Export as property graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../exporters/sql.html">Export as relational databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../examples.html">Usage examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/corpus_exploration.html">Exploring a Textual Corpus with ArchiTXT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/database_integration.html">Integrating multiple databases</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../integrations.html">Integrations</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/mlflow.html">MLFlow</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="architxt.html">architxt</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="architxt.bucket.html">architxt.bucket</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="architxt.bucket.zodb.html">architxt.bucket.zodb</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="architxt.cli.html">architxt.cli</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="architxt.cli.export.html">architxt.cli.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.cli.loader.html">architxt.cli.loader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.cli.utils.html">architxt.cli.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="architxt.database.html">architxt.database</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="architxt.database.export.html">architxt.database.export</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="architxt.database.export.cypher.html">architxt.database.export.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="architxt.database.export.sql.html">architxt.database.export.sql</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="architxt.database.loader.html">architxt.database.loader</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="architxt.database.loader.cypher.html">architxt.database.loader.cypher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="architxt.database.loader.documents.html">architxt.database.loader.documents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="architxt.database.loader.sql.html">architxt.database.loader.sql</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.forest.html">architxt.forest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.generator.html">architxt.generator</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="architxt.grammar.html">architxt.grammar</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="architxt.grammar.metagrammarLexer.html">architxt.grammar.metagrammarLexer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.grammar.metagrammarListener.html">architxt.grammar.metagrammarListener</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">architxt.grammar.metagrammarParser</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.inspector.html">architxt.inspector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.metrics.html">architxt.metrics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="architxt.nlp.html">architxt.nlp</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="architxt.nlp.brat.html">architxt.nlp.brat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.nlp.entity_extractor.html">architxt.nlp.entity_extractor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.nlp.entity_resolver.html">architxt.nlp.entity_resolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.nlp.model.html">architxt.nlp.model</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="architxt.nlp.parser.html">architxt.nlp.parser</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="architxt.nlp.parser.benepar.html">architxt.nlp.parser.benepar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="architxt.nlp.parser.corenlp.html">architxt.nlp.parser.corenlp</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.nlp.utils.html">architxt.nlp.utils</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.schema.html">architxt.schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.similarity.html">architxt.similarity</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="architxt.simplification.html">architxt.simplification</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="architxt.simplification.llm.html">architxt.simplification.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="architxt.simplification.simple_rewrite.html">architxt.simplification.simple_rewrite</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="architxt.simplification.tree_rewriting.html">architxt.simplification.tree_rewriting</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="architxt.simplification.tree_rewriting.operations.html">architxt.simplification.tree_rewriting.operations</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.tree.html">architxt.tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.ui.html">architxt.ui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architxt.utils.html">architxt.utils</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/neplex/ArchiTXT">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://pypi.org/project/architxt">PyPI</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/neplex/ArchiTXT/issues/new?title=Issue%20on%20page%20%2F_api_reference/architxt.grammar.metagrammarParser.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button"
+   title="Open an issue"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+
+</a>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>architxt.grammar.metagrammarParser</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.ENT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.ENT()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.entList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.COLL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.entList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.COLL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.REL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.REL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.COLL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.REL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.rootList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.PROD_SEPARATOR"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.PROD_SEPARATOR()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.group"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.group()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.groupColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.groupColl()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relation"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.relation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relationColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.relationColl()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.ruleList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.EOF"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.EOF()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SEPARATOR"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.PROD_SEPARATOR()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ROOT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.ROOT()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.rootList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.ruleList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.entList()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.group"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.group()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.groupColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.groupColl()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.relation"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.relation()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.relationColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.relationColl()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.rootList()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ruleList()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.start"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.start()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.COLL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ENT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ENT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EOF"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EOF</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GROUP</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SEPARATOR"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.PROD_SEPARATOR</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.PROD_SYMBOL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.REL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ROOT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ROOT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_entList</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_group"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_group</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_groupColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_groupColl</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relation"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_relation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relationColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_relationColl</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_rootList</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_ruleList</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_start"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_start</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.WS"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.WS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.atn"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.atn</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.buildParseTrees"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.buildParseTrees</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.decisionsToDFA"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.decisionsToDFA</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.grammarFileName"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.grammarFileName</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.literalNames"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.literalNames</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ruleNames"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ruleNames</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.sharedContextCache"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.sharedContextCache</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.symbolicNames"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.symbolicNames</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.serializedATN"><code class="docutils literal notranslate"><span class="pre">serializedATN()</span></code></a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-architxt.grammar.metagrammarParser">
+<span id="architxt-grammar-metagrammarparser"></span><h1>architxt.grammar.metagrammarParser<a class="headerlink" href="#module-architxt.grammar.metagrammarParser" title="Link to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<colgroup>
+<col style="width: 10.0%" />
+<col style="width: 90.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#architxt.grammar.metagrammarParser.serializedATN" title="architxt.grammar.metagrammarParser.serializedATN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serializedATN</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<colgroup>
+<col style="width: 10.0%" />
+<col style="width: 90.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#architxt.grammar.metagrammarParser.metagrammarParser" title="architxt.grammar.metagrammarParser.metagrammarParser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metagrammarParser</span></code></a>(input[, output])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">architxt.grammar.metagrammarParser.</span></span><span class="sig-name descname"><span class="pre">metagrammarParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sys.stdout</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Parser</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">EntListContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.EntListContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.ENT">
+<span class="sig-name descname"><span class="pre">ENT</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.EntListContext.ENT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.ENT" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.entList">
+<span class="sig-name descname"><span class="pre">entList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.EntListContext.entList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.entList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.EntListContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.EntListContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.EntListContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GroupCollContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.COLL">
+<span class="sig-name descname"><span class="pre">COLL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext.COLL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.COLL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.GROUP">
+<span class="sig-name descname"><span class="pre">GROUP</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext.GROUP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.GROUP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.PROD_SYMBOL">
+<span class="sig-name descname"><span class="pre">PROD_SYMBOL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext.PROD_SYMBOL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.PROD_SYMBOL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupCollContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GroupContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.GROUP">
+<span class="sig-name descname"><span class="pre">GROUP</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext.GROUP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.GROUP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.PROD_SYMBOL">
+<span class="sig-name descname"><span class="pre">PROD_SYMBOL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext.PROD_SYMBOL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.PROD_SYMBOL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.entList">
+<span class="sig-name descname"><span class="pre">entList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext.entList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.entList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.GroupContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RelationCollContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.COLL">
+<span class="sig-name descname"><span class="pre">COLL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext.COLL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.COLL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.PROD_SYMBOL">
+<span class="sig-name descname"><span class="pre">PROD_SYMBOL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext.PROD_SYMBOL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.PROD_SYMBOL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.REL">
+<span class="sig-name descname"><span class="pre">REL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext.REL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.REL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationCollContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RelationContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.GROUP">
+<span class="sig-name descname"><span class="pre">GROUP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext.GROUP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.GROUP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.PROD_SYMBOL">
+<span class="sig-name descname"><span class="pre">PROD_SYMBOL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext.PROD_SYMBOL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.PROD_SYMBOL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.REL">
+<span class="sig-name descname"><span class="pre">REL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext.REL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.REL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RelationContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RootListContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.COLL">
+<span class="sig-name descname"><span class="pre">COLL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.COLL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.COLL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.GROUP">
+<span class="sig-name descname"><span class="pre">GROUP</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.GROUP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.GROUP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.REL">
+<span class="sig-name descname"><span class="pre">REL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.REL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.REL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.rootList">
+<span class="sig-name descname"><span class="pre">rootList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RootListContext.rootList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.rootList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RuleListContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.PROD_SEPARATOR">
+<span class="sig-name descname"><span class="pre">PROD_SEPARATOR</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.PROD_SEPARATOR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.PROD_SEPARATOR" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.group">
+<span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.group"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.group" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.groupColl">
+<span class="sig-name descname"><span class="pre">groupColl</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.groupColl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.groupColl" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relation">
+<span class="sig-name descname"><span class="pre">relation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.relation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relation" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relationColl">
+<span class="sig-name descname"><span class="pre">relationColl</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.relationColl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relationColl" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.ruleList">
+<span class="sig-name descname"><span class="pre">ruleList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.RuleListContext.ruleList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.ruleList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">StartContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parser</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invokingState</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ParserRuleContext</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.EOF">
+<span class="sig-name descname"><span class="pre">EOF</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.EOF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.EOF" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SEPARATOR">
+<span class="sig-name descname"><span class="pre">PROD_SEPARATOR</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.PROD_SEPARATOR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SEPARATOR" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SYMBOL">
+<span class="sig-name descname"><span class="pre">PROD_SYMBOL</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.PROD_SYMBOL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SYMBOL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ROOT">
+<span class="sig-name descname"><span class="pre">ROOT</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.ROOT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ROOT" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.enterRule">
+<span class="sig-name descname"><span class="pre">enterRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.enterRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.enterRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.exitRule">
+<span class="sig-name descname"><span class="pre">exitRule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listener</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.exitRule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.exitRule" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.getRuleIndex">
+<span class="sig-name descname"><span class="pre">getRuleIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.getRuleIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.getRuleIndex" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.rootList">
+<span class="sig-name descname"><span class="pre">rootList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.rootList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.rootList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ruleList">
+<span class="sig-name descname"><span class="pre">ruleList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.StartContext.ruleList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ruleList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.StartContext.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.parser" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.entList">
+<span class="sig-name descname"><span class="pre">entList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.entList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.entList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.group">
+<span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.group"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.group" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.groupColl">
+<span class="sig-name descname"><span class="pre">groupColl</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.groupColl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.groupColl" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.relation">
+<span class="sig-name descname"><span class="pre">relation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.relation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.relation" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.relationColl">
+<span class="sig-name descname"><span class="pre">relationColl</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.relationColl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.relationColl" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.rootList">
+<span class="sig-name descname"><span class="pre">rootList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.rootList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.rootList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.ruleList">
+<span class="sig-name descname"><span class="pre">ruleList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.ruleList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.ruleList" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#metagrammarParser.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.start" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.COLL">
+<span class="sig-name descname"><span class="pre">COLL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.COLL" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.ENT">
+<span class="sig-name descname"><span class="pre">ENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.ENT" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.EOF">
+<span class="sig-name descname"><span class="pre">EOF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-1</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.EOF" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.GROUP">
+<span class="sig-name descname"><span class="pre">GROUP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.GROUP" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.PROD_SEPARATOR">
+<span class="sig-name descname"><span class="pre">PROD_SEPARATOR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SEPARATOR" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.PROD_SYMBOL">
+<span class="sig-name descname"><span class="pre">PROD_SYMBOL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SYMBOL" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.REL">
+<span class="sig-name descname"><span class="pre">REL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.REL" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.ROOT">
+<span class="sig-name descname"><span class="pre">ROOT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.ROOT" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_entList">
+<span class="sig-name descname"><span class="pre">RULE_entList</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_entList" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_group">
+<span class="sig-name descname"><span class="pre">RULE_group</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_group" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_groupColl">
+<span class="sig-name descname"><span class="pre">RULE_groupColl</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_groupColl" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_relation">
+<span class="sig-name descname"><span class="pre">RULE_relation</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relation" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_relationColl">
+<span class="sig-name descname"><span class="pre">RULE_relationColl</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relationColl" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_rootList">
+<span class="sig-name descname"><span class="pre">RULE_rootList</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_rootList" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_ruleList">
+<span class="sig-name descname"><span class="pre">RULE_ruleList</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_ruleList" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.RULE_start">
+<span class="sig-name descname"><span class="pre">RULE_start</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_start" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.WS">
+<span class="sig-name descname"><span class="pre">WS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.WS" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.atn">
+<span class="sig-name descname"><span class="pre">atn</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;antlr4.atn.ATN.ATN</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.atn" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <code class="xref py py-class docutils literal notranslate"><span class="pre">ATN</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.buildParseTrees">
+<span class="sig-name descname"><span class="pre">buildParseTrees</span></span><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.buildParseTrees" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.decisionsToDFA">
+<span class="sig-name descname"><span class="pre">decisionsToDFA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;antlr4.dfa.DFA.DFA</span> <span class="pre">object&gt;,</span> <span class="pre">&lt;antlr4.dfa.DFA.DFA</span> <span class="pre">object&gt;,</span> <span class="pre">&lt;antlr4.dfa.DFA.DFA</span> <span class="pre">object&gt;]</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.decisionsToDFA" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.grammarFileName">
+<span class="sig-name descname"><span class="pre">grammarFileName</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'metagrammar.g4'</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.grammarFileName" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.literalNames">
+<span class="sig-name descname"><span class="pre">literalNames</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['&lt;INVALID&gt;',</span> <span class="pre">'&lt;INVALID&gt;',</span> <span class="pre">'&lt;INVALID&gt;',</span> <span class="pre">'&lt;INVALID&gt;',</span> <span class="pre">'&lt;INVALID&gt;',</span> <span class="pre">&quot;'ROOT'&quot;,</span> <span class="pre">&quot;'-&gt;'&quot;,</span> <span class="pre">&quot;';'&quot;]</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.literalNames" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.ruleNames">
+<span class="sig-name descname"><span class="pre">ruleNames</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['start',</span> <span class="pre">'rootList',</span> <span class="pre">'ruleList',</span> <span class="pre">'group',</span> <span class="pre">'groupColl',</span> <span class="pre">'relation',</span> <span class="pre">'relationColl',</span> <span class="pre">'entList']</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.ruleNames" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.sharedContextCache">
+<span class="sig-name descname"><span class="pre">sharedContextCache</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;antlr4.PredictionContext.PredictionContextCache</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.sharedContextCache" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <code class="xref py py-class docutils literal notranslate"><span class="pre">PredictionContextCache</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.metagrammarParser.symbolicNames">
+<span class="sig-name descname"><span class="pre">symbolicNames</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['&lt;INVALID&gt;',</span> <span class="pre">'REL',</span> <span class="pre">'GROUP',</span> <span class="pre">'ENT',</span> <span class="pre">'COLL',</span> <span class="pre">'ROOT',</span> <span class="pre">'PROD_SYMBOL',</span> <span class="pre">'PROD_SEPARATOR',</span> <span class="pre">'WS']</span></em><a class="headerlink" href="#architxt.grammar.metagrammarParser.metagrammarParser.symbolicNames" title="Link to this definition">#</a></dt>
+<dd><p><strong>Type:</strong>    <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="architxt.grammar.metagrammarParser.serializedATN">
+<span class="sig-prename descclassname"><span class="pre">architxt.grammar.metagrammarParser.</span></span><span class="sig-name descname"><span class="pre">serializedATN</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/architxt/grammar/metagrammarParser.html#serializedATN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#architxt.grammar.metagrammarParser.serializedATN" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="architxt.grammar.metagrammarListener.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">architxt.grammar.metagrammarListener</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="architxt.inspector.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">architxt.inspector</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.ENT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.ENT()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.entList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EntListContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EntListContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.COLL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupCollContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupCollContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.entList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GroupContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GroupContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.COLL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.REL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationCollContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationCollContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.REL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RelationContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RelationContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.COLL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.GROUP()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.REL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.rootList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RootListContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RootListContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.PROD_SEPARATOR"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.PROD_SEPARATOR()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.group"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.group()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.groupColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.groupColl()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relation"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.relation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.relationColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.relationColl()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.ruleList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RuleListContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RuleListContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.EOF"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.EOF()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SEPARATOR"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.PROD_SEPARATOR()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.PROD_SYMBOL()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ROOT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.ROOT()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.enterRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.enterRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.exitRule"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.exitRule()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.getRuleIndex"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.getRuleIndex()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.rootList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.ruleList()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.StartContext.parser"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.StartContext.parser</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.entList()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.group"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.group()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.groupColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.groupColl()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.relation"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.relation()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.relationColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.relationColl()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.rootList()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ruleList()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.start"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.start()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.COLL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.COLL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ENT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ENT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.EOF"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.EOF</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.GROUP"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.GROUP</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SEPARATOR"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.PROD_SEPARATOR</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.PROD_SYMBOL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.PROD_SYMBOL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.REL"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.REL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ROOT"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ROOT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_entList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_entList</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_group"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_group</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_groupColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_groupColl</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relation"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_relation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_relationColl"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_relationColl</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_rootList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_rootList</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_ruleList"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_ruleList</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.RULE_start"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.RULE_start</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.WS"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.WS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.atn"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.atn</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.buildParseTrees"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.buildParseTrees</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.decisionsToDFA"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.decisionsToDFA</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.grammarFileName"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.grammarFileName</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.literalNames"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.literalNames</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.ruleNames"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.ruleNames</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.sharedContextCache"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.sharedContextCache</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.metagrammarParser.symbolicNames"><code class="docutils literal notranslate"><span class="pre">metagrammarParser.symbolicNames</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architxt.grammar.metagrammarParser.serializedATN"><code class="docutils literal notranslate"><span class="pre">serializedATN()</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026, Nicolas Hiot, Mirian Halfeld-Ferrari, Jacques Chabin.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
