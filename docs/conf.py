@@ -46,6 +46,7 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinxcontrib.typer',
     'sphinxcontrib.mermaid',
+    'sphinxext.opengraph',
     'sphinx_autodoc_typehints',
 ]
 
@@ -161,3 +162,9 @@ nb_execution_timeout = 1200
 nb_merge_streams = True
 nb_execution_raise_on_error = True
 nb_execution_show_tb = True
+
+# -- Options for opengraph extension -----------------------------------------
+# https://sphinxext-opengraph.readthedocs.io/en/latest/#options
+
+ogp_site_url = html_baseurl
+ogp_social_cards = {"enable": True}
