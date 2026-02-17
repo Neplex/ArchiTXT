@@ -79,14 +79,14 @@
                 "baptiste.haudebourg37@orange.fr"
             ],
             "familyName": [
-                "Haudebourg",
-                "HAUDEBOURG"
+                "HAUDEBOURG",
+                "Haudebourg"
             ],
             "givenName": "Baptiste"
         }
     ],
     "dateCreated": "2023-09-08T17:17:08Z+0200",
-    "dateModified": "2026-02-12T18:29:30Z+0100",
+    "dateModified": "2026-02-17T11:03:47Z+0100",
     "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
     "developmentStatus": "https://www.repostatus.org/#wip",
     "identifier": "ArchiTXT",
