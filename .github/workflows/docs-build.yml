@@ -13,14 +13,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
-
       - uses: rokibhasansagar/slimhub_actions@v25.42.5
         with:
-          retain: "vcs,pipx,toolcache_python,container_tools,docker_buildkit"
+          retain: "vcs,pipx,toolcache_python,docker_buildkit,nodejs_npm"
 
-      - id: setup_python
-        name: Install Python
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Minify
+        run: npm install -g minify
+
+      - name: Install Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -37,6 +41,11 @@ jobs:
         env:
           TOKENIZERS_PARALLELISM: false
           TQDM_DISABLE: 1
+
+      - name: HTML/CSS/JS Minifier
+        run: |
+          find _build/html -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -exec sh -c \
+          'minify "$0" > "$0.tmp" && mv "$0.tmp" "$0" && echo "$0"' {} \;
 
       - name: Deploy (GitHub Pages)
         uses: peaceiris/actions-gh-pages@v4

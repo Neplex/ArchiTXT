@@ -1,5 +1,5 @@
-ArchiTXT, the Python Library for Converting Unstructured Text into Structured, Searchable Data
-==============================================================================================
+A Python Library for Converting Text into Structured, Searchable Data
+=====================================================================
 
 .. meta::
     :description: ArchiTXT is an open-source Python library that converts unstructured text into structured, searchable, and AI-ready data for automated database generation and NLP workflows.
