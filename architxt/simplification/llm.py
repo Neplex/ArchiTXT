@@ -9,6 +9,7 @@ from collections import Counter
 from difflib import get_close_matches
 from typing import TYPE_CHECKING
 
+import anyio
 import json_repair
 import mlflow
 import more_itertools
@@ -32,7 +33,7 @@ from mlflow.entities import SpanEvent, SpanType
 from tqdm.auto import tqdm, trange
 
 from architxt.bucket import TreeBucket
-from architxt.forest import export_forest_to_jsonl
+from architxt.forest import export_forest_to_jsonl_async
 from architxt.metrics import Metrics
 from architxt.schema import Schema
 from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC
@@ -525,6 +526,9 @@ async def llm_rewrite(
     metrics = Metrics(forest, tau=tau, decay=decay, metric=metric)
     min_support = min_support or max((len(forest) // 20), 2)
 
+    if intermediate_output_path:
+        await anyio.Path(intermediate_output_path).mkdir(parents=True, exist_ok=True)
+
     if mlflow.active_run():
         mlflow.log_params(
             {
@@ -586,9 +590,8 @@ async def llm_rewrite(
 
             # Save intermediate results
             if intermediate_output_path:
-                intermediate_output_path.mkdir(parents=True, exist_ok=True)
                 intermediate_file = intermediate_output_path / f'intermediate_{iteration}.jsonl'
-                export_forest_to_jsonl(intermediate_file, forest)
+                await export_forest_to_jsonl_async(intermediate_file, forest)
 
             # Log metrics to MLflow
             if mlflow.active_run():
