@@ -44,8 +44,11 @@ jobs:
 
       - name: HTML/CSS/JS Minifier
         run: |
-          find _build/html -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -exec sh -c \
-          'minify "$0" > "$0.tmp" && mv "$0.tmp" "$0" && echo "$0"' {} \;
+          find _build/html -type f \( -name '*.html' -o -name '*.css' \) -exec sh -c '
+          minify "$0" > "$0.tmp" &&
+          echo "$0: $(stat -c%s "$0") -> $(stat -c%s "$0.tmp") bytes (saved $(($(stat -c%s "$0") - $(stat -c%s "$0.tmp"))) bytes)" &&
+          mv "$0.tmp" "$0"
+          ' {} \;
 
       - name: Deploy (GitHub Pages)
         uses: peaceiris/actions-gh-pages@v4
