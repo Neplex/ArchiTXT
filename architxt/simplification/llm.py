@@ -32,8 +32,7 @@ from langchain_core.runnables import (
 from mlflow.entities import SpanEvent, SpanType
 from tqdm.auto import tqdm, trange
 
-from architxt.bucket import TreeBucket
-from architxt.forest import export_forest_to_jsonl_async
+from architxt.forest import async_update_forest, export_forest_to_jsonl_async
 from architxt.metrics import Metrics
 from architxt.schema import Schema
 from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC
@@ -579,10 +578,7 @@ async def llm_rewrite(
                         any_modified = True
                     yield tree
 
-            if isinstance(forest, TreeBucket):
-                await forest.async_update(_simplification_wrap(), commit=commit)
-            else:
-                forest[:] = [tree async for tree in _simplification_wrap()]
+            await async_update_forest(forest, _simplification_wrap(), commit=commit)
 
             mlflow_schema = _get_mlflow_schema(forest)
             iteration_span.set_outputs(mlflow_schema)

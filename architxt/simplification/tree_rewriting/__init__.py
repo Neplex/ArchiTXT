@@ -17,6 +17,7 @@ from mlflow.entities import SpanEvent
 from tqdm.auto import tqdm, trange
 
 from architxt.bucket import TreeBucket
+from architxt.forest import update_forest
 from architxt.metrics import Metrics
 from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, TreeClusterer
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
@@ -386,7 +387,7 @@ def apply_operations(
                 mlflow.add_trace(worker_trace)
 
         if new_forest:
-            forest[:] = new_forest
+            update_forest(forest, new_forest)
 
         op_id = simplification_operation.get()
 

@@ -11,8 +11,8 @@ from rich.progress import Progress
 from rich.table import Table
 
 from architxt.bucket.zodb import ZODBTreeBucket
-from architxt.forest import import_forest_from_jsonl
-from architxt.tree import NodeType
+from architxt.forest import import_forest_from_jsonl, update_forest
+from architxt.tree import Forest, NodeType
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
@@ -21,7 +21,15 @@ if TYPE_CHECKING:
     from architxt.schema import Schema
     from architxt.tree import Tree
 
-__all__ = ['console', 'load_forest', 'show_metrics', 'show_schema', 'show_valid_trees_metrics']
+__all__ = [
+    'console',
+    'get_schema_metrics',
+    'init_forest',
+    'load_forest',
+    'show_metrics',
+    'show_schema',
+    'show_valid_trees_metrics',
+]
 
 
 console = Console()
@@ -124,3 +132,17 @@ def load_forest(files: Iterable[str | Path]) -> Generator[Tree, None, None]:
             else:
                 trees = import_forest_from_jsonl(file_path)
                 yield from progress.track(trees, task_id=task_id)
+
+
+def init_forest(forest: Forest, files: Iterable[str | Path]) -> None:
+    """
+    Initialize a forest by loading trees from a list of storage paths (ZODB directories or JSONL files).
+
+    :param forest: The forest to initialize.
+    :param files: List of file paths to read into the forest.
+
+    >>> with ZODBTreeBucket() as forest: # doctest: +SKIP
+    ...     init_forest(forest, ['forest_dir/', 'forest.jsonl'])
+    """
+    trees = load_forest(files)
+    update_forest(forest, trees, commit=True)
