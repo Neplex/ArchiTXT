@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+import warnings
 from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,6 +17,7 @@ from rich.panel import Panel
 from rich.table import Table
 from typer.main import get_command
 
+from architxt.bucket import TreeBucket
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
@@ -26,7 +28,15 @@ from architxt.simplification.tree_rewriting import rewrite
 
 from .export import app as export_app
 from .loader import app as loader_app
-from .utils import console, get_schema_metrics, load_forest, show_metrics, show_schema, show_valid_trees_metrics
+from .utils import (
+    console,
+    get_schema_metrics,
+    init_forest,
+    load_forest,
+    show_metrics,
+    show_schema,
+    show_valid_trees_metrics,
+)
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -72,12 +82,22 @@ def cleanup(
     decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
     output: Path | None = typer.Option(None, help="Path to save the result."),
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
+    in_memory: bool = typer.Option(False, help="Perform the cleanup in memory."),
 ) -> None:
+    if in_memory:
+        warnings.warn(
+            "Performing cleanup in memory. This is not recommended for large datasets as it may lead to high memory usage.",
+            UserWarning,
+        )
+        storage_ctx = nullcontext([])
+    else:
+        storage_ctx = ZODBTreeBucket()
+
     with (
-        ZODBTreeBucket() as tmp_forest,
+        storage_ctx as tmp_forest,
         ZODBTreeBucket(storage_path=output) as output_forest,
     ):
-        tmp_forest.update(load_forest(files), commit=True)
+        init_forest(tmp_forest, files)
         schema = Schema.from_forest(tmp_forest, keep_unlabelled=False)
 
         show_schema(schema)
@@ -109,7 +129,17 @@ def simplify(
     metrics: bool = typer.Option(False, help="Show metrics of the simplification."),
     log: bool = typer.Option(False, help="Enable logging to MLFlow."),
     log_system_metrics: bool = typer.Option(False, help="Enable logging of system metrics to MLFlow."),
+    in_memory: bool = typer.Option(False, help="Perform the simplification in memory."),
 ) -> None:
+    if in_memory:
+        warnings.warn(
+            "Performing simplification in memory. This is not recommended for large datasets as it may lead to high memory usage.",
+            UserWarning,
+        )
+        storage_ctx = nullcontext([])
+    else:
+        storage_ctx = ZODBTreeBucket(storage_path=output)
+
     run_ctx: AbstractContextManager = nullcontext()
 
     if log:
@@ -118,8 +148,8 @@ def simplify(
         for file in files:
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
-    with run_ctx, ZODBTreeBucket(storage_path=output) as forest:
-        forest.update(load_forest(files), commit=True)
+    with run_ctx, storage_ctx as forest:
+        init_forest(forest, files)
 
         console.print(
             f'[blue]Rewriting {len(forest)} trees with tau={tau}, decay={decay}, epoch={epoch}, min_support={min_support}[/]'
@@ -135,6 +165,10 @@ def simplify(
         if metrics:
             show_metrics(result_metrics)
             show_valid_trees_metrics(result_metrics, schema, forest, epoch + 1, log)
+
+        if output and not isinstance(forest, TreeBucket):
+            with ZODBTreeBucket(storage_path=output) as output_forest:
+                output_forest.update(forest, commit=True)
 
 
 @app.command(help="Simplify a bunch of databased together.")
@@ -160,6 +194,7 @@ def simplify_llm(
     rate_limit: float | None = typer.Option(None, help="Rate limit for the LLM."),
     estimate: bool = typer.Option(False, help="Estimate the number of tokens to generate."),
     temperature: float = typer.Option(0.2, help="Temperature for the LLM."),
+    in_memory: bool = typer.Option(False, help="Perform the simplification in memory."),
 ) -> None:
     try:
         from langchain.chat_models import init_chat_model
@@ -176,6 +211,15 @@ def simplify_llm(
             err=True,
         )
         raise typer.Exit(code=2)
+
+    if in_memory:
+        warnings.warn(
+            "Performing simplification in memory. This is not recommended for large datasets as it may lead to high memory usage.",
+            UserWarning,
+        )
+        storage_ctx = nullcontext([])
+    else:
+        storage_ctx = ZODBTreeBucket(storage_path=output)
 
     run_ctx: AbstractContextManager = nullcontext()
 
@@ -245,8 +289,8 @@ def simplify_llm(
             console.print(f'[blue]Estimated number of queries: {num_queries} queries[/]')
         return
 
-    with run_ctx, ZODBTreeBucket(storage_path=output) as forest:
-        forest.update(load_forest(files), commit=True)
+    with run_ctx, storage_ctx as forest:
+        init_forest(forest, files)
 
         console.print(f'[blue]Rewriting {len(forest)} trees with model={model}[/]')
         result_metrics = anyio.run(
@@ -270,6 +314,10 @@ def simplify_llm(
         if metrics:
             show_metrics(result_metrics)
             show_valid_trees_metrics(result_metrics, schema, forest, refining_steps + 1, log)
+
+        if output and not isinstance(forest, TreeBucket):
+            with ZODBTreeBucket(storage_path=output) as output_forest:
+                output_forest.update(forest, commit=True)
 
 
 @app.command(help="Display statistics of a dataset.")
