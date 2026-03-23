@@ -82,7 +82,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ui = ['streamlit>=1.39.0', 'streamlit-agraph', 'streamlit-tags']
+ui = ['streamlit>=1.53.0', 'streamlit-agraph', 'streamlit-tags']
 flair = ['flair>=0.15,<0.16']
 llm = [ 'langchain>=0.3,<0.4', 'langchain-core', 'langchain-huggingface', 'json-repair>=0.52,<0.53' ]
 
