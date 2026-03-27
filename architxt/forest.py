@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from contextlib import nullcontext
+from pathlib import Path
+from typing import TYPE_CHECKING, TextIO
 
 from anyio import open_file
 
@@ -10,7 +12,6 @@ from architxt.tree import Forest, Tree
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Generator, Iterable
-    from pathlib import Path
 
 __all__ = [
     'async_update_forest',
@@ -45,14 +46,16 @@ async def export_forest_to_jsonl_async(path: Path, forest: Iterable[Tree]) -> No
             await f.write(json.dumps(tree.to_json(), ensure_ascii=False) + '\n')
 
 
-def import_forest_from_jsonl(path: Path) -> Generator[Tree, None, None]:
+def import_forest_from_jsonl(file: Path | TextIO) -> Generator[Tree, None, None]:
     """
     Import a forest of :py:class:`~architxt.tree.Tree` objects from a JSONL file.
 
-    :param path: Path to the input JSONL file.
+    :param file: Path to the input JSONL file.
     :yield: :py:class:`~architxt.tree.Tree` objects.
     """
-    with path.open('r', encoding='utf-8') as f:
+    buffer = file.open('r', encoding='utf-8') if isinstance(file, Path) else nullcontext(file)
+
+    with buffer as f:
         for line in f:
             if not (line := line.strip()):
                 continue
