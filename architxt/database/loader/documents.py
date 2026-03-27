@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 
@@ -20,11 +21,11 @@ __all__ = ['read_document']
 
 FILE_PARSERS: Sequence[Callable[[BytesIO | BinaryIO], dict[str, Any] | list[Any]]] = (
     json.load,  # JSON
-    lambda x: toml.loads(x.read().decode()),  # TOML
-    lambda x: list(yaml.YAML().load_all(x)),  # YAML
     lambda x: xmltodict.parse(x.read()),  # XML
     lambda x: pd.read_csv(x).to_dict(orient='records'),  # CSV
     lambda x: {k: df.to_dict(orient='records') for k, df in pd.read_excel(x, sheet_name=None).items()},  # EXCEL
+    lambda x: list(yaml.YAML().load_all(x)),  # YAML
+    lambda x: toml.loads(x.read().decode()),  # TOML
 )
 
 
@@ -68,21 +69,8 @@ def read_document_file(file: str | Path | BytesIO | BinaryIO) -> dict[str, Any] 
     :raises OSError: If the file cannot be read.
     :raises ValueError: If the file cannot be read or is empty.
     """
-    should_close = False
-    document_db: BytesIO | BinaryIO
-
-    if isinstance(file, str | Path):
-        document_db = Path(file).open('rb')  # noqa: SIM115
-        should_close = True
-    else:
-        document_db = file
-
-    try:
+    with Path(file).open('rb') if isinstance(file, str | Path) else nullcontext(file) as document_db:
         data = parse_file(document_db)
-
-    finally:
-        if should_close:
-            document_db.close()
 
     if not data:
         msg = 'Empty document'
@@ -139,7 +127,7 @@ def read_tree(data: dict[str, Any] | list[Any], *, root_name: str = 'ROOT') -> T
         if isinstance(sub_element, dict | list):  # Recursively process nested structures
             children.append(read_tree(sub_element, root_name=name))
 
-        else:  # Leaf node becomes an entity
+        elif pd.notna(sub_element) and str(sub_element) != '':  # Non-empty leaf node becomes an entity
             ent_label = NodeLabel(NodeType.ENT, str(name).replace(' ', '_').lower())
             children.append(Tree(ent_label, [str(sub_element)]))
 
