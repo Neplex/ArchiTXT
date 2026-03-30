@@ -1,7 +1,7 @@
 import mlflow
 import streamlit as st
 
-from architxt.ui.page import exporter, importer, simplification, visualizer
+from architxt.ui.page import exporter, importer, labelling, simplification, visualizer
 from architxt.ui.utils import clear_data, get_metrics
 
 PAGES = {
@@ -11,6 +11,7 @@ PAGES = {
     ],
     "Tools": [
         st.Page(visualizer, title="Visualize", icon=":material/table:"),
+        st.Page(labelling, title="Labelling", icon=":material/ink_pen:"),
         st.Page(simplification, title="Simplify", icon=":material/build:"),
     ],
 }

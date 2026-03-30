@@ -37,6 +37,9 @@ def update_metrics() -> None:
 
     st.session_state[METRIC_BEFORE_KEY] = st.session_state.get(METRIC_KEY, DEFAULT_METRIC)
     st.session_state[METRIC_KEY] = metrics
+    st.session_state.pop("group_renames", None)
+    st.session_state.pop("relation_renames", None)
+
     st.rerun()
 
 
