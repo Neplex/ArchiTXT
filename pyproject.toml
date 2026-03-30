@@ -128,7 +128,7 @@ dev = [
     "ruff==0.15.6",
     "pyrefly==0.54.0",
     "deptry>=0.23.0,<1.0.0",
-    "vulture==2.14",
+    "vulture==2.16",
     # typing stubs
     "scipy-stubs",
     "pandas-stubs",
