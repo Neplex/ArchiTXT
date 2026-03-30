@@ -2,8 +2,8 @@ import shutil
 import subprocess
 import warnings
 from contextlib import AbstractContextManager, nullcontext
+from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import anyio
 import mlflow
@@ -21,6 +21,7 @@ from architxt.bucket import TreeBucket
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.generator import gen_instance
 from architxt.inspector import ForestInspector
+from architxt.llm import get_chat_model
 from architxt.metrics import Metrics, redundancy_score
 from architxt.schema import Group, Relation, Schema
 from architxt.similarity import DECAY
@@ -37,9 +38,6 @@ from .utils import (
     show_schema,
     show_valid_trees_metrics,
 )
-
-if TYPE_CHECKING:
-    from langchain_core.language_models import BaseChatModel
 
 app = typer.Typer(
     help="ArchiTXT is a tool for structuring textual data into a valid database model. "
@@ -197,9 +195,7 @@ def simplify_llm(
     in_memory: bool = typer.Option(False, help="Perform the simplification in memory."),
 ) -> None:
     try:
-        from langchain.chat_models import init_chat_model
         from langchain_core.rate_limiters import InMemoryRateLimiter
-        from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 
         from architxt.simplification.llm import estimate_tokens, llm_rewrite
     except ImportError:
@@ -242,36 +238,15 @@ def simplify_llm(
             mlflow.log_input(MetaDataset(CodeDatasetSource({}), name=file.name))
 
     rate_limiter = InMemoryRateLimiter(requests_per_second=rate_limit) if rate_limit else None
-    llm: BaseChatModel
-
-    if model_provider == 'huggingface' and local:
-        pipeline = HuggingFacePipeline.from_model_id(
-            model_id=model,
-            task='text-generation',
-            device_map=None if openvino else 'auto',
-            backend='openvino' if openvino else 'pt',
-            model_kwargs={'export': True} if openvino else {'torch_dtype': 'auto'},
-            pipeline_kwargs={
-                'use_cache': True,
-                'do_sample': True,
-                'return_full_text': False,
-                'max_new_tokens': max_tokens,
-                'temperature': temperature,
-                'repetition_penalty': 1.1,
-                'num_return_sequences': 1,
-                'pad_token_id': 0,
-            },
-        )
-        llm = ChatHuggingFace(llm=pipeline, rate_limiter=rate_limiter)
-
-    else:
-        llm = init_chat_model(
-            model_provider=model_provider,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            rate_limiter=rate_limiter,
-        )
+    llm = get_chat_model(
+        model_provider,
+        model,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        rate_limiter=rate_limiter,
+        local=local,
+        openvino=openvino,
+    )
 
     if estimate:
         num_input_tokens, num_output_tokens, num_queries = estimate_tokens(
@@ -293,19 +268,19 @@ def simplify_llm(
         init_forest(forest, files)
 
         console.print(f'[blue]Rewriting {len(forest)} trees with model={model}[/]')
-        result_metrics = anyio.run(
+        transform = partial(
             llm_rewrite,
-            forest,
-            llm,
-            max_tokens,
-            tau,
-            decay,
-            min_support,
-            vocab_similarity,
-            refining_steps,
-            debug,
-            intermediate_output,
+            llm=llm,
+            max_tokens=max_tokens,
+            tau=tau,
+            decay=decay,
+            min_support=min_support,
+            vocab_similarity=vocab_similarity,
+            refining_steps=refining_steps,
+            debug=debug,
+            intermediate_output=intermediate_output,
         )
+        result_metrics = anyio.run(transform, forest)
 
         # Generate schema
         schema = Schema.from_forest(forest, keep_unlabelled=False)

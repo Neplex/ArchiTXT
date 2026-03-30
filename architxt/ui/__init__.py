@@ -41,6 +41,9 @@ def main() -> None:
             mlflow.set_experiment('ArchiTXT UI')
             st.success(f"Logging to {mlflow.get_tracking_uri()}")
 
+        st.session_state["llm_local"] = st.toggle("Local LLM", key="w_llm_local", value=False)
+        st.session_state["llm_openvino"] = st.toggle("Use OpenVINO", key="w_llm_openvino", value=False)
+
     render_metrics()
 
     if st.button("Clear data"):
