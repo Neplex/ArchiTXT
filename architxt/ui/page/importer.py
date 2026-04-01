@@ -96,7 +96,9 @@ def _render_text_corpus_import(forest: TreeBucket) -> None:
 
 
 def _render_sql_import(forest: TreeBucket) -> None:
-    sql_uri = st.text_input("SQL URI", value="sqlite:///example.db", help="e.g., postgresql://user:pass@localhost/db")
+    col1, col2 = st.columns((4, 1))
+    sql_uri = col1.text_input("SQL URI", value="sqlite:///example.db", help="e.g., postgresql://user:pass@localhost/db")
+    sample = col2.number_input("Sample", min_value=1, value=None)
 
     if st.button("Load SQL"):
         engine = get_sql_engine(sql_uri)
@@ -105,17 +107,18 @@ def _render_sql_import(forest: TreeBucket) -> None:
             st.spinner("Loading from SQL..."),
             engine.connect() as connection,
         ):
-            trees = loader.read_sql(connection)
+            trees = loader.read_sql(connection, sample=sample or 0)
             forest.update(trees, commit=True)
 
         update_metrics()
 
 
 def _render_graph_import(forest: TreeBucket) -> None:
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns((2, 1, 1, 1))
     graph_uri = col1.text_input("Graph URI", value="bolt://localhost:7687")
     username = col2.text_input("Username", value="neo4j")
     password = col3.text_input("Password", type="password")
+    sample = col4.number_input("Sample", min_value=1, value=None)
 
     if st.button("Load Graph"):
         driver = get_neo4j_driver(graph_uri, username=username, password=password)
@@ -124,25 +127,27 @@ def _render_graph_import(forest: TreeBucket) -> None:
             st.spinner("Loading from Graph..."),
             driver.session() as session,
         ):
-            trees = loader.read_cypher(session)
+            trees = loader.read_cypher(session, sample=sample or 0)
             forest.update(trees, commit=True)
 
         update_metrics()
 
 
 def _render_document_import(forest: TreeBucket) -> None:
-    uploaded_documents = st.file_uploader(
+    col1, col2 = st.columns((4, 1))
+    uploaded_documents = col1.file_uploader(
         "Document File",
         [".json", ".toml", ".yml", ".yaml", ".xml", ".csv", ".xls", ".xlsx"],
         accept_multiple_files=True,
     )
+    sample = col2.number_input("Sample", min_value=1, value=None)
 
     if st.button("Load document", disabled=not uploaded_documents):
         with st.spinner("Loading from document..."):
 
             def load_trees() -> Generator[Tree, None, None]:
                 for document in uploaded_documents:
-                    yield from read_document(document, root_name=document.name)
+                    yield from read_document(document, root_name=document.name, sample=sample or 0)
 
             forest.update(load_trees(), commit=True)
 
