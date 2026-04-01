@@ -32,7 +32,38 @@ jobs:
         run: |
           docker run --user "$(id -u):$(id -g)" -v $(pwd):/data -e GITHUB_TOKEN=$GITHUB_TOKEN -e CLEAN_VERSION=$CLEAN_VERSION proycon/codemeta-harvester --regen --opts "--version $CLEAN_VERSION"
 
+      - name: Sort codemeta.json
+        run: |
+          jq --sort-keys 'walk(
+            if type == "object" then
+              with_entries(
+                if .key == "author" or .key == "contributor" then
+                  .value |= sort_by(.familyName // "")
+                elif .key == "softwareRequirements" then
+                  .value |= sort_by(.identifier // "")
+                else
+                  .
+                end
+              )
+            else
+              .
+            end
+          )' codemeta.json > codemeta.sorted.json
+          mv codemeta.sorted.json codemeta.json
+
+      - name: Check for change
+        id: check_change
+        run: |
+          if git diff --ignore-matching-lines='"dateModified"' --exit-code codemeta.json; then
+            echo "Nothing changed. Skipping commit."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Commit & Push changes
+        if: steps.check_change.outputs.changed
         uses: actions-js/push@v1.5
         with:
           github_token: '${{ secrets.GITHUB_TOKEN }}'
