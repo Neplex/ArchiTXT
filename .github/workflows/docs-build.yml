@@ -36,6 +36,14 @@ jobs:
       - name: Install Dependencies
         run: poetry install --all-extras --with=docs
 
+      - name: Cache Jupyter Notebooks
+        uses: actions/cache@v4
+        with:
+          path: '**/.jupyter_cache'
+          key: jupyter-cache-${{ runner.os }}-${{ hashFiles('**/*.ipynb') }}
+          restore-keys: |
+            jupyter-cache-${{ runner.os }}-
+
       - name: Build Documentation
         run: poetry run sphinx-build -M html docs _build -v
         env:

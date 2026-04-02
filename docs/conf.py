@@ -51,7 +51,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.jupyter_cache']
 
 autosectionlabel_prefix_document = True
 
@@ -158,6 +158,8 @@ copybutton_prompt_is_regexp = True
 # -- Options for myst_nb extension -------------------------------------------
 # https://myst-nb.readthedocs.io/en/latest/configuration.html
 
+nb_execution_mode = "cache"
+nb_execution_cache_path = ".jupyter_cache"
 nb_execution_timeout = 1200
 nb_merge_streams = True
 nb_execution_raise_on_error = True
