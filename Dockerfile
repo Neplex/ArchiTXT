@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.12
+ARG PYTHON_VERSION=3.13
 FROM python:$PYTHON_VERSION AS builder
 
 WORKDIR /build
@@ -21,7 +21,7 @@ ENV POETRY_NO_INTERACTION=1 \
 # Build dependencies
 RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=cache,target=/root/.cache/pip \
-    poetry --no-cache export --format=requirements.txt --all-extras --output=requirements.txt \
+    poetry --no-cache export --format=requirements.txt --all-extras --without-hashes --output=requirements.txt \
     && pip wheel --prefer-binary --requirement requirements.txt --wheel-dir /build/wheels \
     && rm requirements.txt
 

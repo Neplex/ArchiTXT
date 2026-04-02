@@ -164,7 +164,7 @@ def similarity(
         _y = _y.parent
         distance += 1
 
-    return np.clip(sim_sum / weight_sum, 0.0, 1.0)  # Needed to fix float issues
+    return float(np.clip(sim_sum / weight_sum, 0.0, 1.0))  # Needed to fix float issues
 
 
 @dataclasses.dataclass(frozen=True)

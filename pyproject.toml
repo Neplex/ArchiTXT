@@ -34,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Database",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -42,14 +43,15 @@ classifiers = [
 
 dynamic = ["version"]
 
-requires-python = '>=3.10,<3.13'
+requires-python = '>=3.10,<3.14'
 dependencies = [
     'tqdm>=4.60',
     'nltk>=3.9,<4.0',
     'unidecode',
     'benepar',
     'pandas>=2.3.0,<3.0.0',
-    'numpy>=1.16,<2.0',
+    'numpy>=1.16,<2.0; python_version < "3.13"',
+    'numpy>=2.1,<3.0; python_version >= "3.13"',
     'levenshtein',
     'more-itertools',
     'pybrat>=0.1.7,<0.2.0',
@@ -62,12 +64,13 @@ dependencies = [
     'googletrans>=4.0.2,<5.0.0',
     'aiostream>=0.7,<0.8',
     'sqlalchemy>=2.0.39,<3.0.0',
-    'spacy>=3.7.0,<4.0.0',
+    'spacy>=3.7.0,<3.8.0; python_version < "3.13"',
+    'spacy>=3.8.2,<4.0.0; python_version >= "3.13"',
     'xmltodict>=0.14.2,<1.1.0',
     'xlrd>=2.0.1,<3.0.0',
     'neo4j>=5.28.1,<6.0.0',
-    'zodb>=6.0,<7.0',
-    'relstorage>=4.1.1,<5.0.0',
+    'zodb>=6.1,<7.0',
+    'relstorage>=4.2,<5.0',
     'anyio>=4.9.0,<5.0.0',
     'toml>=0.10.0,<0.11.0',
     'scikit-learn>=1.7.0,<2.0.0',
@@ -82,7 +85,7 @@ dependencies = [
 
 [project.optional-dependencies]
 ui = ['streamlit>=1.53.0', 'streamlit-agraph', 'streamlit-tags']
-scispacy = ['scispacy>=0.4,<0.7']
+scispacy = ['scispacy>=0.4,<0.7; python_version < "3.13"']
 flair = ['flair>=0.15,<0.16']
 llm = [ 'langchain>=0.3,<2.0', 'langchain-core', 'langchain-huggingface', 'json-repair>=0.52,<1.0' ]
 
@@ -180,7 +183,8 @@ junit_family = "legacy"
 testpaths = ["architxt", "tests"]
 addopts = [
     "--doctest-modules",
-    "--beartype-skip-packages=architxt/grammar"
+    "--beartype-skip-packages=architxt/grammar",
+    "--ignore=architxt/nlp/contrib",
 ]
 anyio_mode = "auto"
 

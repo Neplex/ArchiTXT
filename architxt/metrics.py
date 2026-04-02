@@ -59,7 +59,7 @@ def confidence(dataframe: pd.DataFrame, column: str) -> float:
     antecedents = [c for c in dataframe.columns if c != column]
     counts_ac = dataframe.groupby(dataframe.columns.to_list(), sort=False, dropna=False).size()
     max_by_antecedent = counts_ac.groupby(antecedents, sort=False, dropna=False).max()
-    return max_by_antecedent.sum() / dataframe.shape[0]
+    return float(max_by_antecedent.sum() / dataframe.shape[0])
 
 
 def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> float:
@@ -92,7 +92,7 @@ def dependency_score(dataframe: pd.DataFrame, attributes: Collection[str]) -> fl
         if dep_score == 1.0:
             break
 
-    return dep_score
+    return float(dep_score)
 
 
 def process_subset(dataframe: pd.DataFrame, tau: float, attrs: tuple[str, ...]) -> pd.Series[bool] | None:
@@ -147,7 +147,7 @@ def redundancy_score(dataframe: pd.DataFrame, tau: float = 1.0, null_threshold: 
                 duplicates |= result
 
     # The table-level redundancy is the fraction of rows that are duplicates in at least one candidate set.
-    return duplicates.sum() / dataframe.shape[0]
+    return float(duplicates.sum() / dataframe.shape[0])
 
 
 class Metrics:
