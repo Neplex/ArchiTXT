@@ -54,7 +54,7 @@ jobs:
       - name: Check for change
         id: check_change
         run: |
-          if git diff --ignore-matching-lines='"dateModified"' --exit-code codemeta.json; then
+          if git diff --quiet --ignore-matching-lines='"dateModified"' --exit-code codemeta.json; then
             echo "Nothing changed. Skipping commit."
             echo "changed=false" >> $GITHUB_OUTPUT
           else
@@ -63,7 +63,7 @@ jobs:
           fi
 
       - name: Commit & Push changes
-        if: steps.check_change.outputs.changed
+        if: steps.check_change.outputs.changed == 'true'
         uses: actions-js/push@v1.5
         with:
           github_token: '${{ secrets.GITHUB_TOKEN }}'
