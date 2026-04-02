@@ -84,7 +84,7 @@ dependencies = [
 ui = ['streamlit>=1.53.0', 'streamlit-agraph', 'streamlit-tags']
 scispacy = ['scispacy>=0.4,<0.7']
 flair = ['flair>=0.15,<0.16']
-llm = [ 'langchain>=0.3,<0.4', 'langchain-core', 'langchain-huggingface', 'json-repair>=0.52,<0.53' ]
+llm = [ 'langchain>=0.3,<2.0', 'langchain-core', 'langchain-huggingface', 'json-repair>=0.52,<1.0' ]
 
 [project.urls]
 documentation = "https://neplex.github.io/ArchiTXT"
