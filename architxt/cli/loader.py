@@ -12,7 +12,6 @@ from architxt.bucket import TreeBucket
 from architxt.bucket.zodb import ZODBTreeBucket
 from architxt.database import loader
 from architxt.nlp import raw_load_corpus
-from architxt.nlp.entity_resolver import ScispacyResolver
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.schema import Schema
 from architxt.tree import Tree
@@ -196,7 +195,12 @@ def load_corpus(
         mlflow.start_run(description='corpus_processing')
 
     parser = CoreNLPParser(corenlp_url=corenlp_url)
-    _resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver) if resolver else None
+    _resolver = None
+
+    if resolver:
+        from architxt.nlp.contrib.scispacy import ScispacyResolver
+
+        _resolver = ScispacyResolver(cleanup=True, translate=True, kb_name=resolver)
 
     with ZODBTreeBucket(storage_path=output) as forest:
         anyio.run(
