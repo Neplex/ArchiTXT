@@ -74,7 +74,7 @@
     }
   ],
   "dateCreated": "2023-09-08T17:17:08Z+0200",
-  "dateModified": "2026-04-02T15:21:31Z+0200",
+  "dateModified": "2026-04-02T17:12:26Z+0200",
   "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
   "developmentStatus": "https://www.repostatus.org/#wip",
   "identifier": "ArchiTXT",
@@ -113,7 +113,8 @@
     "Python 3",
     "Python 3.10",
     "Python 3.11",
-    "Python 3.12"
+    "Python 3.12",
+    "Python 3.13"
   ],
   "softwareHelp": "https://neplex.github.io/ArchiTXT",
   "softwareRequirements": [
@@ -250,6 +251,13 @@
       "identifier": "numpy",
       "name": "numpy",
       "runtimePlatform": "Python 3",
+      "version": ">=2.1,<3.0"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "numpy",
+      "name": "numpy",
+      "runtimePlatform": "Python 3",
       "version": ">=1.16,<2.0"
     },
     {
@@ -278,7 +286,7 @@
       "identifier": "relstorage",
       "name": "relstorage",
       "runtimePlatform": "Python 3",
-      "version": ">=4.1.1,<5.0.0"
+      "version": ">=4.2,<5.0"
     },
     {
       "@type": "SoftwareApplication",
@@ -320,7 +328,14 @@
       "identifier": "spacy",
       "name": "spacy",
       "runtimePlatform": "Python 3",
-      "version": ">=3.7.0,<4.0.0"
+      "version": ">=3.7.0,<3.8.0"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "spacy",
+      "name": "spacy",
+      "runtimePlatform": "Python 3",
+      "version": ">=3.8.2,<4.0.0"
     },
     {
       "@type": "SoftwareApplication",
@@ -400,7 +415,7 @@
       "identifier": "zodb",
       "name": "zodb",
       "runtimePlatform": "Python 3",
-      "version": ">=6.0,<7.0"
+      "version": ">=6.1,<7.0"
     },
     {
       "@type": "SoftwareApplication",
