@@ -13,11 +13,19 @@ from architxt.database import loader
 from architxt.database.loader import read_document
 from architxt.forest import import_forest_from_jsonl
 from architxt.nlp import raw_load_corpus
-from architxt.nlp.entity_resolver import ScispacyResolver
 from architxt.nlp.parser.benepar import BeneparParser
 from architxt.nlp.parser.corenlp import CoreNLPParser
 from architxt.tree import Tree
 from architxt.ui.utils import get_forest, get_neo4j_driver, get_sql_engine, update_metrics
+
+try:
+    from architxt.nlp.contrib.scispacy import ScispacyResolver
+
+    RESOLVER_AVAILABLE = True
+except ImportError:
+    ScispacyResolver = None
+    RESOLVER_AVAILABLE = False
+
 
 RESOLVER_NAMES = {
     None: 'No resolution',
@@ -54,7 +62,12 @@ def _render_text_corpus_import(forest: TreeBucket) -> None:
         parser = get_corenlp_parser(corenlp_url)
 
     col1, col2 = st.columns(2)
-    resolver_name = col1.selectbox('Entity Resolver', options=RESOLVER_NAMES.keys(), format_func=RESOLVER_NAMES.get)
+    resolver_name: str | None = col1.selectbox(
+        'Entity Resolver',
+        options=RESOLVER_NAMES.keys(),
+        format_func=RESOLVER_NAMES.get,
+        disabled=not RESOLVER_AVAILABLE,
+    )
     sample = col2.number_input('Sample', min_value=1, value=None)
 
     with st.expander("Advanced NLP Settings"):
@@ -70,11 +83,13 @@ def _render_text_corpus_import(forest: TreeBucket) -> None:
 
     if st.button("Load Corpus", disabled=not uploaded_files):
         resolver = None
-        if resolver_name:
+        if RESOLVER_AVAILABLE and resolver_name:
             try:
                 resolver = ScispacyResolver(kb_name=resolver_name)
-            except Exception as e:
-                st.warning(f"Could not initialize resolver: {e}")
+            except (FileNotFoundError, RuntimeError) as exc:
+                st.warning(
+                    f"Could not initialize {RESOLVER_NAMES[resolver_name]}. Continuing without entity resolution: {exc}"
+                )
 
         trees = raw_load_corpus(
             uploaded_files,
