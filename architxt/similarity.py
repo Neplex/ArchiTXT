@@ -20,7 +20,8 @@ from scipy.spatial.distance import squareform
 from tqdm.auto import tqdm
 
 from architxt.bucket import TreeBucket
-from architxt.tree import Forest, NodeType, Tree, TreeOID, TreePersistentRef, has_type
+from architxt.schema import Schema
+from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, TreePersistentRef, has_type
 
 __all__ = [
     'DECAY',
@@ -101,7 +102,7 @@ def similarity(
 
     The function uses a specified metric (such as Jaccard, Levenshtein, or Jaro-Winkler) to calculate the
     similarity between the labels of entities in the trees. The similarity is computed as a recursive weighted
-    mean for each tree anestor, where the weight decays with the distance from the tree.
+    mean for each tree ancestor, where the weight decays with the distance from the tree.
 
     .. math::
         \text{similarity}_\text{metric}(x, y) =
@@ -209,6 +210,7 @@ class TreeClusterer:
         max_sim_ctx_depth: int = MAX_SIM_CTX_DEPTH,
         max_height: int = 5,
         min_cluster_size: int = 2,
+        schema_only: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -225,6 +227,8 @@ class TreeClusterer:
         :param max_sim_ctx_depth: The maximum depth of context to consider when computing similarity.
         :param max_height: The maximum height of subtrees to consider for clustering.
         :param min_cluster_size: The minimum size of a cluster
+        :param schema_only: If True the clustering will be done on the schema instead of the instance.
+                            It can improve performance but may not give the same result as with the instance.
         """
         _validate_tau(tau)
         _validate_decay(decay)
@@ -234,6 +238,7 @@ class TreeClusterer:
         self._metric = metric
         self._max_sim_ctx_depth = max_sim_ctx_depth
         self._max_height = max_height
+        self._schema_only = schema_only
         self._clusterer = HDBSCAN(
             metric='precomputed',
             cluster_selection_epsilon=1 - self._tau,
@@ -288,7 +293,26 @@ class TreeClusterer:
             return
 
         # Compute distance matrix for all subtrees
-        dist_matrix = self._compute_dist_matrix(subtrees)
+        if self._schema_only:
+            schema = Schema.from_forest(forest)
+            schema_tree = schema.to_tree()
+            schema_subtrees = tuple(
+                schema_tree.subtrees(
+                    lambda x: (
+                        x.height <= self._max_height and not has_type(x, NodeType.ENT) and not x.has_duplicate_entity()
+                    )
+                )
+            )
+            subtrees_mapping: dict[NodeLabel | str, list[int]] = defaultdict(list)
+            for i, st in enumerate(subtrees):
+                if st := self._get_tree(st):
+                    subtrees_mapping[st.label].append(i)
+            dist_matrix = self._compute_dist_matrix(schema_subtrees)
+
+        else:
+            schema_subtrees = ()
+            subtrees_mapping = {}
+            dist_matrix = self._compute_dist_matrix(subtrees)
 
         # HDBSCAN does not like zero distances, so we add a bit of jitter
         # We use a tiny uniform noise on exact zeros to breaks ties without changing semantics
@@ -300,24 +324,36 @@ class TreeClusterer:
 
         # Perform hierarchical clustering based on the distance threshold tau
         labels = self._clusterer.fit_predict(squareform(dist_matrix))
+        probabilities = np.ones(len(subtrees)) if self._schema_only else self._clusterer.probabilities_
 
         # Group subtrees by cluster ID
         subtree_clusters = defaultdict(list)
         for idx, cluster_id in enumerate(labels):
             if cluster_id != -1:
-                subtree_clusters[cluster_id].append(idx)
+                if self._schema_only:
+                    subtrees_ids = subtrees_mapping[schema_subtrees[idx].label]
+                    subtree_clusters[cluster_id].extend(subtrees_ids)
+                else:
+                    subtree_clusters[cluster_id].append(idx)
 
-        # Sort clusters based on the HDBSCAN membership probability within the cluster.
+        self._reconstruct_clusters(subtree_clusters, subtrees, probabilities)
+
+    def _reconstruct_clusters(
+        self,
+        subtree_clusters: dict[int, list[int]],
+        subtrees: Sequence[Tree | TreePersistentRef],
+        probabilities: npt.NDArray[np.float64],
+    ) -> None:
+        # Sort clusters based on the membership probability within the cluster.
         for cluster_num, cluster_indices in enumerate(subtree_clusters.values()):
-            if len(cluster_indices) == 1:
+            if len(cluster_indices) < 2:
                 continue
 
             # Sort the cluster based on their membership probability
-            cluster_probabilities = self._clusterer.probabilities_
-            sorted_indices = sorted(cluster_indices, key=lambda i: cluster_probabilities[i], reverse=True)
+            sorted_indices = sorted(cluster_indices, key=lambda i: probabilities[i], reverse=True)
             tree_cluster = TreeCluster(
                 trees=tuple(subtrees[i] for i in sorted_indices),
-                probabilities=np.asarray(cluster_probabilities[sorted_indices], dtype=np.float64),
+                probabilities=np.asarray(probabilities[sorted_indices], dtype=np.float64),
             )
 
             # Get the most common label for the cluster
@@ -481,6 +517,7 @@ def entity_labels(
     tau: float,
     metric: METRIC_FUNC | None = DEFAULT_METRIC,
     decay: float = DECAY,
+    schema_only: bool = False,
 ) -> dict[TreeOID, str]:
     """
     Process the given forest to assign labels to entities based on clustering of their ancestor.
@@ -491,6 +528,7 @@ def entity_labels(
         If None, use the parent label as the equivalent class.
     :param decay: The similarity decay factor.
         The higher the value, the more the weight of context decreases with distance.
+    :param schema_only: If True the clustering will be done on the schema instead of the instance.
     :return: A dictionary mapping entities to their respective cluster name.
     """
     _validate_tau(tau)
@@ -503,7 +541,7 @@ def entity_labels(
         for tree in forest
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
     ]
-    clusterer = TreeClusterer(tau=tau, metric=metric, decay=decay)
+    clusterer = TreeClusterer(tau=tau, metric=metric, decay=decay, schema_only=schema_only)
     clusterer.fit(entity_parents, _all_subtrees=False)
 
     return {

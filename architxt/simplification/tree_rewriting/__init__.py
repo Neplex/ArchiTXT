@@ -66,6 +66,7 @@ def rewrite(
     max_workers: int | None = None,
     commit: bool | int = True,
     simplify_names: bool = True,
+    schema_similarity: bool = False,
 ) -> Metrics:
     """
     Rewrite a forest by applying edit operations iteratively.
@@ -88,6 +89,7 @@ def rewrite(
         When using TreeBucket, workers always commit in internal transactions (to avoid serialization).
         The commit parameter only controls the batch size for these commits.
     :param simplify_names: Should the groups/relations names be simplified after the rewrite?
+    :param schema_similarity: Should the similarity be computed on the schema instead of the instance?
 
     :return: A `Metrics` object encapsulating the results and metrics calculated for the rewrite process.
     """
@@ -99,7 +101,7 @@ def rewrite(
     batch_size = get_commit_batch_size(commit)
     min_support = min_support or max((len(forest) // 10), 2)
     max_workers = max_workers or min(len(forest) // batch_size, (cpu_count() - 2)) or 1
-    tree_clusterer = TreeClusterer(tau=tau, decay=decay, metric=metric)
+    tree_clusterer = TreeClusterer(tau=tau, decay=decay, metric=metric, schema_only=schema_similarity)
 
     if debug:
         print('workers :', max_workers, '| batch size :', batch_size)

@@ -2,6 +2,7 @@ import shutil
 import subprocess
 import warnings
 from contextlib import AbstractContextManager, nullcontext
+from enum import Enum
 from functools import partial
 from pathlib import Path
 
@@ -111,6 +112,11 @@ def cleanup(
             show_metrics(result_metrics)
 
 
+class SimilarityMode(str, Enum):
+    instance = "instance"
+    schema = "schema"
+
+
 @app.command(help="Simplify a bunch of databased together.")
 def simplify(
     files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Path of the data files to load."),
@@ -119,6 +125,10 @@ def simplify(
     decay: float = typer.Option(DECAY, help="The similarity decay factor.", min=0.001),
     epoch: int = typer.Option(100, help="Number of iteration for tree rewriting.", min=1),
     min_support: int = typer.Option(20, help="Minimum support for tree patterns.", min=1),
+    similarity: SimilarityMode = typer.Option(
+        SimilarityMode.instance,
+        help="Mode for similarity calculation. 'instance' uses instance-level similarity, 'schema' uses schema-level similarity.",
+    ),
     workers: int | None = typer.Option(
         None, help="Number of parallel worker processes to use. Defaults to the number of available CPU cores.", min=1
     ),
@@ -153,7 +163,14 @@ def simplify(
             f'[blue]Rewriting {len(forest)} trees with tau={tau}, decay={decay}, epoch={epoch}, min_support={min_support}[/]'
         )
         result_metrics = rewrite(
-            forest, tau=tau, decay=decay, epoch=epoch, min_support=min_support, debug=debug, max_workers=workers
+            forest,
+            tau=tau,
+            decay=decay,
+            epoch=epoch,
+            min_support=min_support,
+            schema_similarity=(similarity == SimilarityMode.schema),
+            debug=debug,
+            max_workers=workers,
         )
 
         # Generate schema

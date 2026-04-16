@@ -16,10 +16,18 @@ def _render_rule_based_simplification(forest: TreeBucket) -> None:
     decay = c2.number_input('Decay', min_value=0.0, value=2.0)
     min_support = c1.number_input('Min Support', min_value=1, value=10)
     epoch = c2.number_input('Epochs', min_value=1, value=50)
+    schema_similarity = st.selectbox("Compute similarity on", ('instance', 'schema'), index=0)
 
     if st.button("Apply Rule-Based Simplification"):
         with st.spinner("Simplifying..."):
-            rewrite(forest, tau=tau, decay=decay, epoch=epoch, min_support=min_support)
+            rewrite(
+                forest,
+                tau=tau,
+                decay=decay,
+                epoch=epoch,
+                min_support=min_support,
+                schema_similarity=schema_similarity == 'schema',
+            )
 
         update_metrics()
 

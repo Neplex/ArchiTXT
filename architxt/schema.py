@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 from enum import Enum, auto
 from functools import cached_property
 from itertools import combinations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 from antlr4 import CommonTokenStream, InputStream
@@ -18,7 +18,6 @@ from tqdm.auto import tqdm
 
 from architxt.grammar.metagrammarLexer import metagrammarLexer
 from architxt.grammar.metagrammarParser import metagrammarParser
-from architxt.similarity import jaccard
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 
 if TYPE_CHECKING:
@@ -82,6 +81,16 @@ class Schema(CFG):
         super().__init__(Nonterminal('ROOT'), [root_production, *productions])
         self._groups = groups
         self._relations = relations
+
+    def __or__(self, other: Any) -> Schema:
+        if not isinstance(other, Schema):
+            return NotImplemented
+
+        return Schema(
+            self.productions() + other.productions(),
+            self.groups | other.groups,
+            self.relations | other.relations,
+        )
 
     @staticmethod
     def _get_rank(nt: Nonterminal) -> int:
@@ -291,6 +300,8 @@ class Schema(CFG):
         :return: The group overlap ratio as a float value between 0 and 1.
                  A higher value indicates a higher degree of overlap between groups.
         """
+        from architxt.similarity import jaccard
+
         jaccard_indices = [jaccard(group1.entities, group2.entities) for group1, group2 in combinations(self.groups, 2)]
 
         # Combine scores (average of pairwise indices)
@@ -339,6 +350,36 @@ class Schema(CFG):
         :returns: The schema as a list of production rules, each terminated by a semicolon.
         """
         return '\n'.join(f"{prod};" for prod in self.productions())
+
+    def to_tree(self) -> Tree:
+        """
+        Convert the schema (CFG) into a single template tree rooted at 'ROOT'.
+
+        Each symbol in the schema is expanded recursively starting from the start symbol.
+
+        :return: A template tree representing the schema.
+
+        >>> schema = Schema.from_description(
+        ...     groups={
+        ...         Group('G1', {'A', 'B'}),
+        ...         Group('G2', {'A', 'C', 'D'}),
+        ...     },
+        ...     relations={
+        ...         Relation('R1', 'G1', 'G2', RelationOrientation.LEFT),
+        ...     },
+        ...     collections=False
+        ... )
+        >>> print(schema.to_tree())
+        (ROOT (GROUP::G1 (ENT::A ) (ENT::B )) (GROUP::G2 (ENT::A ) (ENT::C ) (ENT::D )) (REL::R1 (GROUP::G1 (ENT::A ) (ENT::B )) (GROUP::G2 (ENT::A ) (ENT::C ) (ENT::D ))))
+        """
+
+        def expand(lhs: Nonterminal) -> Tree:
+            prods = self.productions(lhs=lhs)
+            children = [expand(rhs) if isinstance(rhs, Nonterminal) else rhs for prod in prods for rhs in prod.rhs()]
+
+            return Tree(lhs.symbol(), children)
+
+        return expand(self.start())
 
     def extract_valid_trees(self, forest: Iterable[Tree]) -> Generator[Tree, None, None]:
         """
