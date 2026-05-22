@@ -75,7 +75,7 @@ html_js_files = [
     'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js',
     'https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js',
 ]
-html_extra_path = ['robots.txt']
+html_extra_path = ['robots.txt', 'google8549087e50bc912b.html']
 
 html_theme = 'sphinx_book_theme'
 html_theme_options = {
