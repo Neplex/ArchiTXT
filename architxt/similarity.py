@@ -7,16 +7,22 @@ import warnings
 from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from itertools import combinations
-from typing import Any
+from typing import Any, overload
 
 import mlflow
+import more_itertools
 import numpy as np
 import numpy.typing as npt
-from hdbscan import HDBSCAN
+import torch
+from hdbscan import HDBSCAN, approximate_predict
 from Levenshtein import jaro_winkler
 from Levenshtein import ratio as levenshtein_ratio
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import squareform
+from torch import nn
+from torch.nn.functional import normalize
+from torch_geometric.nn import Aggregation, SimpleConv
+from torch_geometric.utils import to_undirected
 from tqdm.auto import tqdm
 
 from architxt.bucket import TreeBucket
@@ -26,6 +32,7 @@ from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, TreePersis
 __all__ = [
     'DECAY',
     'METRIC_FUNC',
+    'EmbeddedTreeClusterer',
     'TreeCluster',
     'TreeClusterView',
     'TreeClusterer',
@@ -245,6 +252,7 @@ class TreeClusterer:
             min_cluster_size=min_cluster_size,
             **kwargs,
         )
+        self._clusters_names = {}
         self._clusters = {}
         self._bucket = None
 
@@ -269,27 +277,12 @@ class TreeClusterer:
         :param _all_subtrees: If true, compute the similarity between all subtrees, else only the given trees are compared.
         :return: A set of tuples, where each tuple represents a cluster of subtrees that meet the similarity threshold.
         """
+        self._clusters_names.clear()
         self._clusters.clear()
-        self._bucket = None
+        self._bucket = forest if isinstance(forest, TreeBucket) else None
 
-        if isinstance(forest, TreeBucket):
-            self._bucket = forest
-
-        subtrees = (
-            tuple(
-                subtree if self._bucket is None else self._bucket.get_persistent_ref(subtree)
-                for tree in forest
-                for subtree in tree.subtrees(
-                    lambda x: (
-                        x.height <= self._max_height and not has_type(x, NodeType.ENT) and not x.has_duplicate_entity()
-                    )
-                )
-            )
-            if _all_subtrees
-            else tuple(tree if self._bucket is None else self._bucket.get_persistent_ref(tree) for tree in forest)
-        )
-
-        if len(subtrees) < 2:
+        subtrees = self._get_subtrees_to_cluster(forest, _all_subtrees)
+        if len(subtrees) < self._clusterer.min_cluster_size:
             return
 
         # Compute distance matrix for all subtrees
@@ -338,6 +331,34 @@ class TreeClusterer:
 
         self._reconstruct_clusters(subtree_clusters, subtrees, probabilities)
 
+    @overload
+    def _get_subtrees_to_cluster(self, forest: Forest, all_subtrees: bool = True) -> tuple[Tree, ...]: ...
+
+    @overload
+    def _get_subtrees_to_cluster(
+        self, forest: TreeBucket, all_subtrees: bool = True
+    ) -> tuple[TreePersistentRef, ...]: ...
+
+    def _get_subtrees_to_cluster(
+        self, forest: Forest | TreeBucket, all_subtrees: bool = True
+    ) -> tuple[Tree, ...] | tuple[TreePersistentRef, ...]:
+        return (
+            tuple(
+                self._get_tree_or_ref(subtree)
+                for tree in forest
+                for subtree in tree.subtrees(
+                    lambda x: (
+                        x.height <= self._max_height and not has_type(x, NodeType.ENT) and not x.has_duplicate_entity()
+                    )
+                )
+            )
+            if all_subtrees
+            else tuple(self._get_tree_or_ref(tree) for tree in forest)
+        )
+
+    def _get_tree_or_ref(self, tree: Tree) -> Tree | TreePersistentRef:
+        return tree if self._bucket is None else self._bucket.get_persistent_ref(tree)
+
     def _reconstruct_clusters(
         self,
         subtree_clusters: dict[int, list[int]],
@@ -345,7 +366,7 @@ class TreeClusterer:
         probabilities: npt.NDArray[np.float64],
     ) -> None:
         # Sort clusters based on the membership probability within the cluster.
-        for cluster_num, cluster_indices in enumerate(subtree_clusters.values()):
+        for cluster_id, cluster_indices in subtree_clusters.items():
             if len(cluster_indices) < 2:
                 continue
 
@@ -361,10 +382,11 @@ class TreeClusterer:
                 tree.label.name for i in sorted_indices if has_type(tree := self._get_tree(subtrees[i]))
             )
 
-            cluster_name = str(cluster_num)
+            cluster_name = str(cluster_id)
             if most_commons := label_counter.most_common(1):
                 cluster_name = f'{most_commons[0][0]}_{cluster_name}'
 
+            self._clusters_names[cluster_id] = cluster_name
             self._clusters[cluster_name] = tree_cluster
 
     def get_equiv_of(self, t: Tree, top_k: int | None = 20) -> str | None:
@@ -511,6 +533,189 @@ class TreeClusterer:
             warnings.warn(f'Could not plot single linkage tree: {error}', stacklevel=2)
 
 
+class DecayedConv(nn.Module):
+    def __init__(
+        self,
+        layers: int = MAX_SIM_CTX_DEPTH,
+        aggr: str | list[str] | Aggregation = 'mean',
+        decay: float = DECAY,
+    ) -> None:
+        super().__init__()
+        self.decay = decay
+        self.layers = layers
+        self.conv = SimpleConv(aggr=aggr, combine_root=None)
+
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+        for i in range(self.layers):
+            scale = self.decay ** (-i)
+            h = scale * self.conv(x, edge_index)
+            x = x + h
+
+        return normalize(x)
+
+
+class EmbeddedTreeClusterer(TreeClusterer):
+    _embedder: nn.Module
+    _vocab_embeddings: dict[str, torch.Tensor]
+
+    def __init__(
+        self,
+        tau: float = 0.7,
+        decay: float = DECAY,
+        max_sim_ctx_depth: int = MAX_SIM_CTX_DEPTH,
+        max_height: int = 5,
+        min_cluster_size: int = 2,
+        schema_only: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            tau=tau,
+            decay=decay,
+            max_sim_ctx_depth=max_sim_ctx_depth,
+            max_height=max_height,
+            min_cluster_size=min_cluster_size,
+            schema_only=schema_only,
+        )
+        self._vocab_embeddings = {}
+        self._label_avg_embedding = {}
+        self._dim = 0
+        self._embedder = DecayedConv(layers=self._max_sim_ctx_depth, decay=self._decay)
+        self._clusterer = HDBSCAN(
+            metric='euclidean',
+            prediction_data=True,
+            cluster_selection_epsilon=1 - self._tau,
+            min_cluster_size=min_cluster_size,
+            **kwargs,
+        )
+
+    def _compute_vocab_embedding(self, forest: Forest | TreeBucket) -> None:
+        props = sorted({prop for tree in forest for prop in tree.entity_labels()})
+        self._vocab_embeddings.clear()
+        self._dim = len(props)
+
+        for prop in props:
+            tensor = torch.zeros(self._dim, dtype=torch.float64)
+            tensor[props.index(prop)] = 1
+            self._vocab_embeddings[prop] = tensor
+
+    def _get_tree_embedding(self, tree: Tree) -> dict[Tree, torch.Tensor] | dict[TreePersistentRef, torch.Tensor]:
+        subtrees = list(tree.subtrees(lambda x: not has_type(x, NodeType.ENT)))
+        oid_to_idx = {st.oid: i for i, st in enumerate(subtrees)}
+
+        features = torch.stack(
+            [
+                sum(
+                    [self._vocab_embeddings[p] for p in st.entity_labels() if p in self._vocab_embeddings],
+                    torch.zeros(self._dim, dtype=torch.float64),
+                )
+                for st in subtrees
+            ]
+        )
+
+        edge_index = torch.tensor(
+            [[oid_to_idx[st.oid], oid_to_idx[child.oid]] for st in subtrees for child in st if child.oid in oid_to_idx],
+            dtype=torch.long,
+        ).t()
+
+        if edge_index.size(0) == 2:
+            edge_index = to_undirected(edge_index)
+            features = self._embedder(features, edge_index)
+
+        return {
+            st: torch.cat([torch.tensor([hash(st.label)], dtype=torch.float64), features[oid_to_idx[st.oid]]])
+            for st in subtrees
+        }
+
+    @staticmethod
+    def _get_average_label_embedding(tree_embeddings: dict[Tree, dict[Tree, torch.Tensor]]) -> dict[str, torch.Tensor]:
+        return dict(
+            more_itertools.groupby_transform(
+                ((st, emb) for st_emb in tree_embeddings.values() for st, emb in st_emb.items() if has_type(st)),
+                keyfunc=lambda x: x[0].label,
+                valuefunc=lambda x: x[1],
+                reducefunc=lambda x: torch.stack(list(x)).mean(dim=0),
+            )
+        )
+
+    def _get_feature_matrix(self, forest: Iterable[Tree | TreePersistentRef]) -> npt.NDArray[np.float64]:
+        trees = [tree for tree_ref in forest if (tree := self._get_tree(tree_ref)) is not None]
+        roots = {tree.root for tree in trees}
+        tree_embeddings = {root: self._get_tree_embedding(root) for root in roots}
+        self._label_avg_embedding = self._get_average_label_embedding(tree_embeddings)
+        return np.stack(
+            [
+                self._label_avg_embedding.get(tree.label, tree_embeddings[tree.root][tree]).numpy().astype(np.float64)
+                for tree in trees
+            ]
+        ).astype(np.float64)
+
+    @torch.no_grad()
+    def fit(self, forest: Forest | TreeBucket, _all_subtrees: bool = True) -> None:
+        self._clusters_names.clear()
+        self._clusters.clear()
+        self._bucket = forest if isinstance(forest, TreeBucket) else None
+        self._compute_vocab_embedding(forest)
+
+        subtrees = self._get_subtrees_to_cluster(forest, _all_subtrees)
+        if len(subtrees) < self._clusterer.min_cluster_size:
+            return
+
+        if self._schema_only:
+            schema = Schema.from_forest(forest)
+            schema_tree = schema.to_tree()
+            schema_subtrees = tuple(
+                schema_tree.subtrees(
+                    lambda x: (
+                        x.height <= self._max_height and not has_type(x, NodeType.ENT) and not x.has_duplicate_entity()
+                    )
+                )
+            )
+            subtrees_mapping: dict[NodeLabel | str, list[int]] = defaultdict(list)
+            for i, st in enumerate(subtrees):
+                if st := self._get_tree(st):
+                    subtrees_mapping[st.label].append(i)
+            feature_matrix = self._get_feature_matrix(schema_subtrees)
+
+        else:
+            schema_subtrees = ()
+            subtrees_mapping = {}
+            feature_matrix = self._get_feature_matrix(subtrees)
+
+        # Perform hierarchical clustering based on the distance threshold tau
+        labels = self._clusterer.fit_predict(feature_matrix)
+        probabilities = np.ones(len(subtrees)) if self._schema_only else self._clusterer.probabilities_
+
+        # Group subtrees by cluster ID
+        subtree_clusters = defaultdict(list)
+        for idx, cluster_id in enumerate(labels):
+            if cluster_id != -1:
+                if self._schema_only:
+                    subtrees_ids = subtrees_mapping[schema_subtrees[idx].label]
+                    subtree_clusters[cluster_id].extend(subtrees_ids)
+                else:
+                    subtree_clusters[cluster_id].append(idx)
+
+        self._reconstruct_clusters(subtree_clusters, subtrees, probabilities)
+
+    def get_equiv_of(self, t: Tree, _top_k: int = 5) -> str | None:
+        if has_type(t, NodeType.ENT):
+            return None
+
+        if t.label in self._label_avg_embedding:
+            point_to_predict = self._label_avg_embedding[t.label]
+
+        else:
+            embeddings = self._get_tree_embedding(t.root)
+            if t not in embeddings:
+                return None
+
+            point_to_predict = embeddings[t].numpy().astype(np.float64)
+
+        labels, _probabilities = approximate_predict(self._clusterer, [point_to_predict])
+        cluster_id = labels[0]
+        return self._clusters_names.get(cluster_id)
+
+
 def entity_labels(
     forest: Iterable[Tree],
     *,
@@ -541,7 +746,7 @@ def entity_labels(
         for tree in forest
         for subtree in tree.subtrees(lambda x: not has_type(x, NodeType.ENT) and x.has_entity_child())
     ]
-    clusterer = TreeClusterer(tau=tau, metric=metric, decay=decay, schema_only=schema_only)
+    clusterer = EmbeddedTreeClusterer(tau=tau, decay=decay, schema_only=schema_only)
     clusterer.fit(entity_parents, _all_subtrees=False)
 
     return {
