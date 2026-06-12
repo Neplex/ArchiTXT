@@ -19,7 +19,7 @@ from tqdm.auto import tqdm, trange
 from architxt.bucket import TreeBucket
 from architxt.forest import update_forest
 from architxt.metrics import Metrics
-from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, TreeClusterer
+from architxt.similarity import DECAY, DEFAULT_METRIC, METRIC_FUNC, EmbeddedTreeClusterer, TreeClusterer
 from architxt.tree import Forest, NodeLabel, NodeType, Tree, TreeOID, has_type
 from architxt.utils import ExceptionGroup, get_commit_batch_size
 
@@ -101,7 +101,7 @@ def rewrite(
     batch_size = get_commit_batch_size(commit)
     min_support = min_support or max((len(forest) // 10), 2)
     max_workers = max_workers or min(len(forest) // batch_size, (cpu_count() - 2)) or 1
-    tree_clusterer = TreeClusterer(tau=tau, decay=decay, metric=metric, schema_only=schema_similarity)
+    tree_clusterer = EmbeddedTreeClusterer(tau=tau, decay=decay, schema_only=schema_similarity)
 
     if debug:
         print('workers :', max_workers, '| batch size :', batch_size)
