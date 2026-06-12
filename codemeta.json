@@ -74,7 +74,7 @@
     }
   ],
   "dateCreated": "2023-09-08T17:17:08Z+0200",
-  "dateModified": "2026-05-22T17:22:27Z+0200",
+  "dateModified": "2026-06-12T17:28:41Z+0200",
   "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
   "developmentStatus": "https://www.repostatus.org/#wip",
   "identifier": "ArchiTXT",
@@ -369,6 +369,20 @@
       "name": "toml",
       "runtimePlatform": "Python 3",
       "version": ">=0.10.0,<0.11.0"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "torch",
+      "name": "torch",
+      "runtimePlatform": "Python 3",
+      "version": ">=2.12.0,<3.0.0"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "torch-geometric",
+      "name": "torch-geometric",
+      "runtimePlatform": "Python 3",
+      "version": ">=2.8.0,<3.0.0"
     },
     {
       "@type": "SoftwareApplication",
