@@ -22,7 +22,6 @@ from scipy.spatial.distance import squareform
 from torch import nn
 from torch.nn.functional import normalize
 from torch_geometric.nn import Aggregation, SimpleConv
-from torch_geometric.utils import to_undirected
 from tqdm.auto import tqdm
 
 from architxt.bucket import TreeBucket
@@ -539,24 +538,28 @@ class DecayedConv(nn.Module):
         layers: int = MAX_SIM_CTX_DEPTH,
         aggr: str | list[str] | Aggregation = 'mean',
         decay: float = DECAY,
+        ctx_weight: float = 0.5,
     ) -> None:
         super().__init__()
-        self.decay = decay
         self.layers = layers
+        self.decay = decay
+        self.ctx_weight = ctx_weight
         self.conv = SimpleConv(aggr=aggr, combine_root=None)
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+        h = x
         for i in range(self.layers):
-            scale = self.decay ** (-i)
-            h = scale * self.conv(x, edge_index)
-            x = x + h
+            scale = self.decay**-i
+            h = scale * self.conv(h, edge_index)
 
-        return normalize(x)
+        # features + context
+        return x + self.ctx_weight * h
 
 
 class EmbeddedTreeClusterer(TreeClusterer):
     _embedder: nn.Module
     _vocab_embeddings: dict[str, torch.Tensor]
+    _label_avg_embedding: dict[str, torch.Tensor]
 
     def __init__(
         self,
@@ -566,6 +569,8 @@ class EmbeddedTreeClusterer(TreeClusterer):
         max_height: int = 5,
         min_cluster_size: int = 2,
         schema_only: bool = False,
+        label_weight: float = 0.5,
+        ctx_weight: float = 0.5,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -576,14 +581,15 @@ class EmbeddedTreeClusterer(TreeClusterer):
             min_cluster_size=min_cluster_size,
             schema_only=schema_only,
         )
+        self._label_weight = label_weight
         self._vocab_embeddings = {}
         self._label_avg_embedding = {}
         self._dim = 0
-        self._embedder = DecayedConv(layers=self._max_sim_ctx_depth, decay=self._decay)
+        self._embedder = DecayedConv(layers=self._max_sim_ctx_depth, decay=self._decay, ctx_weight=ctx_weight)
         self._clusterer = HDBSCAN(
             metric='euclidean',
             prediction_data=True,
-            cluster_selection_epsilon=1 - self._tau,
+            cluster_selection_epsilon=math.sqrt(2 * (1 - tau)),
             min_cluster_size=min_cluster_size,
             **kwargs,
         )
@@ -618,13 +624,9 @@ class EmbeddedTreeClusterer(TreeClusterer):
         ).t()
 
         if edge_index.size(0) == 2:
-            edge_index = to_undirected(edge_index)
             features = self._embedder(features, edge_index)
 
-        return {
-            st: torch.cat([torch.tensor([hash(st.label)], dtype=torch.float64), features[oid_to_idx[st.oid]]])
-            for st in subtrees
-        }
+        return {st: features[oid_to_idx[st.oid]] for st in subtrees}
 
     @staticmethod
     def _get_average_label_embedding(tree_embeddings: dict[Tree, dict[Tree, torch.Tensor]]) -> dict[str, torch.Tensor]:
@@ -642,12 +644,24 @@ class EmbeddedTreeClusterer(TreeClusterer):
         roots = {tree.root for tree in trees}
         tree_embeddings = {root: self._get_tree_embedding(root) for root in roots}
         self._label_avg_embedding = self._get_average_label_embedding(tree_embeddings)
-        return np.stack(
-            [
-                self._label_avg_embedding.get(tree.label, tree_embeddings[tree.root][tree]).numpy().astype(np.float64)
-                for tree in trees
-            ]
-        ).astype(np.float64)
+
+        # Add a soft label prior: same-label nodes are encouraged to cluster together,
+        # but context-specific embeddings can still split labels into distinct groups.
+        return (
+            normalize(
+                torch.stack(
+                    [
+                        tree_embeddings[tree.root][tree]
+                        + self._label_weight * self._label_avg_embedding.get(tree.label, torch.zeros(self._dim))
+                        for tree in trees
+                    ]
+                ),
+                p=2,
+                dim=1,
+            )
+            .numpy()
+            .astype(np.float64)
+        )
 
     @torch.no_grad()
     def fit(self, forest: Forest | TreeBucket, _all_subtrees: bool = True) -> None:
@@ -701,16 +715,16 @@ class EmbeddedTreeClusterer(TreeClusterer):
         if has_type(t, NodeType.ENT):
             return None
 
+        embeddings = self._get_tree_embedding(t.root)
+        if t not in embeddings:
+            return None
+
+        point_to_predict = embeddings[t]
+
         if t.label in self._label_avg_embedding:
-            point_to_predict = self._label_avg_embedding[t.label]
+            point_to_predict += self._label_weight * self._label_avg_embedding[t.label]
 
-        else:
-            embeddings = self._get_tree_embedding(t.root)
-            if t not in embeddings:
-                return None
-
-            point_to_predict = embeddings[t].numpy().astype(np.float64)
-
+        point_to_predict = normalize(point_to_predict, p=2, dim=0).numpy().astype(np.float64)
         labels, _probabilities = approximate_predict(self._clusterer, [point_to_predict])
         cluster_id = labels[0]
         return self._clusters_names.get(cluster_id)
