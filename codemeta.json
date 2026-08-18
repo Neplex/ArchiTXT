@@ -74,7 +74,7 @@
     }
   ],
   "dateCreated": "2023-09-08T17:17:08Z+0200",
-  "dateModified": "2026-06-17T15:11:39Z+0200",
+  "dateModified": "2026-08-18T09:21:09Z+0200",
   "description": "ArchiTXT is a tool for structuring textual data into a valid database model. It is guided by a meta-grammar and uses an iterative process of tree rewriting.",
   "developmentStatus": "https://www.repostatus.org/#wip",
   "identifier": "ArchiTXT",
@@ -328,14 +328,14 @@
       "identifier": "spacy",
       "name": "spacy",
       "runtimePlatform": "Python 3",
-      "version": ">=3.8.2,<4.0.0"
+      "version": ">=3.7.0,<3.8.0"
     },
     {
       "@type": "SoftwareApplication",
       "identifier": "spacy",
       "name": "spacy",
       "runtimePlatform": "Python 3",
-      "version": ">=3.7.0,<3.8.0"
+      "version": ">=3.8.2,<4.0.0"
     },
     {
       "@type": "SoftwareApplication",
