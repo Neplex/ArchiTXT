@@ -116,7 +116,7 @@ docs = [
     "notebook>=7.3.3",
     "itables>=2.3.0",
     "ipywidgets>=8.1.7",
-    "plotly<6.0",
+    "plotly<8.0",
     "yfiles-jupyter-graphs>=1.10.7",
     "yfiles-jupyter-graphs-for-neo4j>=1.7.0",
 ]
