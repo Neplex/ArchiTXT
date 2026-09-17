@@ -4,6 +4,7 @@
 ![PyPI - Status](https://img.shields.io/pypi/status/architxt)
 [![PyPI - Version](https://img.shields.io/pypi/v/architxt)](https://pypi.org/project/architxt/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/architxt)
+![PyPI Downloads](https://img.shields.io/pypi/dm/architxt)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/neplex/architxt/python-build.yml)](https://github.com/Neplex/ArchiTXT/actions)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/Neplex/ArchiTXT/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/Neplex/ArchiTXT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15688157.svg)](https://doi.org/10.5281/zenodo.15688157)
